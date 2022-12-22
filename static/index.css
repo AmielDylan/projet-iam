@@ -1,0 +1,148 @@
+body{
+    font-family: 'Montserrat';
+    font-style: normal;
+    color: #FFFFFF;
+    position: relative;
+    background: linear-gradient(247.1deg, #000958 0%, #000000 100%);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+div.frame-1{
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+}
+
+div.container.top{
+    padding-top: 3rem;
+}
+
+div.container.second{
+    margin-top: 5rem;
+}
+
+div.third{
+    border: 1px solid #9F9F9F !important;
+    border-radius: 3px !important;
+}
+
+h1.title {
+    font-weight: 800;
+    font-size: 57px;
+    line-height: 69px;
+}
+
+h2.title-2 {
+    font-weight: 800;
+    font-size: 28px;
+    line-height: 34px;
+    color: #9F9F9F;
+}
+
+h3{
+    font-weight: 700;
+    font-size: 14px;
+    line-height: 16px;
+}
+
+p.version{
+    font-weight: 500;
+    font-size: 15px;
+    line-height: 18px;
+}
+
+p.warning{
+    font-weight: 400;
+    font-size: 14px;
+    line-height: 16px;
+    margin-top: 1.5rem;
+}
+
+p.info{
+    font-weight: 400;
+    font-size: 14px;
+    line-height: 16px;
+    padding-left: 1rem;
+    margin-top: 2rem;
+}
+
+p.title-3{
+    font-weight: 400;
+    font-size: 14px;
+    line-height: 16px;
+    margin-top: 1rem;
+    margin-bottom: 3rem;
+}
+
+p.title-4{
+    font-weight: 700;
+    font-size: 14px;
+    line-height: 16px;
+    margin: 6px 0px;
+}
+
+p.end{
+    padding: 2rem;
+    color: white;
+}
+
+span.med{
+    font-weight: 700;
+    font-size: 14px;
+    line-height: 16px;
+    color: #F5CE00;
+}
+
+input{
+    background: #D9D9D9 !important;
+    border-radius: 3px !important;
+}
+
+label.form-label{
+    font-weight: 700;
+    font-size: 14px;
+    line-height: 16px;
+}
+
+button{
+    font-size: 14px !important;
+    line-height: 16px !important;
+    color: #000958 !important;
+    font-weight: 600 !important;
+}
+
+button.rounded-pill{
+    margin-top: 1vh;
+    margin-right: 1vw;
+}
+
+div.d-flex{
+    color: #000000;
+    border-radius: 3px 3px 0px 0px;
+    padding: 1rem;
+}
+
+div.container.details{
+    padding: 1rem;
+}
+
+div.container.last{
+    margin-top: 2rem;
+    margin-bottom: 6rem;
+}
+
+.visible {
+  visibility: visible !important;
+}
+.invisible {
+  visibility: hidden !important;
+}
+
+@media (max-width: 767.98px) {
+  div.col-12.col-md-4 {
+    padding-top: 1rem !important;
+  }
+}
