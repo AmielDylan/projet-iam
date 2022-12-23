@@ -101,6 +101,18 @@ input{
     border-radius: 3px !important;
 }
 
+input#med-1.danger{
+    border: 3px solid red;
+}
+
+input#med-1.warning{
+    border: 3px solid #b19403;
+}
+
+input#med-1.valide{
+    border : 3px solid #00A611;
+}
+
 label.form-label{
     font-weight: 700;
     font-size: 14px;

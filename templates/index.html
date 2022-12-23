@@ -27,10 +27,18 @@
       <form action="/" class="row justify-content-between g-5" method="post">
         <div class="col-12 col-md-6">
           <label for="med-1" class="form-label">Médicament 1</label>
-          <input id="med-1" name="med-1" class="form-control form-control-lg" {% if resultat[4] %} value={{ resultat[4] }} {% endif %} type="text" aria-describedby="med-1-helper" oninput="this.value = this.value.toUpperCase()">
+          <input 
+            id="med-1" 
+            name="med-1" 
+            class="form-control form-control-lg" 
+            type="text" aria-describedby="med-1-helper" 
+            onfocus="clear_border()"
+            onblur="check_medicament(1)"
+            oninput="this.value = this.value.toUpperCase()">
           <div id="med-1-helper" class="form-text">Evitez les charactères spéciaux svp</div>
 
-          <div class="visible" id="choix-classe-1">
+          {% if class_list_1 %}
+          <div id="choix-classe-1">
             <p class="warning"> Cette substance est comprise dans plusieurs médicaments. Veuillez choisir celui qui vous intéresse : </p>
          
             <div class="">
@@ -38,14 +46,16 @@
               <button class="btn btn-lg btn-warning rounded-pill" type="button">Button</button>
             </div>
           </div>
+          {% endif %}
         </div>
 
         <div class="col-12 col-md-6">
           <label for="med-2" class="form-label">Médicament 2</label>
-          <input id="med-2" name="med-2" class="form-control form-control-lg" {% if resultat[5] %} value={{ resultat[5] }} {% endif %} type="text" aria-describedby="med-2-helper" oninput="this.value = this.value.toUpperCase()">
+          <input id="med-2" name="med-2" class="form-control form-control-lg" type="text" aria-describedby="med-2-helper" oninput="this.value = this.value.toUpperCase()">
           <div id="med-2-helper" class="form-text">Evitez les charactères spéciaux svp</div>
 
-          <div class="visible" id="choix-classe-2">
+          {% if class_list_2 %}
+          <div id="choix-classe-2">
             <p class="warning"> Cette substance est comprise dans plusieurs médicaments. Veuillez choisir celui qui vous intéresse : </p>
          
             <div class="">
@@ -53,6 +63,7 @@
               <button class="btn btn-lg btn-warning rounded-pill" type="button">Button</button>
             </div>
           </div>
+          {% endif %}
         </div>
 
         <div class="d-flex justify-content-end">
