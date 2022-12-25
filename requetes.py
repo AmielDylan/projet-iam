@@ -155,3 +155,5 @@ def getFullResult(res, med_1, med_2):
     return res
   else:
     return []
+
+print(getClassesId('ADRENALINE'))
