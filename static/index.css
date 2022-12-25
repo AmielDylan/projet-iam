@@ -101,15 +101,15 @@ input{
     border-radius: 3px !important;
 }
 
-input#med-1.danger{
+input.danger{
     border: 3px solid red;
 }
 
-input#med-1.warning{
+input.warning{
     border: 3px solid #b19403;
 }
 
-input#med-1.valide{
+input.valide{
     border : 3px solid #00A611;
 }
 
@@ -151,6 +151,7 @@ div.container.last{
 }
 .invisible {
   visibility: hidden !important;
+  display: none;
 }
 
 @media (max-width: 767.98px) {
