@@ -43,7 +43,7 @@ function input_warning(input_Med, input_number){
   input_Med.classList.add("warning")
   input_Med.classList.remove("valide")
 
-  helper.innerText = "Il s'agit d'une substance !"
+  helper.innerText = "Info : Il s'agit d'une substance !"
 
   helper.classList.remove("text-danger")
   helper.classList.remove("text-success")
@@ -99,9 +99,10 @@ function clear_border(input_number){
 
 function append_classes(listClasses, input_number){
   var listResponse = []
+  var propositions = document.getElementById("propositions-"+input_number)
 
-  while (document.getElementById("propositions-"+input_number).hasChildNodes()) {
-    list.removeChild(document.getElementById("propositions-"+input_number).firstChild);
+  while (propositions.hasChildNodes()) {
+    propositions.removeChild(document.getElementById("propositions-"+input_number).firstChild);
   }
 
   listClasses.forEach(element => {
@@ -186,7 +187,7 @@ async function check_medicament(input_number){
             var listClasses = await getListClasses(input_Med.value)
             result.push(listClasses)
 
-            append_classes(result[0], 1)
+            append_classes(result[0], input_number)
 
         }else{
             input_valid(input_Med, input_number)
@@ -195,4 +196,6 @@ async function check_medicament(input_number){
             result.push(input_Med.value)
         }
     }
+
+    return result
 }
