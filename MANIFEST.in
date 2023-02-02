@@ -1,0 +1,3 @@
+graft iam/static
+graft iam/templates
+global-exclude *.pyc
