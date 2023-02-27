@@ -11,110 +11,117 @@
     <script src="../static/index.js"></script>
   </head>
   <body>
-    <div class="container top">
-      <div class="frame-1">
-        <h1 class="title">Projet IAM</h1>
-        <p class="version">version 1.0</p>
+    <div class="content">
+      <div class="container top">
+        <div class="frame-1">
+          <h1 class="title">Projet IAM</h1>
+          <p class="version">version 1.0</p>
+        </div>
+
+        <h2 class="title-2">Plateforme de présentation des interactions médicamenteuses</h2>
+        <p class="info border-3 border-start">
+          Dans sa version initiale, cette plateforme d’aide à la décision permet de visualiser les interactions médicamenteuses entre deux médicaments. En renseignant deux médicaments (ou class de médicaments), il est possible d’obtenir des informations tels que le détail, le niveau de précaution, les risques encourues et les actions associées
+        </p>
+      </div>
+      
+      <div class="container second">
+        <form action="/" class="row justify-content-between g-5" method="post">
+          <div class="col-12 col-md-6">
+            <label for="med-1" class="form-label">Médicament 1</label>
+            <input 
+              id="med-1" 
+              name="med-1" 
+              class="form-control form-control-lg" 
+              type="text" aria-describedby="med-1-helper" 
+              onfocus="clear_border(1)"
+              onblur="check_medicament(1)"
+              oninput="this.value = this.value.toUpperCase()">
+            <div id="med-1-helper" class="form-text">Evitez les charactères spéciaux svp.</div>
+
+            <div id="choix-classe-1">
+              <p class="warning"> Cette substance est comprise dans plusieurs classes. </p>
+          
+              <div id="propositions-1" class=""></div>
+            </div>
+          </div>
+
+          <div class="col-12 col-md-6">
+            <label for="med-2" class="form-label">Médicament 2</label>
+            <input 
+              id="med-2" 
+              name="med-2" 
+              class="form-control form-control-lg" 
+              type="text" aria-describedby="med-2-helper" 
+              onfocus="clear_border(2)"
+              onblur="check_medicament(2)"
+              oninput="this.value = this.value.toUpperCase()">
+            <div id="med-2-helper" class="form-text">Evitez les charactères spéciaux svp.</div>
+
+            <div id="choix-classe-2">
+              <p class="warning"> Cette substance est comprise dans plusieurs classes. </p>
+          
+              <div id="propositions-2" class=""></div>
+            </div>
+          </div>
+
+          <div class="d-flex justify-content-end">
+            <button type="submit" class="btn btn-lg btn-warning m-2">Découvrir interaction</button>
+          </div>
+        </form>
       </div>
 
-      <h2 class="title-2">Plateforme de présentation des interactions médicamenteuses</h2>
-      <p class="info border-3 border-start">
-        Dans sa version initiale, cette plateforme d’aide à la décision permet de visualiser les interactions médicamenteuses entre deux médicaments. En renseignant deux médicaments (ou class de médicaments), il est possible d’obtenir des informations tels que le détail, le niveau de précaution, les risques encourues et les actions associées
-      </p>
-    </div>
-    
-    <div class="container second">
-      <form action="/" class="row justify-content-between g-5" method="post">
-        <div class="col-12 col-md-6">
-          <label for="med-1" class="form-label">Médicament 1</label>
-          <input 
-            id="med-1" 
-            name="med-1" 
-            class="form-control form-control-lg" 
-            type="text" aria-describedby="med-1-helper" 
-            onfocus="clear_border(1)"
-            onblur="check_medicament(1)"
-            oninput="this.value = this.value.toUpperCase()">
-          <div id="med-1-helper" class="form-text">Evitez les charactères spéciaux svp.</div>
+      {% if resultats %}
+      <div class="container last">
+      
+        <div class="third" id="third">
+          <div class="d-flex bg-white bg-opacity-20 justify-content-between">
+            <h3>Résultat requêtes entre {{ resultats[resultats|length()-2] }} et {{ resultats[lenresultat|length()-1] }}</h3>
 
-          <div id="choix-classe-1">
-            <p class="warning"> Cette substance est comprise dans plusieurs classes. </p>
-         
-            <div id="propositions-1" class=""></div>
+            <i class="fa-solid fa-circle-xmark" onclick="dispose_result()"></i>
           </div>
-        </div>
-
-        <div class="col-12 col-md-6">
-          <label for="med-2" class="form-label">Médicament 2</label>
-          <input 
-            id="med-2" 
-            name="med-2" 
-            class="form-control form-control-lg" 
-            type="text" aria-describedby="med-2-helper" 
-            onfocus="clear_border(2)"
-            onblur="check_medicament(2)"
-            oninput="this.value = this.value.toUpperCase()">
-          <div id="med-2-helper" class="form-text">Evitez les charactères spéciaux svp.</div>
-
-          <div id="choix-classe-2">
-            <p class="warning"> Cette substance est comprise dans plusieurs classes. </p>
-         
-            <div id="propositions-2" class=""></div>
-          </div>
-        </div>
-
-        <div class="d-flex justify-content-end">
-          <button type="submit" class="btn btn-lg btn-warning m-2">Découvrir interaction</button>
-        </div>
-      </form>
-    </div>
-
-    <div class="container last">
-      {% if resultat %}
-      <div class="third" id="third">
-        <div class="d-flex bg-white bg-opacity-20 justify-content-between">
-          <h3>Résultat requêtes</h3>
-
-          <i class="fa-solid fa-circle-xmark" onclick="dispose_result()"></i>
-        </div>
-
-        <div class="container details">
           
-          <p class="title-3">Interactions entre <span class="med">{{ resultat[4] }}</span> et <span class="med">{{ resultat[5] }}</span></p>
-          
-          <div class="row">
-            <div class="col">
-              <div>
-                <p class="title-4">Niveau d'interaction :</p>
-                <p class="resultat">{{ resultat[2] }}</p>
-              </div>
+          {% for resultat in resultats[:-2] %}
+
+          <div class="container details">
+            
+            <p class="title-3">Composants <span class="medName_yellow">{{ resultat[4][0] }}</span> et <span class="medName_yellow">{{ resultat[4][1] }}</span></p>
+              
+            <div class="row">
+                <div class="col">
+                  <div>
+                    <p class="title-4">Niveau d'interaction :</p>
+                    <p class="resultat">{{ resultat[2] }}</p>
+                  </div>
+                </div>
             </div>
+
+            <div class="row mt-4">
+                <div class="col-12 col-md-4 mb-2">
+                  <div>
+                    <p class="title-4">Détails (du médicament 1) :</p>
+                    <p class="resultat">{{ resultat[0] }}</p>
+                  </div>
+                </div>
+
+                <div class="col-12 col-md-4">
+                  <div>
+                    <p class="title-4">Risques d’interaction :</p>
+                    <p class="resultat">{{ resultat[1] }}</p>
+                  </div>
+                </div>
+
+                <div class="col-12 col-md-4">
+                  <div>
+                    <p class="title-4">Actions associées :</p>
+                    <p class="resultat">{{ resultat[3] }}</p>
+                  </div>
+                </div>
+            </div>
+            
           </div>
-
-          <div class="row mt-4">
-            <div class="col-12 col-md-4">
-              <div>
-                <p class="title-4">Détails (du médicament 1) :</p>
-                <p class="resultat">{{ resultat[0] }}</p>
-              </div>
-            </div>
-
-            <div class="col-12 col-md-4">
-              <div>
-                <p class="title-4">Risques d’interaction :</p>
-                <p class="resultat">{{ resultat[1] }}</p>
-              </div>
-            </div>
-
-            <div class="col-12 col-md-4">
-              <div>
-                <p class="title-4">Actions associées :</p>
-                <p class="resultat">{{ resultat[3] }}</p>
-              </div>
-            </div>
-          </div>
+          {% endfor %}
         </div>
-      </div>
+      </div>     
       {% endif %}
     </div>
 

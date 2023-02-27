@@ -32,13 +32,16 @@ def create_app(test_config=None):
             med_1 = request.form.get("med-1")
             # getting input with name = med-2 in HTML form
             med_2 = request.form.get("med-2")
-        
+
+            temp = getInteractionsMed(med_1=med_1.upper(), med_2=med_2.upper())[0]
+            args = getInteractionsMed(med_1=med_1.upper(), med_2=med_2.upper())[1]
+
             result = getFullResult(
-                getInteractionsMed(med_1=med_1.upper(), med_2=med_2.upper()),
+                listRes=temp,args=args,
                 med_1=med_1,
                 med_2=med_2)
 
-        return render_template('index.html', resultat = result, class_list_1 = class_list_1, class_list_2 = class_list_2)
+        return render_template('index.html', resultats = result, class_list_1 = class_list_1, class_list_2 = class_list_2)
 
     @app.route('/testClasse', methods=['POST'])
     def testClasse():
@@ -54,10 +57,10 @@ def create_app(test_config=None):
     def getListClasses():
         resultat = []
         substance = request.form.get("substance")
-        listId = getClassesId(substance=substance)
+        listId = getClassesIdFromSubstance(substance=substance)
 
         for value in listId:
-            resultat.append(getClasse(value))
+            resultat.append(getClasseName(value))
 
         return resultat
 

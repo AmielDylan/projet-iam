@@ -1,3 +1,7 @@
+html, body {
+    height: 100%;
+}
+
 body{
     font-family: 'Montserrat';
     font-style: normal;
@@ -7,6 +11,14 @@ body{
     min-height: 100vh;
     display: flex;
     flex-direction: column;
+}
+
+.content {
+    flex: 1 0 auto;
+}
+
+.footer {
+    flex-shrink: 0;
 }
 
 div.frame-1{
@@ -73,8 +85,8 @@ p.title-3{
     font-weight: 400;
     font-size: 14px;
     line-height: 16px;
-    margin-top: 1rem;
-    margin-bottom: 3rem;
+    /* margin-top: 1rem; */
+    /* margin-bottom: 1rem; */
 }
 
 p.title-4{
@@ -89,11 +101,18 @@ p.end{
     color: white;
 }
 
-span.med{
+span.medName_yellow{
     font-weight: 700;
     font-size: 14px;
     line-height: 16px;
     color: #F5CE00;
+}
+
+span.medName_black{
+    font-weight: 700;
+    font-size: 14px;
+    line-height: 16px;
+    color: #000958;
 }
 
 input{
@@ -102,15 +121,15 @@ input{
 }
 
 input.danger{
-    border: 3px solid red;
+    border: 1px solid red;
 }
 
 input.warning{
-    border: 3px solid #b19403;
+    border: 1px solid #b19403;
 }
 
 input.valide{
-    border : 3px solid #00A611;
+    border : 1px solid #00A611;
 }
 
 label.form-label{

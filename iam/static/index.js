@@ -29,7 +29,7 @@ function input_danger(input_Med, input_number){
   input_Med.classList.remove("warning")
   input_Med.classList.remove("valide")
 
-  helper.innerText = "Veuillez vérifier la valeur entrée svp."
+  helper.innerText = "Entrez une valeur correcte svp."
 
   helper.classList.add("text-danger")
   helper.classList.remove("text-success")
@@ -43,7 +43,7 @@ function input_warning(input_Med, input_number){
   input_Med.classList.add("warning")
   input_Med.classList.remove("valide")
 
-  helper.innerText = "Info : Il s'agit d'une substance !"
+  helper.innerText = "Informations disponible"
 
   helper.classList.remove("text-danger")
   helper.classList.remove("text-success")
@@ -57,7 +57,7 @@ function input_valid(input_Med, input_number){
   input_Med.classList.remove("warning")
   input_Med.classList.add("valide")
 
-  helper.innerText = "Medicament Valide"
+  helper.innerText = "Entrée valide"
 
   helper.classList.remove("text-danger")
   helper.classList.add("text-success")

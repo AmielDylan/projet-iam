@@ -45,7 +45,7 @@ def isClasse(medicament):
   else:
     cnx.close()
 
-  return result
+  return eval(result)
 
 def isSubstance(medicament):
   result = []
@@ -64,18 +64,18 @@ def isSubstance(medicament):
   else:
     cnx.close()
 
-  return result
+  return eval(result)
 
 # PROCEDURES
-def getClasse(idClasse):
+def getClasseName(idClasse):
   result = []
 
   try:
     cnx = connectToDB()
     cursor = cnx.cursor()
     args = [idClasse,0]
-    
-    result = cursor.callproc('getClasse', args)
+
+    result = cursor.callproc('getClasseName', args)
 
   except Error as err:
       print(err)
@@ -84,7 +84,7 @@ def getClasse(idClasse):
 
   return result[1] if len(result) > 0 else result
 
-def getClassesId(substance):
+def getClassesIdFromSubstance(substance):
   fetch = result = []
   
   try:
@@ -106,29 +106,97 @@ def getClassesId(substance):
 
   return result
 
-def getInteractionsMed(med_1, med_2):
+def getClasseId(className):
   fetch = result = []
-
+  
   try:
     cnx = connectToDB()
     cursor = cnx.cursor()
-    args = [med_1, med_2]
-    cursor.callproc('getInteractionsMed', args)
+    args = [className]
+    cursor.callproc('getClasseId', args)
 
     for value in cursor.stored_results():
       fetch = value.fetchall()
     
     for value in fetch:
-      result.append(value[1].strip('()'))
-      result.append(value[3].strip('()'))
-      result.append(value[4])
-      result.append(value[5].strip('()'))
+      result.append(value[0])
+
   except Error as err:
-    print(err)
+      print(err)
+  else:
+    cnx.close()
+
+  return result
+
+def getInteractionsResults(id):
+  fetch = result = []
+  
+  try:
+    cnx = connectToDB()
+    cursor = cnx.cursor()
+    args = [id]
+    cursor.callproc('getInteractionsResults', args)
+
+    for value in cursor.stored_results():
+      fetch = value.fetchall()
+    
+    for value in fetch:
+      result.append(value[2].strip('()'))
+      result.append(value[4].strip('()'))
+      result.append(value[5])
+      result.append(value[6].strip('()'))
+
+  except Error as err:
+      print(err)
+  else:
+    cnx.close()
+
+  return result
+
+def getInteractionsMed(med_1, med_2):
+  fetch, temp, result, listClasses_1, listClasses_2, listArgs = [],[],[],[],[],[]
+
+  # Classes id from med 1
+  if isSubstance(med_1):
+    listClasses_1 = getClassesIdFromSubstance(med_1)
+  elif isClasse(med_1):
+    listClasses_1 = getClasseId(med_1)
+
+  # Classes id from med 2
+  if isSubstance(med_2):
+    listClasses_2 = getClassesIdFromSubstance(med_2)
+  elif isClasse(med_2):
+    listClasses_2 = getClasseId(med_2)
+
+  listClasses_1 = [getClasseName(id) for id in listClasses_1]
+  listClasses_2 = [getClasseName(id) for id in listClasses_2]
+
+  try:
+    cnx = connectToDB()
+    cursor = cnx.cursor()
+
+    for value1 in listClasses_1:
+      for value2 in listClasses_2:
+        args = [value1, value2]
+        cursor.callproc('getInteractionsClasses', args)
+        listArgs.append(args)
+
+        for value in cursor.stored_results():
+          fetch = value.fetchall()
+        
+        for value in fetch:
+          temp.append(value[0])
+
+  except Error as err:
+      print(err)
   else:
     cnx.close() 
 
-  return result
+  if len(temp) > 0:
+    for value in temp:
+      result.append(getInteractionsResults(value))
+
+  return result, listArgs
 
 def getNiveau(idNiveau):
   result = []
@@ -146,14 +214,24 @@ def getNiveau(idNiveau):
 
   return result[1] if len(result) > 0 else result
 
-def getFullResult(res, med_1, med_2):
+def getFullResult(listRes, args, med_1, med_2):
+  # List Comprehension qui rajoute les classes à la suite de chaque interaction
+  [i.append(a) for i,a in zip(listRes,args)]
+
+  res=listRes
+
   if len(res) > 0:
-    niveau = getNiveau(res[2])
-    res[2] = niveau
+    for value in res:
+      niveau = getNiveau(value[2])
+      value[2] = niveau
     res.append(med_1)
     res.append(med_2)
     return res
   else:
     return []
-
-print(getClassesId('ADRENALINE'))
+  
+print(
+  getFullResult(
+    getInteractionsMed('abatacept'.upper(),'anti-tnf alpha'.upper())[0],
+    getInteractionsMed('abatacept'.upper(),'anti-tnf alpha'.upper())[1],
+    "",""))
