@@ -5,6 +5,16 @@ window.onload = function(){
 
   details_1.classList.add("invisible")
   details_2.classList.add("invisible")
+
+  var inputField = document.getElementById("med-1");
+  inputField.addEventListener('input', function() {
+    autocomplete(1);
+  });
+
+  var inputField = document.getElementById("med-2");
+  inputField.addEventListener('input', function() {
+    autocomplete(2);
+  });
 }
 
 function show_infos(input_number){
@@ -152,6 +162,22 @@ async function testSubstance(medicament){
     return response
 }
 
+async function testSpecialite(medicament){
+  var formdata = new FormData();
+  formdata.append("medTest", medicament);
+  
+  var requestOptions = {
+    method: 'POST',
+    body: formdata,
+    redirect: 'follow'
+  };
+  
+  const response = await fetch("http://127.0.0.1:5000/testSpecialite", requestOptions)
+    .then(response => response.text());
+
+  return response
+}
+
 async function getListClasses(substance){
     var formdata = new FormData();
     formdata.append("substance", substance);
@@ -171,20 +197,21 @@ async function getListClasses(substance){
 async function check_medicament(input_number){
     var input_Med = document.getElementById("med-"+input_number);
     var result = []
-    var testCls = await testClasse(input_Med.value)
-    var testSub = await testSubstance(input_Med.value)    
+    var testCls = await testClasse(input_Med.value.toUpperCase())
+    var testSub = await testSubstance(input_Med.value.toUpperCase())
+    var testSpe = await testSpecialite(input_Med.value.toUpperCase())
     
-    if(input_Med.value == "" || (testCls == "false" && testSub == "false")){
+    if(input_Med.value.toUpperCase() == "" || (testCls == "False" && testSub == "False" && testSpe == "False")){
         input_danger(input_Med, input_number)
         remove_infos(input_number)
 
         result = []
     }else{
-        if (testSub == "true"){ 
+        if (testSub == "True"){ 
             input_warning(input_Med, input_number)
             show_infos(input_number)
             
-            var listClasses = await getListClasses(input_Med.value)
+            var listClasses = await getListClasses(input_Med.value.toUpperCase())
             result.push(listClasses)
 
             append_classes(result[0], input_number)
@@ -193,9 +220,69 @@ async function check_medicament(input_number){
             input_valid(input_Med, input_number)
             remove_infos(input_number)
 
-            result.push(input_Med.value)
+            result.push(input_Med.value.toUpperCase())
         }
     }
 
     return result
+}
+
+async function autocomplete(input_number){
+  // Récupérer la valeur saisie dans le champ de texte
+  const searchQuery = document.getElementById("med-"+input_number).value;
+
+  var myHeaders = new Headers();
+  myHeaders.append("Content-Type", "application/x-www-form-urlencoded");
+
+  var urlencoded = new URLSearchParams();
+  urlencoded.append("query", searchQuery);
+
+  var requestOptions = {
+    method: 'POST',
+    headers: myHeaders,
+    body: urlencoded,
+    redirect: 'follow'
+  };
+
+  // fetch("http://127.0.0.1:5000/autocomplete_input", requestOptions)
+  //   .then(response => response.text())
+  //   .then(result => console.log(result))
+  //   .catch(error => console.log('error', error));
+
+  
+  // Vous pouvez utiliser la méthode fetch() ou une bibliothèque comme Axios pour cela
+  fetch("http://127.0.0.1:5000/autocomplete_input", requestOptions)
+    .then(response => response.json())
+    .then(data => {
+      // Récupérer le conteneur où afficher les suggestions d'autocomplétion
+      const autocompleteContainer = document.getElementById("autocomplete-container-"+input_number);
+
+      // Effacer le contenu précédent
+      autocompleteContainer.innerHTML = '';
+
+      // Parcourir les résultats de l'API et créer les suggestions d'autocomplétion
+      data.forEach(result => {
+        // Créer un élément <div> pour chaque suggestion
+        const suggestion = document.createElement('div');
+        suggestion.classList.add('autocomplete-item');
+        suggestion.textContent = result.resultat;
+
+        // Ajouter un écouteur d'événement pour remplir le champ de texte avec la suggestion sélectionnée
+        suggestion.addEventListener('click', () => {
+          document.getElementById("med-"+input_number).value = result.resultat;
+          check_medicament(input_number)
+          autocompleteContainer.innerHTML = ''; // Effacer les suggestions après avoir sélectionné
+        });
+
+        // Ajouter la suggestion au conteneur d'autocomplétion
+        autocompleteContainer.appendChild(suggestion);
+
+        if (searchQuery == ""){
+          autocompleteContainer.innerHTML = ''; 
+        }
+      });
+    })
+    .catch(error => {
+      console.error('Une erreur s\'est produite lors de la récupération des suggestions d\'autocomplétion:', error);
+    });
 }

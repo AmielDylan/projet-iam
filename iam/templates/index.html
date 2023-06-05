@@ -25,18 +25,20 @@
       </div>
       
       <div class="container second">
-        <form action="/" class="row justify-content-between g-5" method="post">
+        <form autocomplete="off" action="/" id="medForm" class="row justify-content-between g-5" method="post">
           <div class="col-12 col-md-6">
             <label for="med-1" class="form-label">Médicament 1</label>
             <input 
+              style="text-transform: uppercase;"
+              value = "{{ resultats[resultats|length()-2] }}"
               id="med-1" 
               name="med-1" 
               class="form-control form-control-lg" 
               type="text" aria-describedby="med-1-helper" 
-              onfocus="clear_border(1)"
-              onblur="check_medicament(1)"
-              oninput="this.value = this.value.toUpperCase()">
+              onfocus="clear_border(1)">
             <div id="med-1-helper" class="form-text">Evitez les charactères spéciaux svp.</div>
+            <div id="autocomplete-container-1"></div>
+
 
             <div id="choix-classe-1">
               <p class="warning"> Cette substance est comprise dans plusieurs classes. </p>
@@ -48,14 +50,15 @@
           <div class="col-12 col-md-6">
             <label for="med-2" class="form-label">Médicament 2</label>
             <input 
+              style="text-transform: uppercase;"
+              value = "{{ resultats[resultats|length()-1] }}"
               id="med-2" 
               name="med-2" 
               class="form-control form-control-lg" 
               type="text" aria-describedby="med-2-helper" 
-              onfocus="clear_border(2)"
-              onblur="check_medicament(2)"
-              oninput="this.value = this.value.toUpperCase()">
+              onfocus="clear_border(2)">
             <div id="med-2-helper" class="form-text">Evitez les charactères spéciaux svp.</div>
+            <div id="autocomplete-container-2"></div>
 
             <div id="choix-classe-2">
               <p class="warning"> Cette substance est comprise dans plusieurs classes. </p>
@@ -75,7 +78,7 @@
       
         <div class="third" id="third">
           <div class="d-flex bg-white bg-opacity-20 justify-content-between">
-            <h3>Résultat requêtes entre {{ resultats[resultats|length()-2] }} et {{ resultats[lenresultat|length()-1] }}</h3>
+            <h3>Résultat interactions entre {{ resultats[resultats|length()-2] }} et {{ resultats[lenresultat|length()-1] }}</h3>
 
             <i class="fa-solid fa-circle-xmark" onclick="dispose_result()"></i>
           </div>
@@ -84,13 +87,13 @@
 
           <div class="container details">
             
-            <p class="title-3">Composants <span class="medName_yellow">{{ resultat[4][0] }}</span> et <span class="medName_yellow">{{ resultat[4][1] }}</span></p>
+            <p class="title-3">Composants : <span class="medName_yellow">{{ resultat[0] }}</span> et <span class="medName_yellow">{{ resultat[1] }}</span></p>
               
             <div class="row">
                 <div class="col">
                   <div>
                     <p class="title-4">Niveau d'interaction :</p>
-                    <p class="resultat">{{ resultat[2] }}</p>
+                    <p class="resultat">{{ resultat[2][2] }}</p>
                   </div>
                 </div>
             </div>
@@ -99,21 +102,21 @@
                 <div class="col-12 col-md-4 mb-2">
                   <div>
                     <p class="title-4">Détails (du médicament 1) :</p>
-                    <p class="resultat">{{ resultat[0] }}</p>
+                    <p class="resultat">{{ resultat[2][0] }}</p>
                   </div>
                 </div>
 
                 <div class="col-12 col-md-4">
                   <div>
                     <p class="title-4">Risques d’interaction :</p>
-                    <p class="resultat">{{ resultat[1] }}</p>
+                    <p class="resultat">{{ resultat[2][1] }}</p>
                   </div>
                 </div>
 
                 <div class="col-12 col-md-4">
                   <div>
                     <p class="title-4">Actions associées :</p>
-                    <p class="resultat">{{ resultat[3] }}</p>
+                    <p class="resultat">{{ resultat[2][3] }}</p>
                   </div>
                 </div>
             </div>
@@ -132,5 +135,8 @@
     </footer>
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js" integrity="sha384-oBqDVmMz9ATKxIep9tiCxS/Z9fNfEXiDAYTujMAeBAsjFuCZSmKbSSUnQlmh/jp3" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-kenU1KFdBIe4zVF0s0G1M5b4hcpxyD9F7jL+jjXkk+Q2h455rYXK/7HAuoJl+0I4" crossorigin="anonymous"></script>
+    <!--Jquery Cdn -->
+    <script src="https://code.jquery.com/jquery-3.6.4.js" integrity="sha256-a9jBBRygX1Bh5lt8GZjXDzyOB+bWve9EiO7tROUtj/E=" crossorigin="anonymous"></script>
+
   </body>
 </html>

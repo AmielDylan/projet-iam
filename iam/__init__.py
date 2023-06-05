@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, jsonify
 from iam.requetes import *
 import os
 
@@ -26,6 +26,8 @@ def create_app(test_config=None):
     def home():
         # Resultat de la requete
         result = class_list_1 = class_list_2 = []
+        temp = []
+        args = []
 
         if request.method == "POST":
             # getting input with name = med-1 in HTML form
@@ -33,8 +35,8 @@ def create_app(test_config=None):
             # getting input with name = med-2 in HTML form
             med_2 = request.form.get("med-2")
 
-            temp = getInteractionsMed(med_1=med_1.upper(), med_2=med_2.upper())[0]
-            args = getInteractionsMed(med_1=med_1.upper(), med_2=med_2.upper())[1]
+            temp.append(getInteractionsMed(med_1=med_1.upper(), med_2=med_2.upper())[0])
+            args.append(getInteractionsMed(med_1=med_1.upper(), med_2=med_2.upper())[1])
 
             result = getFullResult(
                 listRes=temp,args=args,
@@ -52,6 +54,11 @@ def create_app(test_config=None):
     def testSubstance():
         medicament = request.form.get("medTest")
         return isSubstance(medicament=medicament)
+    
+    @app.route('/testSpecialite', methods=['POST'])
+    def testSpecialite():
+        medicament = request.form.get("medTest")
+        return isSpecialite(medicament=medicament)
 
     @app.route('/getListClasses', methods=['POST'])
     def getListClasses():
@@ -61,6 +68,14 @@ def create_app(test_config=None):
 
         for value in listId:
             resultat.append(getClasseName(value))
+
+        return resultat
+    
+    @app.route('/autocomplete_input', methods=['POST'])
+    def autocomplete_input():
+        # Récupérer la valeur de recherche depuis les paramètres de requête
+        search_query = request.form.get("query")
+        resultat = jsonify(autocomplete_data(search_query))
 
         return resultat
 
