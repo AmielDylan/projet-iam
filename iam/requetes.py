@@ -169,6 +169,23 @@ def getSubstanceId(specialite):
 
   return result
 
+def getSubstanceName(idSubstance):
+  result = []
+
+  try:
+    cnx = connectToDB()
+    cursor = cnx.cursor()
+    args = [idSubstance,0]
+
+    result = cursor.callproc('getSubstanceName', args)
+
+  except Error as err:
+      print(err)
+  else:
+    cnx.close()
+
+  return result[1] if len(result) > 0 else result
+
 def getInteractionsResults(id):
   fetch = result = []
   
@@ -202,7 +219,9 @@ def getInteractionsMed(med_1, med_2):
   if eval(isSpecialite(med_1)):
     listSubstancesId = getSubstanceId(med_1)
     for value in listSubstancesId:
-      [i.append(a) for i,a in zip(listClasses_1,getClassesIdFromSubstance(value))]
+      res = getClassesIdFromSubstance(getSubstanceName(value))
+      listClasses_1.append(res[0])
+      # [i.append(a) for i,a in zip(listClasses_1, getClassesIdFromSubstance(getSubstanceName(value)))]
 
   """ If med 1 is a substance : """
   if eval(isSubstance(med_1)):
@@ -212,15 +231,14 @@ def getInteractionsMed(med_1, med_2):
   if eval(isClasse(med_1)):
     listClasses_1.append(getClasseId(med_1)[0])
 
-
-
-
   # Classes id from med 2
   """ If med 2 is a specialite : """
   if eval(isSpecialite(med_2)):
     listSubstancesId_2 = getSubstanceId(med_2)
     for value in listSubstancesId_2:
-      [i.append(a) for i,a in zip(listClasses_2,getClassesIdFromSubstance(value))]
+      res = getClassesIdFromSubstance(getSubstanceName(value))
+      listClasses_2.append(res[0])
+      # [i.append(a) for i,a in zip(listClasses_2,getClassesIdFromSubstance(value))]
 
   """ If med 2 is a substance : """
   if eval(isSubstance(med_2)):
@@ -232,6 +250,7 @@ def getInteractionsMed(med_1, med_2):
 
   listClasses_1 = [getClasseName(id) for id in listClasses_1]
   listClasses_2 = [getClasseName(id) for id in listClasses_2]
+
 
   try:
     cnx = connectToDB()
@@ -349,3 +368,5 @@ def autocomplete_data(search):
 
   # Retourner les résultats
   return autocomplete_results
+
+getInteractionsMed("CIPROFLOXACINE", "TRAMADOL")
