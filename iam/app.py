@@ -1,5 +1,5 @@
 from flask import Flask, render_template, request, jsonify
-from iam.requetes import *
+from static.requetes import *
 import os
 
 def create_app(test_config=None):
