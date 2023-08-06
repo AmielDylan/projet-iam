@@ -3,7 +3,7 @@ from static.requetes import *
 import os
 
  # create and configure the app
-application = Flask(__name__, instance_relative_config=True)
+application = Flask(__name__)
 application.config.from_mapping(SECRET_KEY='dev',)
 
 # ensure the instance folder exists
@@ -72,6 +72,7 @@ def autocomplete_input():
 
 
 if __name__ == "__main__":
-    application.run(debug=True)
+    application.debug = True
+    application.run()
 
 
