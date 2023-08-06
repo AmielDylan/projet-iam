@@ -3,29 +3,29 @@ from mysql.connector import errorcode, Error
 
 # CONFIGURATIONS
 config = {
-  'user': 'root',
-  'password': 'root',
-  'host': '127.0.0.1',
+  # 'user': 'root',
+  # 'password': 'root',
+  # 'host': '127.0.0.1',
+  'user': 'admin',
+  'password': 'iarappdb2023',
+  'host': 'flask-iar-db.cpu44eheq7tf.us-east-1.rds.amazonaws.com',
   'database': 'projet_ipa',
   'raise_on_warnings': True
 }
 
+# Gestion automatique de la fermeture de la connexion
 def connectToDB():
-  try:
-    cnx = mysql.connector.connect(**config)
+    try:
+        cnx = mysql.connector.connect(**config)
+        return cnx
 
-  except mysql.connector.Error as err:
-    if err.errno == errorcode.ER_ACCESS_DENIED_ERROR:
-      print("Something is wrong with your user name or password")
-    elif err.errno == errorcode.ER_BAD_DB_ERROR:
-      print("Database does not exist")
-    else:
-      print(err)
-  else:
-    return cnx
-
-  finally:
-    return cnx
+    except mysql.connector.Error as err:
+        if err.errno == errorcode.ER_ACCESS_DENIED_ERROR:
+            raise Exception("Something is wrong with your user name or password")
+        elif err.errno == errorcode.ER_BAD_DB_ERROR:
+            raise Exception("Database does not exist")
+        else:
+            raise err
 
 # FONCTIONS
 def isClasse(medicament):
@@ -41,7 +41,7 @@ def isClasse(medicament):
     cursor.close()
 
   except Error as err:
-      print(err)
+      raise err
   else:
     cnx.close()
 
@@ -60,7 +60,7 @@ def isSubstance(medicament):
     cursor.close()
 
   except Error as err:
-      print(err)
+      raise err
   else:
     cnx.close()
 
@@ -79,7 +79,7 @@ def isSpecialite(medicament):
     cursor.close()
 
   except Error as err:
-      print(err)
+      raise err
   else:
     cnx.close()
 
@@ -97,7 +97,8 @@ def getClasseName(idClasse):
     result = cursor.callproc('getClasseName', args)
 
   except Error as err:
-      print(err)
+    raise err
+
   else:
     cnx.close()
 
@@ -119,7 +120,7 @@ def getClassesIdFromSubstance(substance):
       result.append(value[0])
 
   except Error as err:
-      print(err)
+      raise err
   else:
     cnx.close()
 
@@ -141,15 +142,15 @@ def getClasseId(className):
       result.append(value[0])
 
   except Error as err:
-      print(err)
+      raise err
   else:
     cnx.close()
 
-  return result
+  return result[0]
 
-def getSubstanceId(specialite):
+def getSubstanceIdFromSpe(specialite):
   fetch = result = []
-  
+
   try:
     cnx = connectToDB()
     cursor = cnx.cursor()
@@ -163,11 +164,28 @@ def getSubstanceId(specialite):
       result.append(value[0])
 
   except Error as err:
-      print(err)
+      raise err
   else:
     cnx.close()
 
   return result
+
+def getSubstanceId(substanceName):
+  result = []
+
+  try:
+    cnx = connectToDB()
+    cursor = cnx.cursor()
+    args = [substanceName,0]
+
+    result = cursor.callproc('getSubID', args)
+
+  except Error as err:
+      raise err
+  else:
+    cnx.close()
+
+  return result[1] if len(result) > 0 else result
 
 def getSubstanceName(idSubstance):
   result = []
@@ -180,7 +198,8 @@ def getSubstanceName(idSubstance):
     result = cursor.callproc('getSubstanceName', args)
 
   except Error as err:
-      print(err)
+      raise err
+
   else:
     cnx.close()
 
@@ -205,7 +224,7 @@ def getInteractionsResults(id):
       result.append(value[6].strip('()'))
 
   except Error as err:
-      print(err)
+      raise err
   else:
     cnx.close()
 
@@ -217,40 +236,56 @@ def getInteractionsMed(med_1, med_2):
   # Classes id from med 1
   """ If med 1 is a specialite : """
   if eval(isSpecialite(med_1)):
-    listSubstancesId = getSubstanceId(med_1)
+    listSubstancesId = getSubstanceIdFromSpe(med_1)
     for value in listSubstancesId:
       res = getClassesIdFromSubstance(getSubstanceName(value))
       listClasses_1.append(res[0])
-      # [i.append(a) for i,a in zip(listClasses_1, getClassesIdFromSubstance(getSubstanceName(value)))]
+
+    # print(f"{med_1} is Specialite")
+
+
+  """ If med 1 is a classe : """
+  if eval(isClasse(med_1)):
+    listClasses_1.append(getClasseId(med_1))
+    
+    # print(f"{med_1} is Classe")
 
   """ If med 1 is a substance : """
   if eval(isSubstance(med_1)):
-    listClasses_1 = getClassesIdFromSubstance(med_1)
-  
-  """ If med 1 is a classe : """
-  if eval(isClasse(med_1)):
-    listClasses_1.append(getClasseId(med_1)[0])
+    for value in getClassesIdFromSubstance(med_1):
+      listClasses_1.append(value)
 
-  # Classes id from med 2
+    # print(f"{med_1} is Substance")
+
+    # Classes id from med 2
   """ If med 2 is a specialite : """
   if eval(isSpecialite(med_2)):
-    listSubstancesId_2 = getSubstanceId(med_2)
-    for value in listSubstancesId_2:
+    listSubstancesId = getSubstanceIdFromSpe(med_2)
+    for value in listSubstancesId:
       res = getClassesIdFromSubstance(getSubstanceName(value))
       listClasses_2.append(res[0])
-      # [i.append(a) for i,a in zip(listClasses_2,getClassesIdFromSubstance(value))]
+
+    # print(f"{med_2} is Specialite")
+
+
+  """ If med 2 is a classe : """
+  if eval(isClasse(med_2)):
+    listClasses_2.append(getClasseId(med_2))
+
+    # print(f"{med_2} is Classe")
 
   """ If med 2 is a substance : """
   if eval(isSubstance(med_2)):
-    listClasses_2 = getClassesIdFromSubstance(med_2)
-  
-  """ If med 2 is a classe : """
-  if eval(isClasse(med_2)):
-    listClasses_2.append(getClasseId(med_2)[0])
+    for value in getClassesIdFromSubstance(med_2):
+      listClasses_2.append(value)
 
+    # print(f"{med_2} is Substance")
+  
   listClasses_1 = [getClasseName(id) for id in listClasses_1]
   listClasses_2 = [getClasseName(id) for id in listClasses_2]
 
+  # print(listClasses_1)
+  # print(listClasses_2)
 
   try:
     cnx = connectToDB()
@@ -259,6 +294,7 @@ def getInteractionsMed(med_1, med_2):
     for value1 in listClasses_1:
       for value2 in listClasses_2:
         args = [value1, value2]
+        
         cursor.callproc('getInteractionsClasses', args)
         listArgs.append(args)
 
@@ -268,13 +304,13 @@ def getInteractionsMed(med_1, med_2):
             fetch.append(None)
         
         for value in fetch:
-          temp.append("None") if value is None else temp.append(value[0])
+              temp.append("None") if value is None else temp.append(value[0])
 
   except Error as err:
-      print(err)
+      raise err
   else:
     cnx.close() 
-
+  
   if len(temp) > 0:
     for value in temp:
       result.append(getInteractionsResults(value)) if value != "None" else result.append([None])
@@ -291,7 +327,7 @@ def getNiveau(idNiveau):
     
     result = cursor.callproc('getNiveau', args)
   except Error as err:
-    print(err)
+    raise err
   else:
     cnx.close() 
 
@@ -304,8 +340,6 @@ def getFullResult(listRes : list, args : list, med_1 : str, med_2 : str):
 
   # Comprehension de liste pour combiner les deux listes
   [i.append(a) for i,a in zip(args, listRes) if (type(i) is list)]
-
-  # print(args)
 
   # Fonction lambda pour filtrer les éléments de list1
   filter_func = lambda x: [None] not in x
@@ -348,7 +382,7 @@ def autocomplete_data(search):
           ORDER BY resultat ASC 
           LIMIT %s;
     """
-    value = (f"%{search_query}%", f"%{search_query}%", f"%{search_query}%", limit)
+    value = (f"{search_query}%", f"{search_query}%", f"{search_query}%", limit)
     cursor.execute(requete, value)
     result = cursor.fetchall()
     cursor.close()
@@ -362,11 +396,9 @@ def autocomplete_data(search):
         autocomplete_results.append(item)
 
   except Error as err:
-      print(err)
+      raise err
   else:
     cnx.close()
 
   # Retourner les résultats
   return autocomplete_results
-
-getInteractionsMed("CIPROFLOXACINE", "TRAMADOL")

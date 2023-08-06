@@ -35,8 +35,9 @@ def create_app(test_config=None):
             # getting input with name = med-2 in HTML form
             med_2 = request.form.get("med-2")
 
-            temp.append(getInteractionsMed(med_1=med_1.upper(), med_2=med_2.upper())[0])
-            args.append(getInteractionsMed(med_1=med_1.upper(), med_2=med_2.upper())[1])
+            interactions_med = getInteractionsMed(med_1=med_1.upper(), med_2=med_2.upper())
+            temp.append(interactions_med[0])
+            args.append(interactions_med[1])
 
             result = getFullResult(
                 listRes=temp,args=args,
@@ -79,4 +80,10 @@ def create_app(test_config=None):
 
         return resultat
 
+    
+    if __name__ == "__main__":
+        app.run(debug=True)
+
     return app
+
+
