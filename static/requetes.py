@@ -3,12 +3,12 @@ from mysql.connector import errorcode, Error
 
 # CONFIGURATIONS
 config = {
-  # 'user': 'root',
-  # 'password': 'root',
-  # 'host': '127.0.0.1',
-  'user': 'admin',
-  'password': 'iarappdb2023',
-  'host': 'flask-iar-db.cpu44eheq7tf.us-east-1.rds.amazonaws.com',
+  'user': 'root',
+  'password': 'root',
+  'host': '127.0.0.1',
+  # 'user': 'admin',
+  # 'password': 'iarappdb2023',
+  # 'host': 'flask-iar-db.cpu44eheq7tf.us-east-1.rds.amazonaws.com',
   'database': 'projet_ipa',
   'raise_on_warnings': True
 }
@@ -239,23 +239,22 @@ def getInteractionsMed(med_1, med_2):
     listSubstancesId = getSubstanceIdFromSpe(med_1)
     for value in listSubstancesId:
       res = getClassesIdFromSubstance(getSubstanceName(value))
-      listClasses_1.append(res[0])
+      for cs_value in res:
+        listClasses_1.append(cs_value)
 
-    # print(f"{med_1} is Specialite")
-
+        if eval(isClasse(getSubstanceName(value))):
+            listClasses_1.append(getClasseId(getSubstanceName(value)))
 
   """ If med 1 is a classe : """
   if eval(isClasse(med_1)):
     listClasses_1.append(getClasseId(med_1))
-    
-    # print(f"{med_1} is Classe")
 
   """ If med 1 is a substance : """
   if eval(isSubstance(med_1)):
     for value in getClassesIdFromSubstance(med_1):
       listClasses_1.append(value)
 
-    # print(f"{med_1} is Substance")
+
 
     # Classes id from med 2
   """ If med 2 is a specialite : """
@@ -263,29 +262,24 @@ def getInteractionsMed(med_1, med_2):
     listSubstancesId = getSubstanceIdFromSpe(med_2)
     for value in listSubstancesId:
       res = getClassesIdFromSubstance(getSubstanceName(value))
-      listClasses_2.append(res[0])
+      for cs_value in res:
+        listClasses_2.append(cs_value)
 
-    # print(f"{med_2} is Specialite")
-
+        if eval(isClasse(getSubstanceName(value))):
+            listClasses_1.append(getClasseId(getSubstanceName(value)))
 
   """ If med 2 is a classe : """
   if eval(isClasse(med_2)):
     listClasses_2.append(getClasseId(med_2))
-
-    # print(f"{med_2} is Classe")
 
   """ If med 2 is a substance : """
   if eval(isSubstance(med_2)):
     for value in getClassesIdFromSubstance(med_2):
       listClasses_2.append(value)
 
-    # print(f"{med_2} is Substance")
   
   listClasses_1 = [getClasseName(id) for id in listClasses_1]
   listClasses_2 = [getClasseName(id) for id in listClasses_2]
-
-  # print(listClasses_1)
-  # print(listClasses_2)
 
   try:
     cnx = connectToDB()
@@ -402,3 +396,5 @@ def autocomplete_data(search):
 
   # Retourner les résultats
   return autocomplete_results
+
+
