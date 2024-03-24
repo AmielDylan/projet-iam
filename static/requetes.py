@@ -6,9 +6,6 @@ config = {
   'user': 'root',
   'password': 'root',
   'host': '127.0.0.1',
-  # 'user': 'admin',
-  # 'password': 'iarappdb2023',
-  # 'host': 'flask-iar-db.cpu44eheq7tf.us-east-1.rds.amazonaws.com',
   'database': 'projet_ipa',
   'raise_on_warnings': True
 }
@@ -266,7 +263,7 @@ def getInteractionsMed(med_1, med_2):
         listClasses_2.append(cs_value)
 
         if eval(isClasse(getSubstanceName(value))):
-            listClasses_1.append(getClasseId(getSubstanceName(value)))
+            listClasses_2.append(getClasseId(getSubstanceName(value)))
 
   """ If med 2 is a classe : """
   if eval(isClasse(med_2)):
