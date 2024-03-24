@@ -5,12 +5,10 @@ The IAM project is a platform for presenting drug interactions. It allows users 
 
 ## Documentation
 
-On VS Code, type and execute make html
-The link to the project documentation will be at *PROJET-IAM/build/html/index.html*
+- On VS Code, type and execute *make html*
+- The link to the project documentation will be at *PROJET-IAM/build/html/index.html*
 
 
 ## Demo
-
-Insert gif or link to demo
 
 On VS Code, type and execute *flask run*
