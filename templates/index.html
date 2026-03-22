@@ -56,21 +56,23 @@
                             <!-- Medication 1 -->
                             <div class="form-group">
                                 <label for="med-1" class="form-label">Medicament 1</label>
-                                <input
-                                    type="text"
-                                    id="med-1"
-                                    name="med-1"
-                                    class="form-control form-control-lg"
-                                    value="{{ med_1_value or (resultats[-2] if resultats and resultats|length >= 2 else '') }}"
-                                    placeholder="Ex: ACIDE ACETYLSALICYLIQUE, AMIODARONE..."
-                                    aria-describedby="med-1-helper"
-                                    aria-expanded="false"
-                                    aria-autocomplete="list"
-                                    style="text-transform: uppercase;">
+                                <div class="input-wrapper">
+                                    <input
+                                        type="text"
+                                        id="med-1"
+                                        name="med-1"
+                                        class="form-control form-control-lg"
+                                        value="{{ med_1_value or (resultats[-2] if resultats and resultats|length >= 2 else '') }}"
+                                        placeholder="Ex: ACIDE ACETYLSALICYLIQUE, AMIODARONE..."
+                                        aria-describedby="med-1-helper"
+                                        aria-expanded="false"
+                                        aria-autocomplete="list"
+                                        style="text-transform: uppercase;">
+                                    <div id="autocomplete-container-1" class="autocomplete-container" role="listbox" aria-label="Suggestions medicament 1"></div>
+                                </div>
                                 <div id="med-1-helper" class="form-text">
                                     Entrez le nom d'un medicament, substance ou classe.
                                 </div>
-                                <div id="autocomplete-container-1" class="autocomplete-container" role="listbox" aria-label="Suggestions medicament 1"></div>
 
                                 <!-- Class choices -->
                                 <div id="choix-classe-1" class="class-choices invisible" role="region" aria-label="Choix de classe">
@@ -82,21 +84,23 @@
                             <!-- Medication 2 -->
                             <div class="form-group">
                                 <label for="med-2" class="form-label">Medicament 2</label>
-                                <input
-                                    type="text"
-                                    id="med-2"
-                                    name="med-2"
-                                    class="form-control form-control-lg"
-                                    value="{{ med_2_value or (resultats[-1] if resultats and resultats|length >= 1 else '') }}"
-                                    placeholder="Ex: DIURETIQUES, ANTICOAGULANTS ORAUX..."
-                                    aria-describedby="med-2-helper"
-                                    aria-expanded="false"
-                                    aria-autocomplete="list"
-                                    style="text-transform: uppercase;">
+                                <div class="input-wrapper">
+                                    <input
+                                        type="text"
+                                        id="med-2"
+                                        name="med-2"
+                                        class="form-control form-control-lg"
+                                        value="{{ med_2_value or (resultats[-1] if resultats and resultats|length >= 1 else '') }}"
+                                        placeholder="Ex: DIURETIQUES, ANTICOAGULANTS ORAUX..."
+                                        aria-describedby="med-2-helper"
+                                        aria-expanded="false"
+                                        aria-autocomplete="list"
+                                        style="text-transform: uppercase;">
+                                    <div id="autocomplete-container-2" class="autocomplete-container" role="listbox" aria-label="Suggestions medicament 2"></div>
+                                </div>
                                 <div id="med-2-helper" class="form-text">
                                     Entrez le nom d'un medicament, substance ou classe.
                                 </div>
-                                <div id="autocomplete-container-2" class="autocomplete-container" role="listbox" aria-label="Suggestions medicament 2"></div>
 
                                 <!-- Class choices -->
                                 <div id="choix-classe-2" class="class-choices invisible" role="region" aria-label="Choix de classe">

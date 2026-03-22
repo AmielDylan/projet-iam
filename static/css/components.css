@@ -284,8 +284,29 @@
    AUTOCOMPLETE
    ============================================ */
 
-.autocomplete-container {
+.input-wrapper {
     position: relative;
+    width: 100%;
+}
+
+.autocomplete-container {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    z-index: 1000;
+    background-color: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-top: none;
+    border-radius: 0 0 var(--radius-md) var(--radius-md);
+    box-shadow: var(--shadow-lg);
+    max-height: 280px;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.autocomplete-container:empty {
+    display: none;
 }
 
 .autocomplete-container .autocomplete-item {
@@ -294,8 +315,10 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
+    gap: var(--space-2);
     border-bottom: 1px solid var(--color-border);
     transition: background-color var(--transition-fast);
+    -webkit-tap-highlight-color: transparent;
 }
 
 .autocomplete-container .autocomplete-item:last-child {

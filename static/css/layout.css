@@ -493,9 +493,22 @@
     }
 
     /* Autocomplete touch-friendly */
+    .autocomplete-container {
+        position: absolute;
+        max-height: 200px;
+        border-radius: 0 0 var(--radius-sm) var(--radius-sm);
+    }
+
     .autocomplete-container .autocomplete-item {
-        padding: var(--space-3);
-        min-height: 44px;
+        padding: var(--space-3) var(--space-4);
+        min-height: 48px;
+        font-size: var(--text-base);
+    }
+
+    .autocomplete-type {
+        font-size: 10px;
+        padding: 2px 6px;
+        flex-shrink: 0;
     }
 
     /* Footer */
