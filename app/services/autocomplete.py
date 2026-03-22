@@ -21,15 +21,15 @@ class AutocompleteService:
 
         sql = """
             SELECT denomination AS resultat, 'classe' AS type
-            FROM projet_ipa.classes
+            FROM classes
             WHERE denomination LIKE %s
             UNION
             SELECT specialites AS resultat, 'specialite' AS type
-            FROM projet_ipa.specialites
+            FROM specialites
             WHERE specialites LIKE %s
             UNION
             SELECT substances AS resultat, 'substance' AS type
-            FROM projet_ipa.substances
+            FROM substances
             WHERE substances LIKE %s
             ORDER BY resultat ASC
             LIMIT %s
