@@ -1,5 +1,6 @@
 """Application factory module."""
 import os
+import logging
 from typing import Optional
 
 from flask import Flask
@@ -9,6 +10,10 @@ from app.services.database import DatabasePool
 from app.api import api_bp
 from app.web import web_bp
 from app.errors import register_error_handlers
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 
 def create_app(config: Optional[Config] = None) -> Flask:
@@ -39,6 +44,13 @@ def create_app(config: Optional[Config] = None) -> Flask:
 
     # Store config for later use
     app.config['APP_CONFIG'] = config
+
+    # Debug: Log database configuration
+    logger.info(f"MYSQL_URL env: {os.environ.get('MYSQL_URL', 'NOT SET')[:50]}...")
+    logger.info(f"DB_HOST: {config.DB_HOST}")
+    logger.info(f"DB_PORT: {config.DB_PORT}")
+    logger.info(f"DB_USER: {config.DB_USER}")
+    logger.info(f"DB_NAME: {config.DB_NAME}")
 
     # Initialize database pool
     DatabasePool.initialize(
