@@ -199,3 +199,22 @@ def get_classes():
         'substance': substance,
         'classes': classes
     })
+
+
+@api_bp.route('/summary', methods=['POST'])
+def get_summary():
+    """Generate an AI summary of interaction data via Groq."""
+    data = request.get_json() or {}
+    med1 = (data.get('med1') or '').upper().strip()
+    med2 = (data.get('med2') or '').upper().strip()
+    interactions = data.get('interactions', [])
+
+    if not med1 or not med2 or not interactions:
+        return jsonify({'success': False, 'error': 'Données manquantes'}), 400
+
+    from app.services.summary import generate_interaction_summary
+    summary = generate_interaction_summary(med1, med2, interactions)
+
+    if summary:
+        return jsonify({'success': True, 'summary': summary})
+    return jsonify({'success': False, 'error': 'Service de résumé non disponible'})

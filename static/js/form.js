@@ -287,6 +287,14 @@ class InteractionForm {
         return 'niveau--aptc';
     }
 
+    getSeverityShort(niveau) {
+        const n = (niveau || '').toLowerCase();
+        if (n.includes('contre')) return 'CI';
+        if (n.includes('d\u00e9conseil') || n.includes('deconseil')) return 'AD';
+        if (n.includes('pr\u00e9caution') || n.includes('precaution')) return 'PE';
+        return 'APTC';
+    }
+
     /**
      * Render interaction results
      * @param {Object} data - API response data
@@ -299,15 +307,20 @@ class InteractionForm {
         const container = this.options.resultsContainer;
         if (!container) return;
 
-        const topSeverityClass = data.interactions && data.interactions.length > 0
-            ? this.getSeverityClass(data.interactions[0].niveau)
-            : 'niveau--aptc';
+        const severityOrder = { 'niveau--ci': 0, 'niveau--ad': 1, 'niveau--pe': 2, 'niveau--aptc': 3 };
+        const sorted = [...(data.interactions || [])].sort((a, b) =>
+            (severityOrder[this.getSeverityClass(a.niveau)] ?? 3) -
+            (severityOrder[this.getSeverityClass(b.niveau)] ?? 3)
+        );
+
+        const topSeverityClass = sorted.length > 0
+            ? this.getSeverityClass(sorted[0].niveau) : 'niveau--aptc';
         const cardModifier = topSeverityClass.replace('niveau--', 'rx-card--');
 
         const med1 = escapeHtml(this.toTitleCase(data.med_1));
         const med2 = escapeHtml(this.toTitleCase(data.med_2));
 
-        if (!data.interactions || data.interactions.length === 0) {
+        if (sorted.length === 0) {
             container.innerHTML = `
                 <div class="rx-card ${cardModifier}" role="alert">
                     <div class="rx-card__header">
@@ -324,30 +337,46 @@ class InteractionForm {
             return;
         }
 
-        const interactionsHtml = data.interactions.map(interaction => {
+        // Unique severity chips in criticality order
+        const seenChips = new Set();
+        const chipsHtml = sorted
+            .map(i => this.getSeverityClass(i.niveau))
+            .filter(cls => { if (seenChips.has(cls)) return false; seenChips.add(cls); return true; })
+            .map(cls => {
+                const short = this.getSeverityShort(sorted.find(i => this.getSeverityClass(i.niveau) === cls).niveau);
+                return `<span class="rx-severity-chip ${cls}">${short}</span>`;
+            }).join('');
+
+        const interactionsHtml = sorted.map((interaction, idx) => {
             const severityClass = this.getSeverityClass(interaction.niveau);
             const c1 = escapeHtml(this.toTitleCase(interaction.class_1 || ''));
             const c2 = escapeHtml(this.toTitleCase(interaction.class_2 || ''));
             return `
                 <div class="rx-interaction">
                     <div class="rx-interaction__body">
-                        <p class="rx-interaction__pair">${c1} — ${c2}</p>
+                        <div class="rx-interaction__pair">
+                            <span class="rx-interaction__number">#${idx + 1}</span>
+                            <span>${c1} <span class="rx-interaction__drug">(${med1})</span> — ${c2} <span class="rx-interaction__drug">(${med2})</span></span>
+                        </div>
                         <div class="rx-niveau-row">
                             <span class="rx-niveau-label">Niveau d'interaction :</span>
                             <span class="rx-niveau ${severityClass}">${escapeHtml(interaction.niveau)}</span>
                         </div>
+                        ${interaction.details ? `
                         <div class="rx-section">
                             <p class="rx-section__label">Détails des classes</p>
                             <p class="rx-section__value">${escapeHtml(interaction.details)}</p>
-                        </div>
+                        </div>` : ''}
+                        ${interaction.risques ? `
                         <div class="rx-section">
                             <p class="rx-section__label">Risques</p>
                             <p class="rx-section__value">${escapeHtml(interaction.risques)}</p>
-                        </div>
+                        </div>` : ''}
+                        ${interaction.actions ? `
                         <div class="rx-section">
                             <p class="rx-section__label">Conduite à tenir</p>
                             <p class="rx-section__value">${escapeHtml(interaction.actions)}</p>
-                        </div>
+                        </div>` : ''}
                     </div>
                 </div>
             `;
@@ -361,6 +390,7 @@ class InteractionForm {
                         <span class="rx-card__meds">entre <strong>${med1}</strong> et <strong>${med2}</strong></span>
                     </div>
                     <div class="rx-card__actions">
+                        <div class="rx-severity-chips">${chipsHtml}</div>
                         <button class="rx-card__share" type="button" aria-label="Partager ce résultat" title="Copier le lien">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
                         </button>
@@ -369,10 +399,13 @@ class InteractionForm {
                     </div>
                 </div>
                 ${interactionsHtml}
+                <div class="rx-summary">
+                    <div class="rx-summary__loading">Résumé en cours de génération…</div>
+                </div>
             </div>
         `;
 
-        // Share button: native share sheet, fallback to clipboard
+        // Wire share button
         container.querySelector('.rx-card__share').addEventListener('click', async (e) => {
             const btn = e.currentTarget;
             const url = window.location.href;
@@ -381,13 +414,10 @@ class InteractionForm {
                 text: `Vérifiez l'interaction médicamenteuse entre ${data.med_1} et ${data.med_2}`,
                 url
             };
-
             if (navigator.share) {
                 try { await navigator.share(shareData); } catch (_) { /* user cancelled */ }
                 return;
             }
-
-            // Fallback: copy to clipboard
             navigator.clipboard.writeText(url).then(() => {
                 btn.classList.add('rx-card__share--copied');
                 btn.setAttribute('title', 'Lien copié !');
@@ -397,6 +427,40 @@ class InteractionForm {
                 }, 2000);
             });
         });
+
+        // Fetch AI summary asynchronously
+        this.loadSummary(data, sorted, container);
+    }
+
+    async loadSummary(data, interactions, container) {
+        const summaryEl = container.querySelector('.rx-summary');
+        if (!summaryEl) return;
+        try {
+            const resp = await fetch('/api/v1/summary', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    med1: data.med_1,
+                    med2: data.med_2,
+                    interactions
+                })
+            });
+            const result = await resp.json();
+            if (result.success && result.summary) {
+                summaryEl.innerHTML = `
+                    <div class="rx-summary__header">
+                        <span class="rx-summary__icon">✦</span>
+                        <span class="rx-summary__label">Résumé IA</span>
+                    </div>
+                    <p class="rx-summary__text">${escapeHtml(result.summary)}</p>
+                    <p class="rx-summary__disclaimer">Résumé généré par intelligence artificielle à titre indicatif. Consultez toujours un professionnel de santé.</p>
+                `;
+            } else {
+                summaryEl.remove();
+            }
+        } catch {
+            summaryEl.remove();
+        }
     }
 }
 
