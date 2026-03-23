@@ -45,6 +45,10 @@
     --color-border: #E5E7EB;
     --color-border-focus: #8B5CF6;
 
+    /* Medication name accent colors */
+    --color-med1: #8B5CF6;   /* violet — premier médicament */
+    --color-med2: #0284C7;   /* bleu  — second médicament */
+
     /* Interaction severity colors (ANSM classification) */
     --color-niveau-ci:      #DC2626;
     --color-niveau-ci-bg:   rgba(220, 38, 38, 0.08);

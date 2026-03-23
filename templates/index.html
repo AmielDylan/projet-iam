@@ -63,11 +63,10 @@
                                         name="med-1"
                                         class="form-control"
                                         value="{{ med_1_value or (resultats[-2] if resultats and resultats|length >= 2 else '') }}"
-                                        placeholder="Ex: ACIDE ACETYLSALICYLIQUE, AMIODARONE..."
+                                        placeholder="Ex: Acide acétylsalicylique, Amiodarone..."
                                         aria-describedby="med-1-helper"
                                         aria-expanded="false"
-                                        aria-autocomplete="list"
-                                        style="text-transform: uppercase;">
+                                        aria-autocomplete="list">
                                     <div id="autocomplete-container-1" class="autocomplete-container" role="listbox" aria-label="Suggestions medicament 1"></div>
                                 </div>
                                 <div id="med-1-helper" class="form-text">
@@ -88,11 +87,10 @@
                                         name="med-2"
                                         class="form-control"
                                         value="{{ med_2_value or (resultats[-1] if resultats and resultats|length >= 1 else '') }}"
-                                        placeholder="Ex: DIURETIQUES, ANTICOAGULANTS ORAUX..."
+                                        placeholder="Ex: Diurétiques, Anticoagulants oraux..."
                                         aria-describedby="med-2-helper"
                                         aria-expanded="false"
-                                        aria-autocomplete="list"
-                                        style="text-transform: uppercase;">
+                                        aria-autocomplete="list">
                                     <div id="autocomplete-container-2" class="autocomplete-container" role="listbox" aria-label="Suggestions medicament 2"></div>
                                 </div>
                                 <div id="med-2-helper" class="form-text">
@@ -177,7 +175,10 @@
         <!-- Footer -->
         <footer class="footer">
             <div class="container">
-                <p>&copy; 2022-{{ now().year if now is defined else '2024' }} Projet IAM - Tous droits reserves</p>
+                <div class="footer-body">
+                    <span class="footer-brand">IAM</span>
+                    <p class="footer-copy">&copy; 2022-{{ now().year if now is defined else '2024' }} Projet IAM &mdash; Interactions médicamenteuses</p>
+                </div>
             </div>
         </footer>
     </div>

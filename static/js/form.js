@@ -87,12 +87,11 @@ class InteractionForm {
      * @param {string} message - Helper message
      */
     setInputState(input, helper, state, message = '') {
-        // Remove all state classes
-        input.classList.remove('danger', 'warning', 'valide');
+        // Remove error state class only
+        input.classList.remove('danger');
 
-        // Update helper text
         if (helper) {
-            helper.classList.remove('text-danger', 'text-success', 'text-warning');
+            helper.classList.remove('text-danger');
 
             switch (state) {
                 case 'danger':
@@ -100,18 +99,8 @@ class InteractionForm {
                     helper.classList.add('text-danger');
                     helper.textContent = message || 'Entrez une valeur correcte svp.';
                     break;
-                case 'warning':
-                    input.classList.add('warning');
-                    helper.classList.add('text-warning');
-                    helper.textContent = message || 'Informations disponibles';
-                    break;
-                case 'valid':
-                    input.classList.add('valide');
-                    helper.classList.add('text-success');
-                    helper.textContent = message || 'Valeur valide';
-                    break;
                 default:
-                    helper.textContent = 'Evitez les caracteres speciaux svp.';
+                    helper.textContent = 'Entrez le nom d\'un médicament, substance ou classe.';
             }
         }
     }
@@ -125,7 +114,7 @@ class InteractionForm {
         const container = document.getElementById(`choix-classe-${inputNumber}`);
         if (!container) return;
 
-        const listItems = classes.map(c => `<li><strong>${escapeHtml(c)}</strong></li>`).join('');
+        const listItems = classes.map(c => `<li>${escapeHtml(c)}</li>`).join('');
 
         container.innerHTML = `
             <div class="class-notice" role="note">
@@ -244,13 +233,22 @@ class InteractionForm {
         const container = this.options.resultsContainer;
         if (!container) return;
 
+        const topSeverityClass = data.interactions && data.interactions.length > 0
+            ? this.getSeverityClass(data.interactions[0].niveau)
+            : 'niveau--aptc';
+        const cardModifier = topSeverityClass.replace('niveau--', 'rx-card--');
+
         if (!data.interactions || data.interactions.length === 0) {
             container.innerHTML = `
-                <div class="rx-card" role="alert">
+                <div class="rx-card ${cardModifier}" role="alert">
                     <div class="rx-card__header">
                         <div class="rx-card__title">
                             <span class="rx-card__label">Résultat</span>
-                            <span class="rx-card__meds">${escapeHtml(data.med_1)} × ${escapeHtml(data.med_2)}</span>
+                            <span class="rx-card__meds">
+                                <span class="rx-med1">${escapeHtml(data.med_1)}</span>
+                                <span style="color: var(--color-text-tertiary); font-weight: 400;"> × </span>
+                                <span class="rx-med2">${escapeHtml(data.med_2)}</span>
+                            </span>
                         </div>
                     </div>
                     <div style="padding: var(--space-6); color: var(--color-text-secondary); font-size: var(--text-sm);">
@@ -266,21 +264,28 @@ class InteractionForm {
             return `
                 <div class="rx-interaction">
                     <div class="rx-interaction__top">
-                        <span class="rx-classes">${escapeHtml(interaction.class_1)} — ${escapeHtml(interaction.class_2)}</span>
-                        <span class="rx-niveau ${severityClass}">${escapeHtml(interaction.niveau)}</span>
+                        <span class="rx-classes">
+                            <span class="rx-med1">${escapeHtml(interaction.class_1)}</span>
+                            <span style="color: var(--color-text-tertiary);"> — </span>
+                            <span class="rx-med2">${escapeHtml(interaction.class_2)}</span>
+                        </span>
+                        <div class="rx-niveau-group">
+                            <span class="rx-niveau-label">Niveau d'interaction</span>
+                            <span class="rx-niveau ${severityClass}">${escapeHtml(interaction.niveau)}</span>
+                        </div>
                     </div>
-                    <div class="rx-interaction__grid">
-                        <div class="rx-detail">
-                            <p class="rx-detail__label">Détails des classes</p>
-                            <p class="rx-detail__value">${escapeHtml(interaction.details)}</p>
+                    <div class="rx-interaction__body">
+                        <div class="rx-section">
+                            <p class="rx-section__label">Détails des classes</p>
+                            <p class="rx-section__value">${escapeHtml(interaction.details)}</p>
                         </div>
-                        <div class="rx-detail">
-                            <p class="rx-detail__label">Risques</p>
-                            <p class="rx-detail__value">${escapeHtml(interaction.risques)}</p>
+                        <div class="rx-section">
+                            <p class="rx-section__label">Risques</p>
+                            <p class="rx-section__value">${escapeHtml(interaction.risques)}</p>
                         </div>
-                        <div class="rx-detail">
-                            <p class="rx-detail__label">Conduite à tenir</p>
-                            <p class="rx-detail__value">${escapeHtml(interaction.actions)}</p>
+                        <div class="rx-section">
+                            <p class="rx-section__label">Conduite à tenir</p>
+                            <p class="rx-section__value">${escapeHtml(interaction.actions)}</p>
                         </div>
                     </div>
                 </div>
@@ -288,11 +293,15 @@ class InteractionForm {
         }).join('');
 
         container.innerHTML = `
-            <div class="rx-card" id="third" aria-live="polite">
+            <div class="rx-card ${cardModifier}" id="third" aria-live="polite">
                 <div class="rx-card__header">
                     <div class="rx-card__title">
                         <span class="rx-card__label">Interactions médicamenteuses</span>
-                        <span class="rx-card__meds">${escapeHtml(data.med_1)} × ${escapeHtml(data.med_2)}</span>
+                        <span class="rx-card__meds">
+                            <span class="rx-med1">${escapeHtml(data.med_1)}</span>
+                            <span style="color: var(--color-text-tertiary); font-weight: 400;"> × </span>
+                            <span class="rx-med2">${escapeHtml(data.med_2)}</span>
+                        </span>
                     </div>
                     <button class="rx-card__close" type="button" aria-label="Fermer"
                         onclick="this.closest('.rx-card').remove()">✕</button>

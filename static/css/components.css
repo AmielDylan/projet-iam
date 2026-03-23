@@ -171,19 +171,10 @@
     font-size: var(--text-lg);
 }
 
-/* Form validation states */
-.form-control.danger,
-.form-control:invalid:not(:placeholder-shown) {
-    border-color: var(--color-danger);
-}
-
-.form-control.warning {
-    border-color: var(--color-warning);
-}
-
-.form-control.valide,
-.form-control:valid:not(:placeholder-shown) {
-    border-color: var(--color-success);
+/* Form validation states — only error state has visible border feedback */
+.form-control.danger {
+    border-color: rgba(220, 38, 38, 0.5);
+    box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.08);
 }
 
 /* Helper text */
@@ -196,14 +187,6 @@
 
 .form-text.text-danger {
     color: var(--color-danger);
-}
-
-.form-text.text-warning {
-    color: var(--color-warning);
-}
-
-.form-text.text-success {
-    color: var(--color-success);
 }
 
 /* ============================================
@@ -515,13 +498,42 @@
 .niveau--pe   { color: var(--color-niveau-pe);   background: var(--color-niveau-pe-bg); }
 .niveau--aptc { color: var(--color-niveau-aptc); background: var(--color-niveau-aptc-bg); }
 
-.rx-interaction__grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: var(--space-4);
+/* Severity top border on result card */
+.rx-card--ci   { border-top: 3px solid var(--color-niveau-ci); }
+.rx-card--ad   { border-top: 3px solid var(--color-niveau-ad); }
+.rx-card--pe   { border-top: 3px solid var(--color-niveau-pe); }
+.rx-card--aptc { border-top: 3px solid var(--color-niveau-aptc); }
+
+/* Niveau label + badge group */
+.rx-niveau-group {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 3px;
+    flex-shrink: 0;
 }
 
-.rx-detail__label {
+.rx-niveau-label {
+    font-size: 9px;
+    font-weight: var(--font-semibold);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--color-text-tertiary);
+}
+
+/* Medication accent colors */
+.rx-med1 { color: var(--color-med1); font-weight: var(--font-semibold); }
+.rx-med2 { color: var(--color-med2); font-weight: var(--font-semibold); }
+
+.rx-interaction__body {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+    margin-top: var(--space-3);
+}
+
+.rx-detail__label,
+.rx-section__label {
     font-size: 10px;
     font-weight: var(--font-semibold);
     text-transform: uppercase;
@@ -530,7 +542,8 @@
     margin: 0 0 4px 0;
 }
 
-.rx-detail__value {
+.rx-detail__value,
+.rx-section__value {
     font-size: var(--text-sm);
     color: var(--color-text-secondary);
     line-height: var(--leading-relaxed);
