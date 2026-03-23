@@ -64,6 +64,12 @@ def home():
     )
 
 
+@web_bp.route('/changelog')
+def changelog():
+    """Render the changelog page."""
+    return render_template('changelog.html')
+
+
 # Legacy route compatibility
 @web_bp.route('/testClasse', methods=['POST'])
 def test_classe():

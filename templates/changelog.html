@@ -1,0 +1,144 @@
+{% extends 'base.html' %}
+
+{% block title %}Changelog — Projet IAM{% endblock %}
+{% block meta_description %}Historique des versions de la plateforme IAM{% endblock %}
+
+{% block content %}
+<main id="main-content" class="main-content">
+    <div class="container">
+        <div class="cl-page-header">
+            <h1 class="cl-page-title">Changelog</h1>
+            <p class="cl-page-sub">Historique des versions de la plateforme IAM.</p>
+        </div>
+
+        <div class="timeline">
+
+            <!-- v2.2.0 -->
+            <div class="timeline__item">
+                <div class="timeline__meta">
+                    <span class="timeline__badge">v2.2.0</span>
+                </div>
+                <div class="timeline__track">
+                    <div class="timeline__dot timeline__dot--current"></div>
+                    <div class="timeline__line"></div>
+                </div>
+                <div class="timeline__body">
+                    <div class="timeline__card">
+                        <div class="timeline__card-header">
+                            <h2 class="timeline__card-title">Résumé IA &amp; expérience résultats</h2>
+                            <time class="timeline__date">Mars 2026</time>
+                        </div>
+                        <details class="timeline__section" open>
+                            <summary class="timeline__section-label">
+                                <span class="timeline__section-badge timeline__section-badge--new">Nouveau</span>
+                            </summary>
+                            <ul class="timeline__list">
+                                <li>Résumé IA de l'interaction via Groq (<code>llama-3.1-8b-instant</code>)</li>
+                                <li>Blocs d'interaction repliables avec badge de sévérité visible</li>
+                                <li>Liens partageables avec validation à l'ouverture</li>
+                                <li>Navbar et page Changelog</li>
+                            </ul>
+                        </details>
+                        <details class="timeline__section" open>
+                            <summary class="timeline__section-label">
+                                <span class="timeline__section-badge timeline__section-badge--fix">Correction</span>
+                            </summary>
+                            <ul class="timeline__list">
+                                <li>Déduplication des interactions bidirectionnelles (A→B = B→A)</li>
+                                <li>Correction de la couleur "Association déconseillée" (orange, pas rouge)</li>
+                                <li>Suppression du flash bleu au clic sur le bouton de recherche</li>
+                                <li>Validation des médicaments partagés via lien</li>
+                                <li>Correction de l'erreur interne pour certaines combinaisons (ex. ATORVASTATINE + KÉTOCONAZOLE)</li>
+                            </ul>
+                        </details>
+                    </div>
+                </div>
+            </div>
+
+            <!-- v2.1.0 -->
+            <div class="timeline__item">
+                <div class="timeline__meta">
+                    <span class="timeline__badge">v2.1.0</span>
+                </div>
+                <div class="timeline__track">
+                    <div class="timeline__dot"></div>
+                    <div class="timeline__line"></div>
+                </div>
+                <div class="timeline__body">
+                    <div class="timeline__card">
+                        <div class="timeline__card-header">
+                            <h2 class="timeline__card-title">Carte prescription &amp; codes couleurs ANSM</h2>
+                            <time class="timeline__date">Décembre 2025</time>
+                        </div>
+                        <details class="timeline__section">
+                            <summary class="timeline__section-label">
+                                <span class="timeline__section-badge timeline__section-badge--new">Nouveau</span>
+                            </summary>
+                            <ul class="timeline__list">
+                                <li>Carte résultat format ordonnance avec codes couleurs ANSM</li>
+                                <li>Attribution des classes aux médicaments dans les résultats (#1, #2…)</li>
+                                <li>Partage natif (Web Share API) avec repli vers clipboard</li>
+                                <li>Chips de sévérité (CI / AD / PE / APTC) dans l'en-tête de la carte</li>
+                                <li>Tri des interactions par criticité décroissante</li>
+                            </ul>
+                        </details>
+                        <details class="timeline__section">
+                            <summary class="timeline__section-label">
+                                <span class="timeline__section-badge timeline__section-badge--update">Amélioration</span>
+                            </summary>
+                            <ul class="timeline__list">
+                                <li>Validation des médicaments avant soumission (messages d'erreur)</li>
+                                <li>Design Paper.app : fond chaud #F7F7F4, texture diagonale, footer arrondi</li>
+                                <li>Notice de classes informative (non interactive) sous les inputs</li>
+                            </ul>
+                        </details>
+                    </div>
+                </div>
+            </div>
+
+            <!-- v2.0.0 -->
+            <div class="timeline__item timeline__item--last">
+                <div class="timeline__meta">
+                    <span class="timeline__badge">v2.0.0</span>
+                </div>
+                <div class="timeline__track">
+                    <div class="timeline__dot"></div>
+                </div>
+                <div class="timeline__body">
+                    <div class="timeline__card">
+                        <div class="timeline__card-header">
+                            <h2 class="timeline__card-title">Réécriture complète de la plateforme</h2>
+                            <time class="timeline__date">Juin 2025</time>
+                        </div>
+                        <details class="timeline__section">
+                            <summary class="timeline__section-label">
+                                <span class="timeline__section-badge timeline__section-badge--new">Nouveau</span>
+                            </summary>
+                            <ul class="timeline__list">
+                                <li>Architecture Flask modulaire (factory pattern)</li>
+                                <li>Pool de connexions MySQL</li>
+                                <li>API JSON <code>/api/v1/*</code> avec validation des entrées</li>
+                                <li>Soumission AJAX sans rechargement de page</li>
+                                <li>Autocomplétion avec anti-rebond (300 ms)</li>
+                                <li>Design system Paper (variables CSS, composants réutilisables)</li>
+                            </ul>
+                        </details>
+                        <details class="timeline__section">
+                            <summary class="timeline__section-label">
+                                <span class="timeline__section-badge timeline__section-badge--update">Amélioration</span>
+                            </summary>
+                            <ul class="timeline__list">
+                                <li>Suppression de <code>eval()</code> pour les retours booléens</li>
+                                <li>Requête SQL directe (sans procédures stockées avec préfixe de schéma)</li>
+                                <li>Sanitisation et validation côté serveur</li>
+                                <li>Accessibilité WCAG 2.2 AA (liens d'évitement, ARIA, focus)</li>
+                            </ul>
+                        </details>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</main>
+{% endblock %}

@@ -37,6 +37,61 @@
 }
 
 /* ============================================
+   NAVBAR
+   ============================================ */
+
+.site-nav {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: rgba(247, 247, 244, 0.88);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--color-border);
+}
+
+.site-nav__inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 52px;
+}
+
+.site-nav__logo {
+    font-size: var(--text-base);
+    font-weight: var(--font-extrabold);
+    color: var(--color-text);
+    text-decoration: none;
+    letter-spacing: -0.03em;
+}
+
+.site-nav__links {
+    display: flex;
+    align-items: center;
+    gap: var(--space-1);
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.site-nav__link {
+    font-size: var(--text-sm);
+    font-weight: var(--font-medium);
+    color: var(--color-text-secondary);
+    text-decoration: none;
+    padding: var(--space-2) var(--space-3);
+    border-radius: var(--radius-md);
+    transition: color 0.15s, background 0.15s;
+}
+
+.site-nav__link:hover,
+.site-nav__link.active {
+    color: var(--color-text);
+    background: var(--color-surface-secondary);
+    text-decoration: none;
+}
+
+/* ============================================
    HEADER
    ============================================ */
 
@@ -307,6 +362,211 @@
     margin: 0;
     white-space: nowrap;
     padding-bottom: 0.5rem;
+}
+
+/* ============================================
+   CHANGELOG PAGE
+   ============================================ */
+
+.cl-page-header {
+    padding: var(--space-12) 0 var(--space-8);
+}
+
+.cl-page-title {
+    font-size: var(--text-4xl);
+    font-weight: var(--font-extrabold);
+    color: var(--color-text);
+    letter-spacing: -0.02em;
+    margin: 0 0 var(--space-3);
+}
+
+.cl-page-sub {
+    font-size: var(--text-base);
+    color: var(--color-text-secondary);
+    margin: 0;
+}
+
+/* Timeline */
+.timeline {
+    display: flex;
+    flex-direction: column;
+    padding-bottom: var(--space-16);
+}
+
+.timeline__item {
+    display: grid;
+    grid-template-columns: 72px 28px 1fr;
+    gap: 0 var(--space-5);
+}
+
+/* Meta — version badge */
+.timeline__meta {
+    display: flex;
+    justify-content: flex-end;
+    padding-top: 3px;
+}
+
+.timeline__badge {
+    font-size: 11px;
+    font-weight: var(--font-semibold);
+    color: var(--color-text-tertiary);
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.01em;
+}
+
+/* Track — dot + vertical line */
+.timeline__track {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.timeline__dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--color-border);
+    flex-shrink: 0;
+    margin-top: 4px;
+    position: relative;
+    z-index: 1;
+}
+
+.timeline__dot--current {
+    background: var(--color-text);
+    width: 12px;
+    height: 12px;
+}
+
+.timeline__line {
+    width: 1px;
+    flex: 1;
+    min-height: var(--space-6);
+    background: var(--color-border);
+    margin-top: var(--space-2);
+}
+
+.timeline__item--last .timeline__line {
+    display: none;
+}
+
+/* Content */
+.timeline__body {
+    padding-bottom: var(--space-10);
+}
+
+.timeline__card-header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--space-4);
+    margin-bottom: var(--space-4);
+    flex-wrap: wrap;
+}
+
+.timeline__card-title {
+    font-size: var(--text-lg);
+    font-weight: var(--font-semibold);
+    color: var(--color-text);
+    margin: 0;
+}
+
+.timeline__date {
+    font-size: var(--text-xs);
+    color: var(--color-text-tertiary);
+    white-space: nowrap;
+}
+
+/* Details / summary sections */
+.timeline__section {
+    margin-bottom: var(--space-3);
+}
+
+.timeline__section-label {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    cursor: pointer;
+    user-select: none;
+    list-style: none;
+    margin-bottom: var(--space-2);
+}
+
+.timeline__section-label::-webkit-details-marker {
+    display: none;
+}
+
+.timeline__section-label::after {
+    content: '›';
+    font-size: 14px;
+    color: var(--color-text-tertiary);
+    margin-left: var(--space-1);
+    transform: rotate(90deg);
+    display: inline-block;
+    transition: transform 0.15s;
+}
+
+details[open] > .timeline__section-label::after {
+    transform: rotate(-90deg);
+}
+
+.timeline__section-badge {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: var(--font-semibold);
+    padding: 2px 8px;
+    border-radius: var(--radius-full);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.timeline__section-badge--new {
+    background: rgba(22, 163, 74, 0.1);
+    color: #16A34A;
+}
+
+.timeline__section-badge--update {
+    background: rgba(217, 119, 6, 0.1);
+    color: #D97706;
+}
+
+.timeline__section-badge--fix {
+    background: rgba(220, 38, 38, 0.08);
+    color: #DC2626;
+}
+
+.timeline__list {
+    margin: 0;
+    padding-left: var(--space-5);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+}
+
+.timeline__list li {
+    font-size: var(--text-sm);
+    color: var(--color-text-secondary);
+    line-height: var(--leading-relaxed);
+}
+
+.timeline__list code {
+    font-size: 11px;
+    background: var(--color-surface-tertiary);
+    padding: 1px 5px;
+    border-radius: 3px;
+    color: var(--color-text);
+    font-family: 'Menlo', 'Monaco', 'Consolas', monospace;
+}
+
+/* Footer link inside dark footer */
+.footer-link {
+    color: inherit;
+    text-decoration: none;
+}
+
+.footer-link:hover {
+    color: rgba(255, 255, 255, 0.9);
 }
 
 /* ============================================
@@ -583,6 +843,24 @@
         flex-direction: column;
         align-items: flex-start;
         gap: var(--space-2);
+    }
+
+    /* Changelog */
+    .cl-page-header {
+        padding: var(--space-8) 0 var(--space-6);
+    }
+
+    .cl-page-title {
+        font-size: var(--text-2xl);
+    }
+
+    .timeline__item {
+        grid-template-columns: 52px 24px 1fr;
+        gap: 0 var(--space-3);
+    }
+
+    .timeline__badge {
+        font-size: 10px;
     }
 
     /* Footer */
