@@ -33,14 +33,14 @@ def generate_interaction_summary(med1: str, med2: str, interactions: list) -> st
         lines.append(line)
 
     prompt = (
-        f"Tu es un pharmacien expert. Rédige un résumé clinique clair et concis (3-4 phrases) "
-        f"de l'interaction médicamenteuse entre {med1} et {med2} pour un professionnel de santé.\n\n"
-        f"Données d'interaction :\n" + "\n".join(lines) + "\n\n"
-        "Consignes :\n"
-        "- Commence par le niveau de gravité le plus élevé\n"
-        "- Mentionne le mécanisme pharmacologique principal si pertinent\n"
-        "- Indique la conduite à tenir principale\n"
-        "- Réponds uniquement en français, de manière factuelle et concise, sans introduction"
+        f"Résume en 2 phrases simples et claires l'interaction entre {med1} et {med2}.\n"
+        f"Données : {' | '.join(lines)}\n\n"
+        "Règles strictes :\n"
+        "- 2 phrases maximum, en français courant\n"
+        "- Pas de titres, pas de tirets, pas de listes, pas de markdown\n"
+        "- Commence directement par le risque principal\n"
+        "- Termine par ce qu'il faut faire\n"
+        "- Aucune introduction ni formule de politesse"
     )
 
     try:
@@ -50,8 +50,8 @@ def generate_interaction_summary(med1: str, med2: str, interactions: list) -> st
             json={
                 'model': _GROQ_MODEL,
                 'messages': [{'role': 'user', 'content': prompt}],
-                'max_tokens': 300,
-                'temperature': 0.2,
+                'max_tokens': 120,
+                'temperature': 0.1,
             },
             timeout=15,
         )
