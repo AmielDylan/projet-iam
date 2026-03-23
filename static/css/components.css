@@ -345,8 +345,8 @@
 .class-notice {
     margin-top: var(--space-2);
     padding: 8px 12px;
-    background: var(--color-surface-tertiary);
-    border-left: 2px solid var(--color-border);
+    background: rgba(0, 0, 0, 0.03);
+    border-left: 2px solid rgba(0, 0, 0, 0.08);
     border-radius: 0 var(--radius-md) var(--radius-md) 0;
     font-size: 11px;
     color: #3C3C43;
@@ -393,10 +393,6 @@
     line-height: 1.7;
 }
 
-.class-notice__list li::first-letter {
-    font-weight: var(--font-semibold);
-    color: #111111;
-}
 
 /* ============================================
    RESULT CARD (prescription-style)
@@ -478,6 +474,13 @@
     gap: var(--space-3);
 }
 
+.rx-niveau-label {
+    font-size: var(--text-xs);
+    color: var(--color-text-tertiary);
+    font-weight: var(--font-normal);
+    white-space: nowrap;
+}
+
 .rx-niveau {
     font-size: 10px;
     font-weight: var(--font-semibold);
@@ -510,12 +513,11 @@
 
 .rx-detail__label,
 .rx-section__label {
-    font-size: 10px;
+    font-size: var(--text-xs);
     font-weight: var(--font-semibold);
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
     color: var(--color-text-tertiary);
     margin: 0 0 4px 0;
+    letter-spacing: 0.01em;
 }
 
 .rx-detail__value,

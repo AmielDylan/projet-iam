@@ -87,20 +87,17 @@ class InteractionForm {
      * @param {string} message - Helper message
      */
     setInputState(input, helper, state, message = '') {
-        // Remove error state class only
         input.classList.remove('danger');
 
         if (helper) {
             helper.classList.remove('text-danger');
 
-            switch (state) {
-                case 'danger':
-                    input.classList.add('danger');
-                    helper.classList.add('text-danger');
-                    helper.textContent = message || 'Entrez une valeur correcte svp.';
-                    break;
-                default:
-                    helper.textContent = 'Entrez le nom d\'un médicament, substance ou classe.';
+            if (state === 'danger') {
+                input.classList.add('danger');
+                helper.classList.add('text-danger');
+                helper.textContent = message || 'Valeur non reconnue.';
+            } else {
+                helper.textContent = '';
             }
         }
     }
@@ -114,7 +111,8 @@ class InteractionForm {
         const container = document.getElementById(`choix-classe-${inputNumber}`);
         if (!container) return;
 
-        const listItems = classes.map(c => `<li>${escapeHtml(c)}</li>`).join('');
+        const toSentenceCase = s => s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
+        const listItems = classes.map(c => `<li>${escapeHtml(toSentenceCase(c))}</li>`).join('');
 
         container.innerHTML = `
             <div class="class-notice" role="note">
@@ -229,6 +227,10 @@ class InteractionForm {
      * Render interaction results
      * @param {Object} data - API response data
      */
+    toTitleCase(str) {
+        return str.toLowerCase().replace(/(?:^|\s)\S/g, c => c.toUpperCase());
+    }
+
     renderResults(data) {
         const container = this.options.resultsContainer;
         if (!container) return;
@@ -238,13 +240,16 @@ class InteractionForm {
             : 'niveau--aptc';
         const cardModifier = topSeverityClass.replace('niveau--', 'rx-card--');
 
+        const med1 = escapeHtml(this.toTitleCase(data.med_1));
+        const med2 = escapeHtml(this.toTitleCase(data.med_2));
+
         if (!data.interactions || data.interactions.length === 0) {
             container.innerHTML = `
                 <div class="rx-card ${cardModifier}" role="alert">
                     <div class="rx-card__header">
                         <div class="rx-card__title">
                             <span class="rx-card__label">Résultat</span>
-                            <span class="rx-card__meds">${escapeHtml(data.med_1)} × ${escapeHtml(data.med_2)}</span>
+                            <span class="rx-card__meds">${med1} × ${med2}</span>
                         </div>
                     </div>
                     <div style="padding: var(--space-6); color: var(--color-text-secondary); font-size: var(--text-sm);">
@@ -259,10 +264,9 @@ class InteractionForm {
             const severityClass = this.getSeverityClass(interaction.niveau);
             return `
                 <div class="rx-interaction">
-                    <p class="rx-classes">${escapeHtml(interaction.class_1)} — ${escapeHtml(interaction.class_2)}</p>
                     <div class="rx-interaction__body">
                         <div class="rx-niveau-row">
-                            <span class="rx-section__label">Niveau d'interaction</span>
+                            <span class="rx-niveau-label">Niveau d'interaction :</span>
                             <span class="rx-niveau ${severityClass}">${escapeHtml(interaction.niveau)}</span>
                         </div>
                         <div class="rx-section">
@@ -287,7 +291,7 @@ class InteractionForm {
                 <div class="rx-card__header">
                     <div class="rx-card__title">
                         <span class="rx-card__label">Interactions médicamenteuses</span>
-                        <span class="rx-card__meds">${escapeHtml(data.med_1)} × ${escapeHtml(data.med_2)}</span>
+                        <span class="rx-card__meds">${med1} × ${med2}</span>
                     </div>
                     <button class="rx-card__close" type="button" aria-label="Fermer"
                         onclick="this.closest('.rx-card').remove()">✕</button>
