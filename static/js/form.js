@@ -450,7 +450,7 @@ class InteractionForm {
                 summaryEl.innerHTML = `
                     <div class="rx-summary__header">
                         <span class="rx-summary__icon">✦</span>
-                        <span class="rx-summary__label">Résumé IA</span>
+                        <span class="rx-summary__label">Résumé</span>
                     </div>
                     <p class="rx-summary__text">${escapeHtml(result.summary)}</p>
                     <p class="rx-summary__disclaimer">Résumé généré par intelligence artificielle à titre indicatif. Consultez toujours un professionnel de santé.</p>
