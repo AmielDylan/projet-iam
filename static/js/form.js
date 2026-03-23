@@ -281,7 +281,7 @@ class InteractionForm {
      */
     getSeverityClass(niveau) {
         const n = (niveau || '').toLowerCase();
-        if (n.includes('contre') || n.includes('ci')) return 'niveau--ci';
+        if (n.includes('contre')) return 'niveau--ci';
         if (n.includes('d\u00e9conseil') || n.includes('deconseil')) return 'niveau--ad';
         if (n.includes('pr\u00e9caution') || n.includes('precaution')) return 'niveau--pe';
         return 'niveau--aptc';
@@ -369,10 +369,23 @@ class InteractionForm {
             </div>
         `;
 
-        // Share button: copy current URL to clipboard
-        container.querySelector('.rx-card__share').addEventListener('click', (e) => {
+        // Share button: native share sheet, fallback to clipboard
+        container.querySelector('.rx-card__share').addEventListener('click', async (e) => {
             const btn = e.currentTarget;
-            navigator.clipboard.writeText(window.location.href).then(() => {
+            const url = window.location.href;
+            const shareData = {
+                title: `Interaction : ${data.med_1} × ${data.med_2}`,
+                text: `Vérifiez l'interaction médicamenteuse entre ${data.med_1} et ${data.med_2}`,
+                url
+            };
+
+            if (navigator.share) {
+                try { await navigator.share(shareData); } catch (_) { /* user cancelled */ }
+                return;
+            }
+
+            // Fallback: copy to clipboard
+            navigator.clipboard.writeText(url).then(() => {
                 btn.classList.add('rx-card__share--copied');
                 btn.setAttribute('title', 'Lien copié !');
                 setTimeout(() => {

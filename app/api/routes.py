@@ -115,7 +115,12 @@ def get_interactions():
             'field': e.field
         }), 400
 
-    interactions = InteractionService.get_interactions(med_1, med_2)
+    try:
+        interactions = InteractionService.get_interactions(med_1, med_2)
+    except Exception as e:
+        import logging
+        logging.exception("Error fetching interactions for %s / %s", med_1, med_2)
+        return jsonify({'success': False, 'error': 'Erreur interne lors de la recherche.'}), 500
 
     return jsonify({
         'success': True,

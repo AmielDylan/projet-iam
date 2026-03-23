@@ -114,12 +114,19 @@ class DatabasePool:
     ) -> list:
         """Call a stored procedure and return results."""
         with cls.get_connection() as connection:
-            cursor = connection.cursor(dictionary=dictionary)
+            # Note: mysql-connector stored_results() does NOT inherit dictionary=True
+            # from the parent cursor, so we convert manually when needed.
+            cursor = connection.cursor()
             try:
                 cursor.callproc(procedure_name, params)
                 results = []
                 for result_set in cursor.stored_results():
-                    results.extend(result_set.fetchall())
+                    rows = result_set.fetchall()
+                    if dictionary and result_set.description:
+                        columns = [desc[0] for desc in result_set.description]
+                        results.extend(dict(zip(columns, row)) for row in rows)
+                    else:
+                        results.extend(rows)
                 return results
             finally:
                 cursor.close()
