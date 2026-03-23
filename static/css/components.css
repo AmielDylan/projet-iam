@@ -20,13 +20,23 @@
     white-space: nowrap;
     border-radius: var(--radius-md);
     cursor: pointer;
-    transition: all var(--transition-fast);
+    transition: background-color var(--transition-fast), border-color var(--transition-fast);
     border: 2px solid transparent;
+    -webkit-tap-highlight-color: transparent;
+    appearance: none;
+    -webkit-appearance: none;
 }
 
+/* Suppress ALL browser/Bootstrap default focus styles on click */
+.btn:focus {
+    outline: none !important;
+    box-shadow: none !important;
+}
+
+/* Restore a clean focus ring for keyboard users only */
 .btn:focus-visible {
-    outline: none;
-    box-shadow: var(--focus-ring);
+    outline: none !important;
+    box-shadow: var(--focus-ring) !important;
 }
 
 .btn:disabled {

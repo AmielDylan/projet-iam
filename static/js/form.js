@@ -207,13 +207,32 @@ class InteractionForm {
     }
 
     /**
-     * Run a search programmatically (shared links — skips validation)
+     * Run a search programmatically (shared links) — validates before running
      * @param {string} med1
      * @param {string} med2
      */
     async search(med1, med2) {
+        const helper1 = document.getElementById('med-1-helper');
+        const helper2 = document.getElementById('med-2-helper');
+
         this.setLoading(true);
         try {
+            const [r1, r2] = await Promise.all([
+                ApiClient.validateMedication(med1),
+                ApiClient.validateMedication(med2)
+            ]);
+
+            let valid = true;
+            if (!r1?.is_valid) {
+                this.setInputState(this.med1Input, helper1, 'danger', 'Médicament non reconnu dans la base de données.');
+                valid = false;
+            }
+            if (!r2?.is_valid) {
+                this.setInputState(this.med2Input, helper2, 'danger', 'Médicament non reconnu dans la base de données.');
+                valid = false;
+            }
+            if (!valid) return;
+
             const result = await ApiClient.getInteractions(med1, med2);
             this.renderResults(result);
             const params = new URLSearchParams({ med1, med2 });
