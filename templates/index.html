@@ -175,9 +175,40 @@
         <!-- Footer -->
         <footer class="footer">
             <div class="container">
-                <div class="footer-body">
+                <div class="footer-grid">
+                    <div>
+                        <p class="footer-col__title">Plateforme</p>
+                        <ul class="footer-col__list">
+                            <li>Interactions médicamenteuses</li>
+                            <li>Base de données ANSM</li>
+                            <li>Version 2.0</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <p class="footer-col__title">Sources</p>
+                        <ul class="footer-col__list">
+                            <li>Thesaurus ANSM</li>
+                            <li>Base Claude</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <p class="footer-col__title">À propos</p>
+                        <ul class="footer-col__list">
+                            <li>Projet IAM</li>
+                            <li>Documentation</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <p class="footer-col__title">Usage</p>
+                        <ul class="footer-col__list">
+                            <li>Outil d'aide à la décision</li>
+                            <li>Usage professionnel</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="footer-bottom">
                     <span class="footer-brand">IAM</span>
-                    <p class="footer-copy">&copy; 2022-{{ now().year if now is defined else '2024' }} Projet IAM &mdash; Interactions médicamenteuses</p>
+                    <p class="footer-copy">&copy; 2022&ndash;{{ now().year if now is defined else '2024' }} Projet IAM &mdash; Tous droits réservés</p>
                 </div>
             </div>
         </footer>

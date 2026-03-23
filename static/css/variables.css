@@ -3,7 +3,7 @@
  */
 :root {
     /* Primary colors */
-    --color-primary: #111111;
+    --color-primary: #1A1A1A;
     --color-primary-light: #333333;
     --color-primary-dark: #000000;
 
@@ -31,12 +31,12 @@
 
     /* Neutral colors */
     --color-surface: #FFFFFF;
-    --color-surface-secondary: #F9FAFB;
-    --color-surface-tertiary: #F3F4F6;
-    --color-background: #FFFFFF;
+    --color-surface-secondary: #F4F4F0;
+    --color-surface-tertiary: #EBEBE6;
+    --color-background: #F7F7F4;
 
     /* Text colors */
-    --color-text: #111827;
+    --color-text: #1A1A1A;
     --color-text-secondary: #4B5563;
     --color-text-tertiary: #9CA3AF;
     --color-text-inverse: #FFFFFF;

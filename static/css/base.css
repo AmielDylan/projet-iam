@@ -164,8 +164,24 @@ button {
 
 /* Selection */
 ::selection {
-    background-color: var(--color-secondary);
-    color: var(--color-text-inverse);
+    background-color: #E5E5DF;
+    color: var(--color-text);
+}
+
+/* Paper diagonal texture — fixed so it doesn't scroll with content */
+body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    background-image: repeating-linear-gradient(
+        -45deg,
+        rgba(0, 0, 0, 0.025),
+        rgba(0, 0, 0, 0.025) 1px,
+        transparent 1px,
+        transparent 24px
+    );
 }
 
 /* Scrollbar styling (optional) */
