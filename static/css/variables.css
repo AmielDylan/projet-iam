@@ -45,9 +45,19 @@
     --color-border: #E5E7EB;
     --color-border-focus: #8B5CF6;
 
+    /* Interaction severity colors (ANSM classification) */
+    --color-niveau-ci:      #DC2626;
+    --color-niveau-ci-bg:   rgba(220, 38, 38, 0.08);
+    --color-niveau-ad:      #D97706;
+    --color-niveau-ad-bg:   rgba(217, 119, 6, 0.08);
+    --color-niveau-pe:      #CA8A04;
+    --color-niveau-pe-bg:   rgba(202, 138, 4, 0.08);
+    --color-niveau-aptc:    #4B5563;
+    --color-niveau-aptc-bg: rgba(75, 85, 99, 0.08);
+
     /* Typography */
-    --font-primary: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    --font-display: 'Montserrat', var(--font-primary);
+    --font-primary: 'Google Sans', 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    --font-display: 'Google Sans', 'Roboto', sans-serif;
     --font-mono: 'Roboto Mono', 'SF Mono', 'Consolas', monospace;
 
     /* Font sizes */

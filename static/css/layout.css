@@ -92,8 +92,11 @@
     background-color: var(--color-surface);
     border-radius: var(--radius-xl);
     box-shadow: var(--shadow-lg);
-    padding: var(--space-8);
+    padding: var(--space-6);
     margin-bottom: var(--space-8);
+    max-width: 900px;
+    margin-left: auto;
+    margin-right: auto;
 }
 
 .form-grid {
@@ -500,15 +503,35 @@
     }
 
     .autocomplete-container .autocomplete-item {
-        padding: var(--space-3) var(--space-4);
-        min-height: 48px;
-        font-size: var(--text-base);
+        padding: var(--space-2) var(--space-3);
+        min-height: 44px;
+        font-size: var(--text-sm);
     }
 
     .autocomplete-type {
         font-size: 10px;
-        padding: 2px 6px;
+        padding: 2px 5px;
         flex-shrink: 0;
+    }
+
+    /* Prescription card mobile */
+    .rx-card__header {
+        padding: var(--space-3) var(--space-4);
+    }
+
+    .rx-interaction {
+        padding: var(--space-3) var(--space-4);
+    }
+
+    .rx-interaction__grid {
+        grid-template-columns: 1fr;
+        gap: var(--space-3);
+    }
+
+    .rx-interaction__top {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: var(--space-2);
     }
 
     /* Footer */

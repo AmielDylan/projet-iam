@@ -117,29 +117,29 @@ class InteractionForm {
     }
 
     /**
-     * Show class choices for a substance
+     * Show class information notice (informational only, not interactive)
      * @param {number} inputNumber - 1 or 2
      * @param {Array<string>} classes - List of class names
      */
     showClassChoices(inputNumber, classes) {
         const container = document.getElementById(`choix-classe-${inputNumber}`);
-        const propositions = document.getElementById(`propositions-${inputNumber}`);
+        if (!container) return;
 
-        if (!container || !propositions) return;
+        const listItems = classes.map(c => `<li><strong>${escapeHtml(c)}</strong></li>`).join('');
 
-        // Clear existing buttons
-        propositions.innerHTML = '';
+        container.innerHTML = `
+            <div class="class-notice" role="note">
+                <div class="class-notice__header">
+                    <span class="class-notice__icon">ℹ</span>
+                    <strong>Cette substance appartient à plusieurs classes</strong>
+                    <button class="class-notice__close" aria-label="Fermer" type="button">✕</button>
+                </div>
+                <ul class="class-notice__list">${listItems}</ul>
+            </div>
+        `;
 
-        // Create class buttons
-        classes.forEach(className => {
-            const button = document.createElement('button');
-            button.type = 'button';
-            button.className = 'btn btn-lg btn-warning rounded-pill';
-            button.textContent = className;
-            button.addEventListener('click', () => {
-                this.selectClass(inputNumber, className);
-            });
-            propositions.appendChild(button);
+        container.querySelector('.class-notice__close').addEventListener('click', () => {
+            this.hideClassChoices(inputNumber);
         });
 
         container.classList.remove('invisible');
@@ -155,20 +155,7 @@ class InteractionForm {
         if (container) {
             container.classList.add('invisible');
             container.classList.remove('visible');
-        }
-    }
-
-    /**
-     * Select a class from the choices
-     * @param {number} inputNumber - 1 or 2
-     * @param {string} className - Selected class name
-     */
-    selectClass(inputNumber, className) {
-        const input = document.getElementById(`med-${inputNumber}`);
-        if (input) {
-            input.value = className;
-            this.hideClassChoices(inputNumber);
-            this.validateMedication(input, inputNumber === 1 ? 'med1' : 'med2');
+            container.innerHTML = '';
         }
     }
 
@@ -237,6 +224,19 @@ class InteractionForm {
     }
 
     /**
+     * Map niveau string to CSS severity class
+     * @param {string} niveau
+     * @returns {string} CSS class
+     */
+    getSeverityClass(niveau) {
+        const n = (niveau || '').toLowerCase();
+        if (n.includes('contre') || n.includes('ci')) return 'niveau--ci';
+        if (n.includes('d\u00e9conseil') || n.includes('deconseil')) return 'niveau--ad';
+        if (n.includes('pr\u00e9caution') || n.includes('precaution')) return 'niveau--pe';
+        return 'niveau--aptc';
+    }
+
+    /**
      * Render interaction results
      * @param {Object} data - API response data
      */
@@ -246,67 +246,60 @@ class InteractionForm {
 
         if (!data.interactions || data.interactions.length === 0) {
             container.innerHTML = `
-                <div class="alert alert-info" role="alert">
-                    Aucune interaction trouvee entre <strong>${escapeHtml(data.med_1)}</strong>
-                    et <strong>${escapeHtml(data.med_2)}</strong>.
+                <div class="rx-card" role="alert">
+                    <div class="rx-card__header">
+                        <div class="rx-card__title">
+                            <span class="rx-card__label">Résultat</span>
+                            <span class="rx-card__meds">${escapeHtml(data.med_1)} × ${escapeHtml(data.med_2)}</span>
+                        </div>
+                    </div>
+                    <div style="padding: var(--space-6); color: var(--color-text-secondary); font-size: var(--text-sm);">
+                        Aucune interaction trouvée entre ces deux médicaments.
+                    </div>
                 </div>
             `;
             return;
         }
 
-        let html = `
-            <div class="third" id="third" aria-live="polite">
-                <div class="d-flex bg-white bg-opacity-20 justify-content-between">
-                    <h3>Resultat interactions entre ${escapeHtml(data.med_1)} et ${escapeHtml(data.med_2)}</h3>
-                    <button type="button" class="btn-close" aria-label="Fermer" onclick="this.closest('.third').remove()"></button>
-                </div>
-        `;
-
-        data.interactions.forEach(interaction => {
-            html += `
-                <div class="container details">
-                    <p class="title-3">
-                        Composants: <span class="medName_yellow">${escapeHtml(interaction.class_1)}</span>
-                        et <span class="medName_yellow">${escapeHtml(interaction.class_2)}</span>
-                    </p>
-
-                    <div class="row">
-                        <div class="col">
-                            <div>
-                                <p class="title-4">Niveau d'interaction:</p>
-                                <p class="resultat">${escapeHtml(interaction.niveau)}</p>
-                            </div>
-                        </div>
+        const interactionsHtml = data.interactions.map(interaction => {
+            const severityClass = this.getSeverityClass(interaction.niveau);
+            return `
+                <div class="rx-interaction">
+                    <div class="rx-interaction__top">
+                        <span class="rx-classes">${escapeHtml(interaction.class_1)} — ${escapeHtml(interaction.class_2)}</span>
+                        <span class="rx-niveau ${severityClass}">${escapeHtml(interaction.niveau)}</span>
                     </div>
-
-                    <div class="row mt-4">
-                        <div class="col-12 col-md-4 mb-2">
-                            <div>
-                                <p class="title-4">Details des classes:</p>
-                                <p class="resultat">${escapeHtml(interaction.details)}</p>
-                            </div>
+                    <div class="rx-interaction__grid">
+                        <div class="rx-detail">
+                            <p class="rx-detail__label">Détails des classes</p>
+                            <p class="rx-detail__value">${escapeHtml(interaction.details)}</p>
                         </div>
-
-                        <div class="col-12 col-md-4">
-                            <div>
-                                <p class="title-4">Risques d'interaction:</p>
-                                <p class="resultat">${escapeHtml(interaction.risques)}</p>
-                            </div>
+                        <div class="rx-detail">
+                            <p class="rx-detail__label">Risques</p>
+                            <p class="rx-detail__value">${escapeHtml(interaction.risques)}</p>
                         </div>
-
-                        <div class="col-12 col-md-4">
-                            <div>
-                                <p class="title-4">Actions associees:</p>
-                                <p class="resultat">${escapeHtml(interaction.actions)}</p>
-                            </div>
+                        <div class="rx-detail">
+                            <p class="rx-detail__label">Conduite à tenir</p>
+                            <p class="rx-detail__value">${escapeHtml(interaction.actions)}</p>
                         </div>
                     </div>
                 </div>
             `;
-        });
+        }).join('');
 
-        html += '</div>';
-        container.innerHTML = html;
+        container.innerHTML = `
+            <div class="rx-card" id="third" aria-live="polite">
+                <div class="rx-card__header">
+                    <div class="rx-card__title">
+                        <span class="rx-card__label">Interactions médicamenteuses</span>
+                        <span class="rx-card__meds">${escapeHtml(data.med_1)} × ${escapeHtml(data.med_2)}</span>
+                    </div>
+                    <button class="rx-card__close" type="button" aria-label="Fermer"
+                        onclick="this.closest('.rx-card').remove()">✕</button>
+                </div>
+                ${interactionsHtml}
+            </div>
+        `;
     }
 }
 
