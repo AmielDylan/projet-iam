@@ -20,6 +20,7 @@ class InteractionForm {
         this.med1Input = form.querySelector('#med-1');
         this.med2Input = form.querySelector('#med-2');
         this.submitButton = form.querySelector('button[type="submit"]');
+        this.submitButtonLabel = this.submitButton?.textContent.trim() || 'Rechercher';
 
         this.validationState = {
             med1: null,
@@ -147,7 +148,7 @@ class InteractionForm {
     }
 
     /**
-     * Handle form submission
+     * Handle form submission — validate inputs first, then search
      * @param {Event} e - Submit event
      */
     async handleSubmit(e) {
@@ -155,39 +156,71 @@ class InteractionForm {
 
         const med1 = this.med1Input.value.trim();
         const med2 = this.med2Input.value.trim();
+        const helper1 = document.getElementById('med-1-helper');
+        const helper2 = document.getElementById('med-2-helper');
 
-        if (!med1 || !med2) {
-            this.showError('Veuillez renseigner les deux medicaments.');
-            return;
-        }
+        // Empty check
+        let emptyError = false;
+        if (!med1) { this.setInputState(this.med1Input, helper1, 'danger', 'Veuillez saisir un médicament.'); emptyError = true; }
+        if (!med2) { this.setInputState(this.med2Input, helper2, 'danger', 'Veuillez saisir un médicament.'); emptyError = true; }
+        if (emptyError) return;
 
-        await this.search(med1, med2);
-    }
-
-    /**
-     * Run a search programmatically (also called from shared links)
-     * @param {string} med1
-     * @param {string} med2
-     */
-    async search(med1, med2) {
         this.setLoading(true);
-        announceToScreenReader('Recherche des interactions en cours...');
+        announceToScreenReader('Validation en cours...');
 
         try {
+            // Validate both inputs in parallel
+            const [r1, r2] = await Promise.all([
+                ApiClient.validateMedication(med1),
+                ApiClient.validateMedication(med2)
+            ]);
+
+            let valid = true;
+            if (!r1?.is_valid) {
+                this.setInputState(this.med1Input, helper1, 'danger', 'Médicament non reconnu dans la base de données.');
+                valid = false;
+            }
+            if (!r2?.is_valid) {
+                this.setInputState(this.med2Input, helper2, 'danger', 'Médicament non reconnu dans la base de données.');
+                valid = false;
+            }
+            if (!valid) return;
+
+            // Fetch interactions
+            announceToScreenReader('Recherche des interactions en cours...');
             const result = await ApiClient.getInteractions(med1, med2);
             this.renderResults(result);
-            // Update browser URL so the result is shareable
             const params = new URLSearchParams({ med1, med2 });
             history.replaceState(null, '', `?${params.toString()}`);
-            announceToScreenReader(`${result.count} interaction(s) trouvee(s).`);
+            announceToScreenReader(`${result.count} interaction(s) trouvée(s).`);
         } catch (error) {
             console.error('Submission error:', error);
             if (error instanceof ApiError) {
                 this.showError(error.message);
             } else {
-                this.showError('Une erreur est survenue. Veuillez reessayer.');
+                this.showError('Une erreur est survenue. Veuillez réessayer.');
             }
             announceToScreenReader('Erreur lors de la recherche.');
+        } finally {
+            this.setLoading(false);
+        }
+    }
+
+    /**
+     * Run a search programmatically (shared links — skips validation)
+     * @param {string} med1
+     * @param {string} med2
+     */
+    async search(med1, med2) {
+        this.setLoading(true);
+        try {
+            const result = await ApiClient.getInteractions(med1, med2);
+            this.renderResults(result);
+            const params = new URLSearchParams({ med1, med2 });
+            history.replaceState(null, '', `?${params.toString()}`);
+        } catch (error) {
+            console.error('Search error:', error);
+            this.showError('Une erreur est survenue. Veuillez réessayer.');
         } finally {
             this.setLoading(false);
         }
@@ -203,7 +236,7 @@ class InteractionForm {
             this.submitButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Recherche...';
         } else {
             this.submitButton.disabled = false;
-            this.submitButton.textContent = 'Decouvrir interaction';
+            this.submitButton.textContent = this.submitButtonLabel;
         }
     }
 

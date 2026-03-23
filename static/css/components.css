@@ -34,16 +34,38 @@
     cursor: not-allowed;
 }
 
-/* Primary button */
+/* Primary button — override Bootstrap's CSS vars to prevent blue flash on :active */
 .btn-primary {
+    --bs-btn-color: #fff;
+    --bs-btn-bg: var(--color-secondary);
+    --bs-btn-border-color: var(--color-secondary);
+    --bs-btn-hover-color: #fff;
+    --bs-btn-hover-bg: var(--color-secondary-dark);
+    --bs-btn-hover-border-color: var(--color-secondary-dark);
+    --bs-btn-focus-shadow-rgb: 139, 92, 246;
+    --bs-btn-active-color: #fff;
+    --bs-btn-active-bg: var(--color-secondary-dark);
+    --bs-btn-active-border-color: var(--color-secondary-dark);
+    --bs-btn-active-shadow: 0 0 0 3px rgba(139, 92, 246, 0.3);
+    --bs-btn-disabled-color: #fff;
+    --bs-btn-disabled-bg: var(--color-secondary);
+    --bs-btn-disabled-border-color: var(--color-secondary);
     background-color: var(--color-secondary);
-    color: var(--color-text-inverse);
+    color: #fff;
     border-color: var(--color-secondary);
 }
 
 .btn-primary:hover:not(:disabled) {
     background-color: var(--color-secondary-dark);
     border-color: var(--color-secondary-dark);
+}
+
+.btn-primary:active,
+.btn-primary:focus-visible {
+    background-color: var(--color-secondary-dark) !important;
+    border-color: var(--color-secondary-dark) !important;
+    box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.3) !important;
+    outline: none !important;
 }
 
 /* Secondary button */
