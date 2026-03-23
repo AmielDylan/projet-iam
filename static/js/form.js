@@ -120,7 +120,7 @@ class InteractionForm {
             <div class="class-notice" role="note">
                 <div class="class-notice__header">
                     <span class="class-notice__icon">ℹ</span>
-                    <strong>Cette substance appartient à plusieurs classes</strong>
+                    <span>Cette substance appartient à plusieurs classes</span>
                     <button class="class-notice__close" aria-label="Fermer" type="button">✕</button>
                 </div>
                 <ul class="class-notice__list">${listItems}</ul>
@@ -244,11 +244,7 @@ class InteractionForm {
                     <div class="rx-card__header">
                         <div class="rx-card__title">
                             <span class="rx-card__label">Résultat</span>
-                            <span class="rx-card__meds">
-                                <span class="rx-med1">${escapeHtml(data.med_1)}</span>
-                                <span style="color: var(--color-text-tertiary); font-weight: 400;"> × </span>
-                                <span class="rx-med2">${escapeHtml(data.med_2)}</span>
-                            </span>
+                            <span class="rx-card__meds">${escapeHtml(data.med_1)} × ${escapeHtml(data.med_2)}</span>
                         </div>
                     </div>
                     <div style="padding: var(--space-6); color: var(--color-text-secondary); font-size: var(--text-sm);">
@@ -263,18 +259,12 @@ class InteractionForm {
             const severityClass = this.getSeverityClass(interaction.niveau);
             return `
                 <div class="rx-interaction">
-                    <div class="rx-interaction__top">
-                        <span class="rx-classes">
-                            <span class="rx-med1">${escapeHtml(interaction.class_1)}</span>
-                            <span style="color: var(--color-text-tertiary);"> — </span>
-                            <span class="rx-med2">${escapeHtml(interaction.class_2)}</span>
-                        </span>
-                        <div class="rx-niveau-group">
-                            <span class="rx-niveau-label">Niveau d'interaction</span>
+                    <p class="rx-classes">${escapeHtml(interaction.class_1)} — ${escapeHtml(interaction.class_2)}</p>
+                    <div class="rx-interaction__body">
+                        <div class="rx-niveau-row">
+                            <span class="rx-section__label">Niveau d'interaction</span>
                             <span class="rx-niveau ${severityClass}">${escapeHtml(interaction.niveau)}</span>
                         </div>
-                    </div>
-                    <div class="rx-interaction__body">
                         <div class="rx-section">
                             <p class="rx-section__label">Détails des classes</p>
                             <p class="rx-section__value">${escapeHtml(interaction.details)}</p>
@@ -297,11 +287,7 @@ class InteractionForm {
                 <div class="rx-card__header">
                     <div class="rx-card__title">
                         <span class="rx-card__label">Interactions médicamenteuses</span>
-                        <span class="rx-card__meds">
-                            <span class="rx-med1">${escapeHtml(data.med_1)}</span>
-                            <span style="color: var(--color-text-tertiary); font-weight: 400;"> × </span>
-                            <span class="rx-med2">${escapeHtml(data.med_2)}</span>
-                        </span>
+                        <span class="rx-card__meds">${escapeHtml(data.med_1)} × ${escapeHtml(data.med_2)}</span>
                     </div>
                     <button class="rx-card__close" type="button" aria-label="Fermer"
                         onclick="this.closest('.rx-card').remove()">✕</button>
