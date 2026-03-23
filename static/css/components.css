@@ -463,8 +463,12 @@
 
 .rx-card__meds {
     font-size: var(--text-base);
-    font-weight: var(--font-semibold);
+    font-weight: var(--font-normal);
     color: var(--color-text);
+}
+
+.rx-card__meds strong {
+    font-weight: var(--font-bold);
 }
 
 .rx-card__actions {
@@ -517,6 +521,16 @@
     margin: 0 0 var(--space-3) 0;
 }
 
+/* Interacting class pair header */
+.rx-interaction__pair {
+    font-size: var(--text-sm);
+    font-weight: var(--font-semibold);
+    color: var(--color-text);
+    margin: 0 0 var(--space-3) 0;
+    padding-bottom: var(--space-3);
+    border-bottom: 1px solid var(--color-border);
+}
+
 /* Niveau inline row inside body */
 .rx-niveau-row {
     display: flex;
@@ -526,8 +540,8 @@
 
 .rx-niveau-label {
     font-size: var(--text-xs);
-    color: var(--color-text-tertiary);
-    font-weight: var(--font-normal);
+    color: var(--color-text);
+    font-weight: var(--font-semibold);
     white-space: nowrap;
 }
 

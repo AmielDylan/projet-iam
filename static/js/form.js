@@ -313,7 +313,7 @@ class InteractionForm {
                     <div class="rx-card__header">
                         <div class="rx-card__title">
                             <span class="rx-card__label">Interaction médicamenteuse</span>
-                            <span class="rx-card__meds">entre ${med1} et ${med2}</span>
+                            <span class="rx-card__meds">entre <strong>${med1}</strong> et <strong>${med2}</strong></span>
                         </div>
                     </div>
                     <div style="padding: var(--space-6); color: var(--color-text-secondary); font-size: var(--text-sm);">
@@ -326,9 +326,12 @@ class InteractionForm {
 
         const interactionsHtml = data.interactions.map(interaction => {
             const severityClass = this.getSeverityClass(interaction.niveau);
+            const c1 = escapeHtml(this.toTitleCase(interaction.class_1 || ''));
+            const c2 = escapeHtml(this.toTitleCase(interaction.class_2 || ''));
             return `
                 <div class="rx-interaction">
                     <div class="rx-interaction__body">
+                        <p class="rx-interaction__pair">${c1} — ${c2}</p>
                         <div class="rx-niveau-row">
                             <span class="rx-niveau-label">Niveau d'interaction :</span>
                             <span class="rx-niveau ${severityClass}">${escapeHtml(interaction.niveau)}</span>
@@ -355,7 +358,7 @@ class InteractionForm {
                 <div class="rx-card__header">
                     <div class="rx-card__title">
                         <span class="rx-card__label">Interaction médicamenteuse</span>
-                        <span class="rx-card__meds">entre ${med1} et ${med2}</span>
+                        <span class="rx-card__meds">entre <strong>${med1}</strong> et <strong>${med2}</strong></span>
                     </div>
                     <div class="rx-card__actions">
                         <button class="rx-card__share" type="button" aria-label="Partager ce résultat" title="Copier le lien">
