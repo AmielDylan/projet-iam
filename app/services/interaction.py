@@ -160,7 +160,7 @@ class InteractionService:
         params = (med_1, med_1, med_1, med_2, med_2, med_2)
         rows = DatabasePool.execute_query(sql, params, dictionary=True)
 
-        return [
+        interactions = [
             {
                 'class_1':   row.get('class_1', ''),
                 'class_2':   row.get('class_2', ''),
@@ -172,6 +172,20 @@ class InteractionService:
             }
             for row in rows
         ]
+
+        # Deduplicate bidirectional pairs (A→B and B→A are the same interaction).
+        # When two rows share the same unordered class pair, keep the one with
+        # more populated fields so we never lose data.
+        def _richness(r: dict) -> int:
+            return sum(1 for v in (r['details'], r['risques'], r['actions']) if v)
+
+        seen: dict = {}
+        for row in interactions:
+            key = frozenset([row['class_1'], row['class_2']])
+            if key not in seen or _richness(row) > _richness(seen[key]):
+                seen[key] = row
+
+        return list(seen.values())
 
     @staticmethod
     def _get_interactions_optimized(med_1: str, med_2: str) -> list[dict]:
