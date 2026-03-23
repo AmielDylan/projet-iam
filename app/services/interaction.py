@@ -96,21 +96,82 @@ class InteractionService:
 
     @staticmethod
     def get_interactions(med_1: str, med_2: str) -> list[dict]:
-        """
-        Get interactions between two medications.
-
-        This method tries to use the optimized procedure first,
-        falling back to the legacy approach if needed.
-        """
+        """Get interactions between two medications using direct SQL (no stored procs)."""
         med_1 = med_1.upper().strip()
         med_2 = med_2.upper().strip()
+        return InteractionService._get_interactions_sql(med_1, med_2)
 
-        # Try optimized procedure first
-        try:
-            return InteractionService._get_interactions_optimized(med_1, med_2)
-        except Exception:
-            # Fallback to legacy method
-            return InteractionService._get_interactions_legacy(med_1, med_2)
+    @staticmethod
+    def _get_interactions_sql(med_1: str, med_2: str) -> list[dict]:
+        """
+        Direct SQL lookup — no stored procedures, no schema prefix.
+        Works on any database name (railway, projet_ipa, etc.).
+        Resolves classe / substance / specialite automatically for both inputs.
+        """
+        sql = """
+        SELECT DISTINCT
+            t1.class_name  AS class_1,
+            t2.class_name  AS class_2,
+            ic.details,
+            ic.risques,
+            n.niveaux      AS niveau,
+            ic.niveau      AS niveau_id,
+            ic.actions
+        FROM (
+            SELECT id AS class_id, denomination AS class_name
+            FROM classes WHERE denomination = %s
+            UNION
+            SELECT c.id, c.denomination
+            FROM classes c
+            INNER JOIN liaisons_cs lcs ON c.id = lcs.id_classes
+            INNER JOIN substances   s  ON lcs.id_substance = s.id
+            WHERE s.substances = %s
+            UNION
+            SELECT DISTINCT c.id, c.denomination
+            FROM classes c
+            INNER JOIN liaisons_cs  lcs ON c.id = lcs.id_classes
+            INNER JOIN liaisons_ss  lss ON lcs.id_substance = lss.id_substance
+            INNER JOIN specialites  sp  ON lss.id_specialites = sp.id
+            WHERE sp.specialites = %s
+        ) AS t1
+        JOIN (
+            SELECT id AS class_id, denomination AS class_name
+            FROM classes WHERE denomination = %s
+            UNION
+            SELECT c.id, c.denomination
+            FROM classes c
+            INNER JOIN liaisons_cs lcs ON c.id = lcs.id_classes
+            INNER JOIN substances   s  ON lcs.id_substance = s.id
+            WHERE s.substances = %s
+            UNION
+            SELECT DISTINCT c.id, c.denomination
+            FROM classes c
+            INNER JOIN liaisons_cs  lcs ON c.id = lcs.id_classes
+            INNER JOIN liaisons_ss  lss ON lcs.id_substance = lss.id_substance
+            INNER JOIN specialites  sp  ON lss.id_specialites = sp.id
+            WHERE sp.specialites = %s
+        ) AS t2
+        INNER JOIN interactions_classes ic
+            ON  (ic.med_1 = t1.class_id AND ic.med_2 = t2.class_id)
+            OR  (ic.med_1 = t2.class_id AND ic.med_2 = t1.class_id)
+        LEFT JOIN niveaux n ON ic.niveau = n.id
+        ORDER BY ic.niveau DESC
+        """
+        params = (med_1, med_1, med_1, med_2, med_2, med_2)
+        rows = DatabasePool.execute_query(sql, params, dictionary=True)
+
+        return [
+            {
+                'class_1':   row.get('class_1', ''),
+                'class_2':   row.get('class_2', ''),
+                'details':   InteractionService._clean_text(row.get('details', '')),
+                'risques':   InteractionService._clean_text(row.get('risques', '')),
+                'niveau':    row.get('niveau', ''),
+                'niveau_id': row.get('niveau_id'),
+                'actions':   InteractionService._clean_text(row.get('actions', ''))
+            }
+            for row in rows
+        ]
 
     @staticmethod
     def _get_interactions_optimized(med_1: str, med_2: str) -> list[dict]:
