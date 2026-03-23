@@ -435,20 +435,38 @@
     color: var(--color-text);
 }
 
-.rx-card__close {
-    background: none;
-    border: none;
-    font-size: 16px;
-    color: var(--color-text-tertiary);
-    cursor: pointer;
-    padding: 4px;
-    line-height: 1;
-    border-radius: var(--radius-sm);
-    transition: color var(--transition-fast);
+.rx-card__actions {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    flex-shrink: 0;
 }
 
-.rx-card__close:hover {
+.rx-card__close,
+.rx-card__share {
+    background: none;
+    border: none;
+    color: var(--color-text-tertiary);
+    cursor: pointer;
+    padding: 4px 6px;
+    line-height: 1;
+    border-radius: var(--radius-sm);
+    transition: color var(--transition-fast), background var(--transition-fast);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.rx-card__close { font-size: 16px; }
+
+.rx-card__close:hover,
+.rx-card__share:hover {
     color: var(--color-text);
+    background: var(--color-surface-tertiary);
+}
+
+.rx-card__share--copied {
+    color: var(--color-success) !important;
 }
 
 .rx-interaction {

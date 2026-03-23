@@ -161,12 +161,24 @@ class InteractionForm {
             return;
         }
 
+        await this.search(med1, med2);
+    }
+
+    /**
+     * Run a search programmatically (also called from shared links)
+     * @param {string} med1
+     * @param {string} med2
+     */
+    async search(med1, med2) {
         this.setLoading(true);
         announceToScreenReader('Recherche des interactions en cours...');
 
         try {
             const result = await ApiClient.getInteractions(med1, med2);
             this.renderResults(result);
+            // Update browser URL so the result is shareable
+            const params = new URLSearchParams({ med1, med2 });
+            history.replaceState(null, '', `?${params.toString()}`);
             announceToScreenReader(`${result.count} interaction(s) trouvee(s).`);
         } catch (error) {
             console.error('Submission error:', error);
@@ -293,12 +305,30 @@ class InteractionForm {
                         <span class="rx-card__label">Interactions médicamenteuses</span>
                         <span class="rx-card__meds">${med1} × ${med2}</span>
                     </div>
-                    <button class="rx-card__close" type="button" aria-label="Fermer"
-                        onclick="this.closest('.rx-card').remove()">✕</button>
+                    <div class="rx-card__actions">
+                        <button class="rx-card__share" type="button" aria-label="Partager ce résultat" title="Copier le lien">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+                        </button>
+                        <button class="rx-card__close" type="button" aria-label="Fermer"
+                            onclick="this.closest('.rx-card').remove()">✕</button>
+                    </div>
                 </div>
                 ${interactionsHtml}
             </div>
         `;
+
+        // Share button: copy current URL to clipboard
+        container.querySelector('.rx-card__share').addEventListener('click', (e) => {
+            const btn = e.currentTarget;
+            navigator.clipboard.writeText(window.location.href).then(() => {
+                btn.classList.add('rx-card__share--copied');
+                btn.setAttribute('title', 'Lien copié !');
+                setTimeout(() => {
+                    btn.classList.remove('rx-card__share--copied');
+                    btn.setAttribute('title', 'Copier le lien');
+                }, 2000);
+            });
+        });
     }
 }
 

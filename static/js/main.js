@@ -31,6 +31,7 @@ class App {
         this.setupAutocomplete();
         this.setupClassChoices();
         this.setupAccessibility();
+        this.setupSharedLink();
     }
 
     /**
@@ -130,26 +131,38 @@ class App {
     }
 
     /**
-     * Clear input validation styles
+     * Clear input validation styles on focus
      * @param {HTMLInputElement} input
      */
     clearInputBorder(input) {
-        input.classList.remove('danger', 'warning', 'valide');
+        input.classList.remove('danger');
 
         const inputNumber = input.id === 'med-1' ? 1 : 2;
         const helper = document.getElementById(`med-${inputNumber}-helper`);
 
         if (helper) {
-            helper.classList.remove('text-danger', 'text-success', 'text-warning');
-            helper.textContent = 'Evitez les caracteres speciaux svp.';
+            helper.classList.remove('text-danger');
+            helper.textContent = '';
         }
+    }
 
-        // Hide class choices
-        const choices = document.getElementById(`choix-classe-${inputNumber}`);
-        if (choices) {
-            choices.classList.add('invisible');
-            choices.classList.remove('visible');
-        }
+    /**
+     * Detect shared link params and auto-run the search
+     */
+    setupSharedLink() {
+        const params = new URLSearchParams(window.location.search);
+        const med1 = params.get('med1');
+        const med2 = params.get('med2');
+
+        if (!med1 || !med2 || !this.form) return;
+
+        const input1 = document.getElementById('med-1');
+        const input2 = document.getElementById('med-2');
+        if (input1) input1.value = med1;
+        if (input2) input2.value = med2;
+
+        // Small delay to let all components finish initializing
+        setTimeout(() => this.form.search(med1, med2), 100);
     }
 }
 
