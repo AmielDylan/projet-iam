@@ -353,15 +353,17 @@ class InteractionForm {
             const c2 = escapeHtml(this.toTitleCase(interaction.class_2 || ''));
             return `
                 <div class="rx-interaction">
-                    <div class="rx-interaction__body">
+                    <button class="rx-interaction__header" type="button" aria-expanded="true">
                         <div class="rx-interaction__pair">
                             <span class="rx-interaction__number">#${idx + 1}</span>
                             <span>${c1} <span class="rx-interaction__drug">(${med1})</span> — ${c2} <span class="rx-interaction__drug">(${med2})</span></span>
                         </div>
-                        <div class="rx-niveau-row">
-                            <span class="rx-niveau-label">Niveau d'interaction :</span>
+                        <div class="rx-interaction__fold-meta">
                             <span class="rx-niveau ${severityClass}">${escapeHtml(interaction.niveau)}</span>
+                            <svg class="rx-interaction__chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
                         </div>
+                    </button>
+                    <div class="rx-interaction__body">
                         ${interaction.details ? `
                         <div class="rx-section">
                             <p class="rx-section__label">Détails des classes</p>
@@ -425,6 +427,15 @@ class InteractionForm {
                     btn.classList.remove('rx-card__share--copied');
                     btn.setAttribute('title', 'Copier le lien');
                 }, 2000);
+            });
+        });
+
+        // Wire fold/unfold on each interaction header
+        container.querySelectorAll('.rx-interaction__header').forEach(header => {
+            header.addEventListener('click', () => {
+                const expanded = header.getAttribute('aria-expanded') === 'true';
+                header.setAttribute('aria-expanded', String(!expanded));
+                header.nextElementSibling.classList.toggle('is-collapsed', expanded);
             });
         });
 
