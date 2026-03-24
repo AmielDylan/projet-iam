@@ -13,10 +13,10 @@
 
         <div class="timeline">
 
-            <!-- v2.2.0 -->
+            <!-- v2.3.0 -->
             <div class="timeline__item">
                 <div class="timeline__meta">
-                    <span class="timeline__badge">v2.2.0</span>
+                    <span class="timeline__badge">v2.3.0</span>
                 </div>
                 <div class="timeline__track">
                     <div class="timeline__dot timeline__dot--current"></div>
@@ -25,24 +25,71 @@
                 <div class="timeline__body">
                     <div class="timeline__card">
                         <div class="timeline__card-header">
+                            <h2 class="timeline__card-title">Lisibilité des résultats &amp; niveaux ANSM</h2>
+                            <time class="timeline__date">Mars 2026</time>
+                        </div>
+                        <div class="timeline__section">
+                            <div class="timeline__section-label">
+                                <span class="timeline__section-badge timeline__section-badge--new">Nouveau</span>
+                            </div>
+                            <ul class="timeline__list">
+                                <li>Glossaire des niveaux ANSM dans la carte de résultats (CI, ASDEC, PE, APEC)</li>
+                            </ul>
+                        </div>
+                        <div class="timeline__section">
+                            <div class="timeline__section-label">
+                                <span class="timeline__section-badge timeline__section-badge--update">Amélioration</span>
+                            </div>
+                            <ul class="timeline__list">
+                                <li>Prise en charge des niveaux combinés (ex. ASDEC&nbsp;· APEC) avec affichage de la sévérité la plus haute</li>
+                                <li>Traduction des abréviations ANSM en libellés lisibles dans les blocs d'interaction</li>
+                                <li>Formatage des textes : retours à la ligne préservés, références "Voir aussi" distinctes</li>
+                                <li>README refait comme base de documentation (GitBook-ready)</li>
+                                <li>Suppression des fichiers inutilisés du dépôt</li>
+                            </ul>
+                        </div>
+                        <div class="timeline__section">
+                            <div class="timeline__section-label">
+                                <span class="timeline__section-badge timeline__section-badge--fix">Correction</span>
+                            </div>
+                            <ul class="timeline__list">
+                                <li>Niveaux ASDEC et APEC affichés en gris (comme APTC) au lieu de leur couleur réelle — corrigé</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- v2.2.0 -->
+            <div class="timeline__item">
+                <div class="timeline__meta">
+                    <span class="timeline__badge">v2.2.0</span>
+                </div>
+                <div class="timeline__track">
+                    <div class="timeline__dot"></div>
+                    <div class="timeline__line"></div>
+                </div>
+                <div class="timeline__body">
+                    <div class="timeline__card">
+                        <div class="timeline__card-header">
                             <h2 class="timeline__card-title">Résumé IA &amp; expérience résultats</h2>
                             <time class="timeline__date">Mars 2026</time>
                         </div>
-                        <details class="timeline__section" open>
-                            <summary class="timeline__section-label">
+                        <div class="timeline__section">
+                            <div class="timeline__section-label">
                                 <span class="timeline__section-badge timeline__section-badge--new">Nouveau</span>
-                            </summary>
+                            </div>
                             <ul class="timeline__list">
                                 <li>Résumé IA de l'interaction via Groq (<code>llama-3.1-8b-instant</code>)</li>
                                 <li>Blocs d'interaction repliables avec badge de sévérité visible</li>
                                 <li>Liens partageables avec validation à l'ouverture</li>
                                 <li>Navbar et page Changelog</li>
                             </ul>
-                        </details>
-                        <details class="timeline__section" open>
-                            <summary class="timeline__section-label">
+                        </div>
+                        <div class="timeline__section">
+                            <div class="timeline__section-label">
                                 <span class="timeline__section-badge timeline__section-badge--fix">Correction</span>
-                            </summary>
+                            </div>
                             <ul class="timeline__list">
                                 <li>Déduplication des interactions bidirectionnelles (A→B = B→A)</li>
                                 <li>Correction de la couleur "Association déconseillée" (orange, pas rouge)</li>
@@ -50,7 +97,7 @@
                                 <li>Validation des médicaments partagés via lien</li>
                                 <li>Correction de l'erreur interne pour certaines combinaisons (ex. ATORVASTATINE + KÉTOCONAZOLE)</li>
                             </ul>
-                        </details>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -70,28 +117,28 @@
                             <h2 class="timeline__card-title">Carte prescription &amp; codes couleurs ANSM</h2>
                             <time class="timeline__date">Décembre 2025</time>
                         </div>
-                        <details class="timeline__section">
-                            <summary class="timeline__section-label">
+                        <div class="timeline__section">
+                            <div class="timeline__section-label">
                                 <span class="timeline__section-badge timeline__section-badge--new">Nouveau</span>
-                            </summary>
+                            </div>
                             <ul class="timeline__list">
                                 <li>Carte résultat format ordonnance avec codes couleurs ANSM</li>
                                 <li>Attribution des classes aux médicaments dans les résultats (#1, #2…)</li>
                                 <li>Partage natif (Web Share API) avec repli vers clipboard</li>
-                                <li>Chips de sévérité (CI / AD / PE / APTC) dans l'en-tête de la carte</li>
+                                <li>Chips de sévérité (CI / ASDEC / PE / APEC) dans l'en-tête de la carte</li>
                                 <li>Tri des interactions par criticité décroissante</li>
                             </ul>
-                        </details>
-                        <details class="timeline__section">
-                            <summary class="timeline__section-label">
+                        </div>
+                        <div class="timeline__section">
+                            <div class="timeline__section-label">
                                 <span class="timeline__section-badge timeline__section-badge--update">Amélioration</span>
-                            </summary>
+                            </div>
                             <ul class="timeline__list">
                                 <li>Validation des médicaments avant soumission (messages d'erreur)</li>
                                 <li>Design Paper.app : fond chaud #F7F7F4, texture diagonale, footer arrondi</li>
-                                <li>Notice de classes informative (non interactive) sous les inputs</li>
+                                <li>Notice de classes informative sous les inputs</li>
                             </ul>
-                        </details>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -110,10 +157,10 @@
                             <h2 class="timeline__card-title">Réécriture complète de la plateforme</h2>
                             <time class="timeline__date">Juin 2025</time>
                         </div>
-                        <details class="timeline__section">
-                            <summary class="timeline__section-label">
+                        <div class="timeline__section">
+                            <div class="timeline__section-label">
                                 <span class="timeline__section-badge timeline__section-badge--new">Nouveau</span>
-                            </summary>
+                            </div>
                             <ul class="timeline__list">
                                 <li>Architecture Flask modulaire (factory pattern)</li>
                                 <li>Pool de connexions MySQL</li>
@@ -122,18 +169,18 @@
                                 <li>Autocomplétion avec anti-rebond (300 ms)</li>
                                 <li>Design system Paper (variables CSS, composants réutilisables)</li>
                             </ul>
-                        </details>
-                        <details class="timeline__section">
-                            <summary class="timeline__section-label">
+                        </div>
+                        <div class="timeline__section">
+                            <div class="timeline__section-label">
                                 <span class="timeline__section-badge timeline__section-badge--update">Amélioration</span>
-                            </summary>
+                            </div>
                             <ul class="timeline__list">
                                 <li>Suppression de <code>eval()</code> pour les retours booléens</li>
                                 <li>Requête SQL directe (sans procédures stockées avec préfixe de schéma)</li>
                                 <li>Sanitisation et validation côté serveur</li>
                                 <li>Accessibilité WCAG 2.2 AA (liens d'évitement, ARIA, focus)</li>
                             </ul>
-                        </details>
+                        </div>
                     </div>
                 </div>
             </div>

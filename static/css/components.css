@@ -754,6 +754,11 @@
     margin: 0;
 }
 
+.rx-section--ref .rx-section__value {
+    font-style: italic;
+    color: var(--color-text-tertiary);
+}
+
 /* ============================================
    SPINNER
    ============================================ */

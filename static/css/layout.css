@@ -478,7 +478,7 @@
     white-space: nowrap;
 }
 
-/* Details / summary sections */
+/* Timeline content sections */
 .timeline__section {
     margin-bottom: var(--space-3);
 }
@@ -487,28 +487,7 @@
     display: flex;
     align-items: center;
     gap: var(--space-2);
-    cursor: pointer;
-    user-select: none;
-    list-style: none;
     margin-bottom: var(--space-2);
-}
-
-.timeline__section-label::-webkit-details-marker {
-    display: none;
-}
-
-.timeline__section-label::after {
-    content: '›';
-    font-size: 14px;
-    color: var(--color-text-tertiary);
-    margin-left: var(--space-1);
-    transform: rotate(90deg);
-    display: inline-block;
-    transition: transform 0.15s;
-}
-
-details[open] > .timeline__section-label::after {
-    transform: rotate(-90deg);
 }
 
 .timeline__section-badge {

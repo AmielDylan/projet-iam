@@ -275,24 +275,50 @@ class InteractionForm {
     }
 
     /**
-     * Map niveau string to CSS severity class
-     * @param {string} niveau
-     * @returns {string} CSS class
+     * Normalize a niveau string (strip accents, uppercase) for matching.
+     */
+    _normalizeNiveau(niveau) {
+        return (niveau || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase();
+    }
+
+    /**
+     * Map niveau string to CSS severity class.
+     * Handles full ANSM labels, abbreviations (CI/ASDEC/PE/APEC), and combined levels.
+     * For combined levels (e.g. "CI - ASDEC - PE"), returns the highest severity class.
      */
     getSeverityClass(niveau) {
-        const n = (niveau || '').toLowerCase();
-        if (n.includes('contre')) return 'niveau--ci';
-        if (n.includes('d\u00e9conseil') || n.includes('deconseil')) return 'niveau--ad';
-        if (n.includes('pr\u00e9caution') || n.includes('precaution')) return 'niveau--pe';
+        const n = this._normalizeNiveau(niveau);
+        if (n.includes('CONTRE') || /\bCI\b/.test(n)) return 'niveau--ci';
+        if (n.includes('DECONSEIL') || n.includes('ASDEC')) return 'niveau--ad';
+        if (n.includes('PRECAUTION') || /\bPE\b/.test(n)) return 'niveau--pe';
         return 'niveau--aptc';
     }
 
     getSeverityShort(niveau) {
-        const n = (niveau || '').toLowerCase();
-        if (n.includes('contre')) return 'CI';
-        if (n.includes('d\u00e9conseil') || n.includes('deconseil')) return 'AD';
-        if (n.includes('pr\u00e9caution') || n.includes('precaution')) return 'PE';
-        return 'APTC';
+        const cls = this.getSeverityClass(niveau);
+        return { 'niveau--ci': 'CI', 'niveau--ad': 'AD', 'niveau--pe': 'PE', 'niveau--aptc': 'APTC' }[cls] || 'APTC';
+    }
+
+    /**
+     * Translate raw DB niveau value to readable French label.
+     * Handles simple values and combined levels like "CI - ASDEC - PE".
+     */
+    formatNiveauLabel(niveau) {
+        if (!niveau) return '';
+        const map = {
+            'CONTRE-INDICATION': 'Contre-indication',
+            'ASSOCIATION DECONSEILLEE': 'Association déconseillée',
+            "PRÉCAUTION D'EMPLOI": "Précaution d'emploi",
+            'A PRENDRE EN COMPTE': 'À prendre en compte',
+            'CI': 'Contre-indication',
+            'ASDEC': 'Association déconseillée',
+            'PE': "Précaution d'emploi",
+            'APEC': 'À prendre en compte',
+        };
+        if (map[niveau]) return map[niveau];
+        return niveau.split(' - ')
+            .map(p => { const t = p.trim(); return map[t] || t; })
+            .join(' · ');
     }
 
     /**
@@ -347,10 +373,27 @@ class InteractionForm {
                 return `<span class="rx-severity-chip ${cls}">${short}</span>`;
             }).join('');
 
+        // Escape HTML and preserve newlines as <br>
+        const safeText = text => escapeHtml(text || '').replace(/\n/g, '<br>');
+
+        // Render a section — detects "Voir aussi :" cross-references
+        const renderSection = (label, text) => {
+            if (!text) return '';
+            const isRef = text.startsWith('Voir aussi :');
+            const displayLabel = isRef ? 'Voir aussi' : label;
+            const displayText = isRef ? text.slice('Voir aussi :'.length).trim() : text;
+            return `
+                <div class="rx-section${isRef ? ' rx-section--ref' : ''}">
+                    <p class="rx-section__label">${displayLabel}</p>
+                    <p class="rx-section__value">${safeText(displayText)}</p>
+                </div>`;
+        };
+
         const interactionsHtml = sorted.map((interaction, idx) => {
             const severityClass = this.getSeverityClass(interaction.niveau);
             const c1 = escapeHtml(this.toTitleCase(interaction.class_1 || ''));
             const c2 = escapeHtml(this.toTitleCase(interaction.class_2 || ''));
+            const niveauLabel = escapeHtml(this.formatNiveauLabel(interaction.niveau));
             return `
                 <div class="rx-interaction">
                     <button class="rx-interaction__header" type="button" aria-expanded="true">
@@ -359,26 +402,14 @@ class InteractionForm {
                             <span>${c1} <span class="rx-interaction__drug">(${med1})</span> — ${c2} <span class="rx-interaction__drug">(${med2})</span></span>
                         </div>
                         <div class="rx-interaction__fold-meta">
-                            <span class="rx-niveau ${severityClass}">${escapeHtml(interaction.niveau)}</span>
+                            <span class="rx-niveau ${severityClass}">${niveauLabel}</span>
                             <svg class="rx-interaction__chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
                         </div>
                     </button>
                     <div class="rx-interaction__body">
-                        ${interaction.details ? `
-                        <div class="rx-section">
-                            <p class="rx-section__label">Détails des classes</p>
-                            <p class="rx-section__value">${escapeHtml(interaction.details)}</p>
-                        </div>` : ''}
-                        ${interaction.risques ? `
-                        <div class="rx-section">
-                            <p class="rx-section__label">Risques</p>
-                            <p class="rx-section__value">${escapeHtml(interaction.risques)}</p>
-                        </div>` : ''}
-                        ${interaction.actions ? `
-                        <div class="rx-section">
-                            <p class="rx-section__label">Conduite à tenir</p>
-                            <p class="rx-section__value">${escapeHtml(interaction.actions)}</p>
-                        </div>` : ''}
+                        ${renderSection('Détails des classes', interaction.details)}
+                        ${renderSection('Risques', interaction.risques)}
+                        ${renderSection('Conduite à tenir', interaction.actions)}
                     </div>
                 </div>
             `;
@@ -386,12 +417,12 @@ class InteractionForm {
 
         const glossaryHtml = `
             <div class="rx-glossary">
-                <span class="rx-glossary__label">Légende</span>
+                <span class="rx-glossary__label">Légende ANSM</span>
                 <ul class="rx-glossary__list">
                     <li><span class="rx-niveau niveau--ci">CI</span> Contre-indication</li>
-                    <li><span class="rx-niveau niveau--ad">AD</span> Association déconseillée</li>
+                    <li><span class="rx-niveau niveau--ad">ASDEC</span> Association déconseillée</li>
                     <li><span class="rx-niveau niveau--pe">PE</span> Précaution d'emploi</li>
-                    <li><span class="rx-niveau niveau--aptc">APTC</span> À prendre en compte</li>
+                    <li><span class="rx-niveau niveau--aptc">APEC</span> À prendre en compte</li>
                 </ul>
             </div>
         `;

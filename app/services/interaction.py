@@ -311,7 +311,11 @@ class InteractionService:
 
     @staticmethod
     def _clean_text(text: Optional[str]) -> str:
-        """Clean text by removing parentheses."""
+        """Clean and normalize interaction text from the database."""
         if not text:
             return ''
-        return text.strip('()')
+        text = text.strip().strip('()').strip()
+        # Capitalize first letter (some entries start mid-sentence)
+        if text:
+            text = text[0].upper() + text[1:]
+        return text
