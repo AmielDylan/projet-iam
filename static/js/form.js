@@ -384,6 +384,18 @@ class InteractionForm {
             `;
         }).join('');
 
+        const glossaryHtml = `
+            <div class="rx-glossary">
+                <span class="rx-glossary__label">Légende</span>
+                <ul class="rx-glossary__list">
+                    <li><span class="rx-niveau niveau--ci">CI</span> Contre-indication</li>
+                    <li><span class="rx-niveau niveau--ad">AD</span> Association déconseillée</li>
+                    <li><span class="rx-niveau niveau--pe">PE</span> Précaution d'emploi</li>
+                    <li><span class="rx-niveau niveau--aptc">APTC</span> À prendre en compte</li>
+                </ul>
+            </div>
+        `;
+
         container.innerHTML = `
             <div class="rx-card ${cardModifier}" id="third" aria-live="polite">
                 <div class="rx-card__header">
@@ -401,6 +413,7 @@ class InteractionForm {
                     </div>
                 </div>
                 ${interactionsHtml}
+                ${glossaryHtml}
                 <div class="rx-summary">
                     <div class="rx-summary__loading">Résumé en cours de génération…</div>
                 </div>
