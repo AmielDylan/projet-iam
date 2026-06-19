@@ -2,7 +2,7 @@
 from typing import Optional
 from dataclasses import dataclass
 
-from app.services.database import DatabasePool
+from app.services import database
 
 
 @dataclass
@@ -60,7 +60,7 @@ class InteractionService:
     @staticmethod
     def _is_classe(medication: str) -> bool:
         """Check if medication is a class."""
-        result = DatabasePool.execute_function('isClasse', (medication,))
+        result = database.DatabasePool.execute_function('isClasse', (medication,))
         # Handle both boolean (new) and string (legacy) return types
         if isinstance(result, str):
             return result == 'True'
@@ -69,7 +69,7 @@ class InteractionService:
     @staticmethod
     def _is_substance(medication: str) -> bool:
         """Check if medication is a substance."""
-        result = DatabasePool.execute_function('isSubstance', (medication,))
+        result = database.DatabasePool.execute_function('isSubstance', (medication,))
         if isinstance(result, str):
             return result == 'True'
         return bool(result)
@@ -77,7 +77,7 @@ class InteractionService:
     @staticmethod
     def _is_specialite(medication: str) -> bool:
         """Check if medication is a specialite."""
-        result = DatabasePool.execute_function('isSpecialite', (medication,))
+        result = database.DatabasePool.execute_function('isSpecialite', (medication,))
         if isinstance(result, str):
             return result == 'True'
         return bool(result)
@@ -85,11 +85,11 @@ class InteractionService:
     @staticmethod
     def get_classes_from_substance(substance: str) -> list[str]:
         """Get class names associated with a substance."""
-        results = DatabasePool.call_procedure('getClassesId', (substance,))
+        results = database.DatabasePool.call_procedure('getClassesId', (substance,))
         class_names = []
         for row in results:
             class_id = row[0]
-            name_result = DatabasePool.call_procedure_with_out('getClasseName', [class_id, 0])
+            name_result = database.DatabasePool.call_procedure_with_out('getClasseName', [class_id, 0])
             if len(name_result) > 1 and name_result[1]:
                 class_names.append(name_result[1])
         return class_names
@@ -158,7 +158,7 @@ class InteractionService:
         ORDER BY ic.niveau DESC
         """
         params = (med_1, med_1, med_1, med_2, med_2, med_2)
-        rows = DatabasePool.execute_query(sql, params, dictionary=True)
+        rows = database.DatabasePool.execute_query(sql, params, dictionary=True)
 
         interactions = [
             {
@@ -190,7 +190,7 @@ class InteractionService:
     @staticmethod
     def _get_interactions_optimized(med_1: str, med_2: str) -> list[dict]:
         """Use the optimized get_full_interactions procedure."""
-        results = DatabasePool.call_procedure(
+        results = database.DatabasePool.call_procedure(
             'get_full_interactions',
             (med_1, med_2),
             dictionary=True
@@ -222,7 +222,7 @@ class InteractionService:
         for class1_id, class1_name in classes_1:
             for class2_id, class2_name in classes_2:
                 # Get interaction ID
-                interaction_results = DatabasePool.call_procedure(
+                interaction_results = database.DatabasePool.call_procedure(
                     'getInteractionsClasses',
                     (class1_name, class2_name)
                 )
@@ -234,7 +234,7 @@ class InteractionService:
                     seen_interaction_ids.add(interaction_id)
 
                     # Get interaction details
-                    detail_results = DatabasePool.call_procedure(
+                    detail_results = database.DatabasePool.call_procedure(
                         'getInteractionsResults',
                         (interaction_id,)
                     )
@@ -262,32 +262,32 @@ class InteractionService:
         med_type = InteractionService.validate_medication(medication)
 
         if med_type.is_classe:
-            results = DatabasePool.call_procedure('getClasseId', (medication,))
+            results = database.DatabasePool.call_procedure('getClasseId', (medication,))
             for row in results:
                 classes.append((row[0], medication))
 
         if med_type.is_substance:
-            substance_classes = DatabasePool.call_procedure('getClassesId', (medication,))
+            substance_classes = database.DatabasePool.call_procedure('getClassesId', (medication,))
             for row in substance_classes:
                 class_id = row[0]
-                name_result = DatabasePool.call_procedure_with_out('getClasseName', [class_id, 0])
+                name_result = database.DatabasePool.call_procedure_with_out('getClasseName', [class_id, 0])
                 if len(name_result) > 1 and name_result[1]:
                     classes.append((class_id, name_result[1]))
 
         if med_type.is_specialite:
             # Get substances from specialite
-            substance_ids = DatabasePool.call_procedure('getSubstanceId', (medication,))
+            substance_ids = database.DatabasePool.call_procedure('getSubstanceId', (medication,))
             for sub_row in substance_ids:
                 sub_id = sub_row[0]
                 # Get substance name
-                sub_name_result = DatabasePool.call_procedure_with_out('getSubstanceName', [sub_id, 0])
+                sub_name_result = database.DatabasePool.call_procedure_with_out('getSubstanceName', [sub_id, 0])
                 if len(sub_name_result) > 1 and sub_name_result[1]:
                     sub_name = sub_name_result[1]
                     # Get classes for this substance
-                    sub_classes = DatabasePool.call_procedure('getClassesId', (sub_name,))
+                    sub_classes = database.DatabasePool.call_procedure('getClassesId', (sub_name,))
                     for cls_row in sub_classes:
                         class_id = cls_row[0]
-                        cls_name_result = DatabasePool.call_procedure_with_out('getClasseName', [class_id, 0])
+                        cls_name_result = database.DatabasePool.call_procedure_with_out('getClasseName', [class_id, 0])
                         if len(cls_name_result) > 1 and cls_name_result[1]:
                             classes.append((class_id, cls_name_result[1]))
 
@@ -306,7 +306,7 @@ class InteractionService:
         """Get niveau name from ID."""
         if niveau_id is None:
             return ''
-        result = DatabasePool.call_procedure_with_out('getNiveau', [niveau_id, 0])
+        result = database.DatabasePool.call_procedure_with_out('getNiveau', [niveau_id, 0])
         return result[1] if len(result) > 1 and result[1] else ''
 
     @staticmethod

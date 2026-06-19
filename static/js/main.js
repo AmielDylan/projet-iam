@@ -3,12 +3,14 @@
  */
 import Autocomplete from './autocomplete.js';
 import InteractionForm from './form.js';
+import PrescriptionWorkspace from './prescription.js';
 
 class App {
     constructor() {
         this.form = null;
         this.autocomplete1 = null;
         this.autocomplete2 = null;
+        this.prescription = null;
     }
 
     /**
@@ -28,6 +30,8 @@ class App {
      */
     setup() {
         this.setupForm();
+        this.setupPrescription();
+        this.setupModeSwitcher();
         this.setupAutocomplete();
         this.setupClassChoices();
         this.setupAccessibility();
@@ -61,6 +65,36 @@ class App {
 
         this.form = new InteractionForm(formElement, {
             resultsContainer: resultsContainer
+        });
+    }
+
+    /**
+     * Setup the prescription workspace
+     */
+    setupPrescription() {
+        const workspace = document.getElementById('prescription-workspace');
+        if (!workspace) return;
+        this.prescription = new PrescriptionWorkspace(workspace);
+    }
+
+    /**
+     * Setup home mode switcher
+     */
+    setupModeSwitcher() {
+        const switches = document.querySelectorAll('[data-mode-target]');
+        const panels = document.querySelectorAll('[data-mode-panel]');
+        if (!switches.length || !panels.length) return;
+
+        switches.forEach(button => {
+            button.addEventListener('click', () => {
+                const target = button.dataset.modeTarget;
+                switches.forEach(item => item.classList.toggle('is-active', item === button));
+                panels.forEach(panel => {
+                    const active = panel.dataset.modePanel === target;
+                    panel.hidden = !active;
+                    panel.classList.toggle('is-active', active);
+                });
+            });
         });
     }
 
