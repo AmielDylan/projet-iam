@@ -174,7 +174,7 @@ def insert_staging(cursor, batch_id: str, source_file: str, row: dict[str, Any])
     cursor.execute(
         """
         INSERT INTO medication_catalog_staging
-            (import_batch_id, source_file, row_number, nom_medicament, dosage, concentration,
+            (import_batch_id, source_file, `row_number`, nom_medicament, dosage, concentration,
              forme_galenique, presentation, volume, quantite_unites, quantite_boites,
              substances, specialite, source_hash, normalized_key)
         VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
