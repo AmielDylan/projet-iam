@@ -304,11 +304,15 @@ def enrich_iam(cursor, batch_id: str, row: dict[str, Any], catalog_id: int, spec
                 stats["liaison_existing"] += 1
             else:
                 cursor.execute(
-                    "INSERT INTO liaisons_ss (id_specialites, id_substance) VALUES (%s, %s)",
+                    "INSERT IGNORE INTO liaisons_ss (id_specialites, id_substance) VALUES (%s, %s)",
                     (specialite_id, substance_id),
                 )
-                audit(cursor, batch_id, "liaison_ss_insert", "applied", "Specialite-substance link added from catalog", {"substance": substance, **row}, catalog_id, "liaisons_ss", cursor.lastrowid)
-                stats["liaison_inserted"] += 1
+                if cursor.rowcount:
+                    audit(cursor, batch_id, "liaison_ss_insert", "applied", "Specialite-substance link added from catalog", {"substance": substance, **row}, catalog_id, "liaisons_ss", specialite_id)
+                    stats["liaison_inserted"] += 1
+                else:
+                    audit(cursor, batch_id, "liaison_ss_insert", "skipped", "Existing liaisons_ss uniqueness constraint prevented insert", {"substance": substance, **row}, catalog_id, "liaisons_ss", specialite_id)
+                    stats["liaison_skipped_constraint"] += 1
 
     return stats
 
