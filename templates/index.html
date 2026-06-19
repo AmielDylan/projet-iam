@@ -8,75 +8,112 @@
 {% endblock %}
 
 {% block content %}
-    <!-- Header -->
-    <header class="header">
-        <div class="container">
-            <div class="header-content">
-                <div>
-                    <h1 class="header-title">Projet IAM</h1>
-                    <p class="header-subtitle">Plateforme de présentation des interactions médicamenteuses</p>
-                </div>
-                <span class="header-version">version 2.2.0</span>
+<main id="main-content" class="main-content main-content--workspace">
+    <div class="container">
+        <header class="workspace-header">
+            <div>
+                <span class="workspace-kicker">Projet IAM v3.0</span>
+                <h1 class="workspace-title">Ordonnance classique</h1>
             </div>
-            <p class="header-description">
-                Cette plateforme d'aide à la décision permet de visualiser les interactions médicamenteuses
-                entre deux médicaments. En renseignant deux médicaments (ou classes de médicaments), vous
-                pouvez obtenir des informations sur le détail, le niveau de précaution, les risques et les
-                actions associées.
-            </p>
-        </div>
-    </header>
+            <div class="mode-switcher" role="tablist" aria-label="Mode de travail">
+                <button type="button" class="mode-switcher__button is-active" data-mode-target="prescription">Ordonnance</button>
+                <button type="button" class="mode-switcher__button" data-mode-target="interaction">Interaction rapide</button>
+            </div>
+        </header>
 
-    <!-- Main content -->
-    <main id="main-content" class="main-content">
-        <div class="container">
-            <!-- Search form -->
+        <section id="prescription-workspace" class="workspace-panel is-active" data-mode-panel="prescription">
+            <div class="prescription-layout">
+                <div class="prescription-editor">
+                    <div class="prescription-steps" aria-label="Progression ordonnance">
+                        <span>Prescripteur</span>
+                        <span>Patient</span>
+                        <span>Médicaments</span>
+                        <span>Analyse</span>
+                        <span>Impression</span>
+                    </div>
+
+                    <section class="rx-section-block" aria-labelledby="prescriber-title">
+                        <h2 id="prescriber-title">Prescripteur</h2>
+                        <form data-prescriber-form class="rx-form-grid">
+                            <label class="rx-field"><span>Civilité</span><input name="title" type="text" placeholder="Dr"></label>
+                            <label class="rx-field"><span>Prénom</span><input name="first_name" type="text"></label>
+                            <label class="rx-field"><span>Nom</span><input name="last_name" type="text"></label>
+                            <label class="rx-field"><span>Profession</span><input name="profession" type="text" placeholder="Médecin généraliste"></label>
+                            <label class="rx-field"><span>Organisme</span><input name="organization" type="text" placeholder="Cabinet, hôpital, dispensaire"></label>
+                            <label class="rx-field rx-field--wide"><span>Adresse</span><textarea name="address" rows="2"></textarea></label>
+                            <label class="rx-field"><span>Téléphone</span><input name="phone" type="text"></label>
+                            <label class="rx-field"><span>Email</span><input name="email" type="email"></label>
+                            <label class="rx-field"><span>Libellé identifiant</span><input name="identifier_label" type="text" placeholder="N° Ordre"></label>
+                            <label class="rx-field"><span>Valeur identifiant</span><input name="identifier_value" type="text"></label>
+                            <label class="rx-field"><span>Libellé secondaire</span><input name="secondary_identifier_label" type="text"></label>
+                            <label class="rx-field"><span>Valeur secondaire</span><input name="secondary_identifier_value" type="text"></label>
+                        </form>
+                    </section>
+
+                    <section class="rx-section-block" aria-labelledby="patient-title">
+                        <h2 id="patient-title">Patient</h2>
+                        <form data-patient-form class="rx-form-grid">
+                            <label class="rx-field"><span>Civilité</span><input name="patient_title" type="text" placeholder="Mme"></label>
+                            <label class="rx-field"><span>Prénom</span><input name="patient_first_name" type="text"></label>
+                            <label class="rx-field"><span>Nom</span><input name="patient_last_name" type="text"></label>
+                            <label class="rx-field"><span>Date de naissance</span><input name="patient_birthdate" type="date"></label>
+                            <label class="rx-field"><span>Poids</span><input name="patient_weight" type="number" min="0" step="0.1"></label>
+                            <label class="rx-field"><span>Date</span><input name="prescription_date" type="date"></label>
+                            <label class="rx-field rx-field--wide"><span>Adresse</span><textarea name="patient_address" rows="2"></textarea></label>
+                            <label class="rx-field rx-field--wide"><span>Notes cliniques</span><textarea name="clinical_notes" rows="2"></textarea></label>
+                        </form>
+                    </section>
+
+                    <section class="rx-section-block" aria-labelledby="medications-title">
+                        <div class="rx-section-head">
+                            <h2 id="medications-title">Médicaments</h2>
+                            <button type="button" class="btn btn-secondary btn-sm" data-add-medication>Ajouter</button>
+                        </div>
+                        <div class="rx-medication-list" data-medication-list></div>
+                    </section>
+                </div>
+
+                <aside class="prescription-sidebar" aria-label="Analyse et aperçu">
+                    <section class="rx-side-block">
+                        <div class="rx-section-head">
+                            <h2>Alertes IAM</h2>
+                            <button type="button" class="btn btn-primary btn-sm" data-analyze-prescription>Analyser</button>
+                        </div>
+                        <div data-prescription-alerts aria-live="polite"></div>
+                        <button type="button" class="btn btn-primary w-100 mt-3" data-print-prescription>Imprimer quand même</button>
+                    </section>
+
+                    <section class="rx-side-block rx-side-block--preview">
+                        <h2>Aperçu A4</h2>
+                        <div data-prescription-preview></div>
+                    </section>
+                </aside>
+            </div>
+        </section>
+
+        <section class="workspace-panel" data-mode-panel="interaction" hidden>
             <section class="form-section" aria-labelledby="form-title">
-                <h2 id="form-title" class="sr-only">Rechercher des interactions</h2>
+                <h2 id="form-title">Interaction rapide</h2>
 
                 <form id="medForm" autocomplete="off" action="/" method="post" novalidate>
                     <div class="form-grid">
-                        <!-- Medication 1 -->
                         <div class="form-group">
                             <label for="med-1" class="form-label">Médicament 1</label>
                             <div class="input-wrapper">
-                                <input
-                                    type="text"
-                                    id="med-1"
-                                    name="med-1"
-                                    class="form-control"
-                                    value="{{ med_1_value or (resultats[-2] if resultats and resultats|length >= 2 else '') }}"
-                                    placeholder="Ex: Acide acétylsalicylique, Amiodarone..."
-                                    aria-describedby="med-1-helper"
-                                    aria-expanded="false"
-                                    aria-autocomplete="list">
+                                <input type="text" id="med-1" name="med-1" class="form-control" value="{{ med_1_value or (resultats[-2] if resultats and resultats|length >= 2 else '') }}" placeholder="Ex: Acide acétylsalicylique, Amiodarone..." aria-describedby="med-1-helper" aria-expanded="false" aria-autocomplete="list">
                                 <div id="autocomplete-container-1" class="autocomplete-container" role="listbox" aria-label="Suggestions médicament 1"></div>
                             </div>
                             <div id="med-1-helper" class="form-text"></div>
-
-                            <!-- Class info notice (injected by JS) -->
                             <div id="choix-classe-1" class="invisible"></div>
                         </div>
 
-                        <!-- Medication 2 -->
                         <div class="form-group">
                             <label for="med-2" class="form-label">Médicament 2</label>
                             <div class="input-wrapper">
-                                <input
-                                    type="text"
-                                    id="med-2"
-                                    name="med-2"
-                                    class="form-control"
-                                    value="{{ med_2_value or (resultats[-1] if resultats and resultats|length >= 1 else '') }}"
-                                    placeholder="Ex: Diurétiques, Anticoagulants oraux..."
-                                    aria-describedby="med-2-helper"
-                                    aria-expanded="false"
-                                    aria-autocomplete="list">
+                                <input type="text" id="med-2" name="med-2" class="form-control" value="{{ med_2_value or (resultats[-1] if resultats and resultats|length >= 1 else '') }}" placeholder="Ex: Diurétiques, Anticoagulants oraux..." aria-describedby="med-2-helper" aria-expanded="false" aria-autocomplete="list">
                                 <div id="autocomplete-container-2" class="autocomplete-container" role="listbox" aria-label="Suggestions médicament 2"></div>
                             </div>
                             <div id="med-2-helper" class="form-text"></div>
-
-                            <!-- Class info notice (injected by JS) -->
                             <div id="choix-classe-2" class="invisible"></div>
                         </div>
                     </div>
@@ -88,66 +125,39 @@
                     {% endif %}
 
                     <div class="form-actions">
-                        <button type="submit" class="btn btn-primary btn-lg">
-                            Rechercher les interactions
-                        </button>
+                        <button type="submit" class="btn btn-primary btn-lg">Rechercher les interactions</button>
                     </div>
                 </form>
             </section>
 
-            <!-- Results -->
             <section id="results-container" class="results-section" aria-live="polite" aria-atomic="true">
                 {% if resultats and resultats|length > 2 %}
                 <div class="third" id="third">
                     <div class="results-header">
-                        <h3 class="results-title">
-                            Interactions entre
-                            <span class="interaction-class-name">{{ resultats[-2] }}</span>
-                            et
-                            <span class="interaction-class-name">{{ resultats[-1] }}</span>
-                        </h3>
+                        <h3 class="results-title">Interactions entre <span class="interaction-class-name">{{ resultats[-2] }}</span> et <span class="interaction-class-name">{{ resultats[-1] }}</span></h3>
                         <button type="button" class="btn-close" aria-label="Fermer les résultats" onclick="this.closest('.third').remove()"></button>
                     </div>
-
                     <div class="results-body">
                         {% for resultat in resultats[:-2] %}
                         <article class="interaction-card">
                             <div class="interaction-header">
-                                <p class="interaction-classes">
-                                    Composants :
-                                    <span class="interaction-class-name">{{ resultat[0] }}</span>
-                                    et
-                                    <span class="interaction-class-name">{{ resultat[1] }}</span>
-                                </p>
+                                <p class="interaction-classes">Composants : <span class="interaction-class-name">{{ resultat[0] }}</span> et <span class="interaction-class-name">{{ resultat[1] }}</span></p>
                                 <span class="interaction-niveau">{{ resultat[2][2] }}</span>
                             </div>
-
                             <div class="interaction-details-grid">
-                                <div class="interaction-detail">
-                                    <p class="interaction-detail-label">Détails des classes</p>
-                                    <p class="interaction-detail-value">{{ resultat[2][0] }}</p>
-                                </div>
-
-                                <div class="interaction-detail">
-                                    <p class="interaction-detail-label">Risques d'interaction</p>
-                                    <p class="interaction-detail-value">{{ resultat[2][1] }}</p>
-                                </div>
-
-                                <div class="interaction-detail">
-                                    <p class="interaction-detail-label">Actions associées</p>
-                                    <p class="interaction-detail-value">{{ resultat[2][3] }}</p>
-                                </div>
+                                <div class="interaction-detail"><p class="interaction-detail-label">Détails des classes</p><p class="interaction-detail-value">{{ resultat[2][0] }}</p></div>
+                                <div class="interaction-detail"><p class="interaction-detail-label">Risques d'interaction</p><p class="interaction-detail-value">{{ resultat[2][1] }}</p></div>
+                                <div class="interaction-detail"><p class="interaction-detail-label">Actions associées</p><p class="interaction-detail-value">{{ resultat[2][3] }}</p></div>
                             </div>
                         </article>
                         {% endfor %}
                     </div>
                 </div>
                 {% elif resultats == [] and request.method == 'POST' %}
-                <div class="alert alert-info" role="alert">
-                    Aucune interaction trouvée entre les deux médicaments recherchés.
-                </div>
+                <div class="alert alert-info" role="alert">Aucune interaction trouvée entre les deux médicaments recherchés.</div>
                 {% endif %}
             </section>
-        </div>
-    </main>
+        </section>
+    </div>
+</main>
 {% endblock %}
