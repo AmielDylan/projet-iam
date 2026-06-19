@@ -3,6 +3,7 @@ from flask import Blueprint, request, jsonify
 
 from app.services.interaction import InteractionService
 from app.services.autocomplete import AutocompleteService
+from app.services.catalog import MedicationCatalogService
 from app.api.validators import (
     sanitize_medication_name,
     validate_autocomplete_query,
@@ -42,7 +43,7 @@ def validate_medication():
             "classes": ["ANTIAGRÉGANTS PLAQUETTAIRES", ...]
         }
     """
-    data = request.get_json() or {}
+    data = request.get_json(silent=True) or {}
     medication_name = data.get('medication') or request.form.get('medTest')
 
     try:
@@ -99,7 +100,7 @@ def get_interactions():
             ]
         }
     """
-    data = request.get_json() or {}
+    data = request.get_json(silent=True) or {}
 
     # Support both JSON body and form data
     med_1_raw = data.get('med_1') or request.form.get('med-1')
@@ -150,7 +151,7 @@ def autocomplete():
         request.args.get('q') or
         request.args.get('query') or
         request.form.get('query') or
-        (request.get_json() or {}).get('query', '')
+        (request.get_json(silent=True) or {}).get('query', '')
     )
 
     try:
@@ -180,7 +181,7 @@ def get_classes():
             "classes": ["ANTIAGRÉGANTS PLAQUETTAIRES", ...]
         }
     """
-    data = request.get_json() or {}
+    data = request.get_json(silent=True) or {}
     substance_name = data.get('substance') or request.form.get('substance')
 
     try:
@@ -204,7 +205,7 @@ def get_classes():
 @api_bp.route('/summary', methods=['POST'])
 def get_summary():
     """Generate an AI summary of interaction data via Groq."""
-    data = request.get_json() or {}
+    data = request.get_json(silent=True) or {}
     med1 = (data.get('med1') or '').upper().strip()
     med2 = (data.get('med2') or '').upper().strip()
     interactions = data.get('interactions', [])
@@ -218,3 +219,52 @@ def get_summary():
     if summary:
         return jsonify({'success': True, 'summary': summary})
     return jsonify({'success': False, 'error': 'Service de résumé non disponible'})
+
+
+@api_bp.route('/medications/search', methods=['GET'])
+def search_medications():
+    """Search the enriched prescription medication catalog."""
+    query = request.args.get('q') or request.args.get('query') or ''
+    try:
+        query = validate_autocomplete_query(query)
+    except ValidationError as e:
+        return jsonify({'success': False, 'error': e.message, 'results': []}), 400
+
+    if not query:
+        return jsonify({'success': True, 'results': []})
+
+    try:
+        limit = min(int(request.args.get('limit', 12)), 25)
+    except ValueError:
+        limit = 12
+
+    results = MedicationCatalogService.search(query, limit=limit)
+    return jsonify({'success': True, 'results': results})
+
+
+@api_bp.route('/medications/<int:medication_id>', methods=['GET'])
+def get_medication(medication_id):
+    """Return one enriched catalog medication."""
+    medication = MedicationCatalogService.get(medication_id)
+    if not medication:
+        return jsonify({'success': False, 'error': 'Médicament introuvable'}), 404
+    return jsonify({'success': True, 'medication': medication})
+
+
+@api_bp.route('/prescriptions/analyze', methods=['POST'])
+def analyze_prescription():
+    """Analyze a prescription draft with IAM interactions and duplicate checks."""
+    data = request.get_json(silent=True) or {}
+    items = data.get('items') or data.get('medications') or []
+    if not isinstance(items, list):
+        return jsonify({'success': False, 'error': 'La liste des médicaments est invalide'}), 400
+    if not items:
+        return jsonify({'success': True, 'items': [], 'alerts': [], 'interactions': [], 'summary': {
+            'items_count': 0,
+            'alerts_count': 0,
+            'interactions_count': 0,
+            'can_print': True,
+        }})
+
+    result = MedicationCatalogService.analyze_prescription(items)
+    return jsonify(result)

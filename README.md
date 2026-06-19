@@ -17,6 +17,8 @@ L'utilisateur saisit deux médicaments (spécialité, substance active ou classe
 | **PE** | Précaution d'emploi | Jaune |
 | **APEC** | À prendre en compte | Gris |
 
+La version 3 ajoute un module d'ordonnance classique : profil prescripteur multi-pays, patient, liste de médicaments, saisie libre, analyse IAM avant impression et aperçu A4.
+
 ---
 
 ## Démarrage rapide
@@ -66,6 +68,7 @@ projet-iam/
 │   ├── changelog.html       # Historique des versions
 │   └── error.html           # Page d'erreur
 ├── migrations/              # Scripts SQL de migration
+├── scripts/                 # Outils d'import et d'exploitation
 ├── application.py           # Point d'entrée (compatibilité Railway/Gunicorn)
 ├── Procfile                 # Commande de démarrage Railway
 └── requirements.txt
@@ -88,6 +91,40 @@ MySQL avec la structure ANSM. Tables principales :
 - `interactions_classes` — interactions entre classes, avec niveau et textes
 - `niveaux` — table de référence des niveaux (CI, ASDEC, PE, APEC, et combinaisons)
 - `liaisons_cs`, `liaisons_ss` — relations substance↔classe et spécialité↔substance
+
+Tables V3 d'enrichissement ordonnance :
+- `medication_catalog_staging` — import brut du fichier XLSX
+- `medication_catalog` — catalogue médicament enrichi pour l'ordonnance
+- `medication_enrichment_audit` — journal des enrichissements et doublons
+- `medication_search_miss` — recherches ordonnance sans résultat
+
+Les tables IAM historiques ne sont pas écrasées. L'enrichissement ajoute uniquement des spécialités, substances et liaisons manquantes quand la correspondance est sûre.
+
+### Import du catalogue médicament
+
+```bash
+# 1. Rapport sans écriture
+python scripts/import_medication_catalog.py \
+  --file /chemin/Lien_SPECIALITES-SUBSTANCES_CLEANED_11-06-2026.xlsx \
+  --dry-run --limit 300
+
+# 2. Import catalogue de validation sur 300 lignes
+python scripts/import_medication_catalog.py \
+  --file /chemin/Lien_SPECIALITES-SUBSTANCES_CLEANED_11-06-2026.xlsx \
+  --apply-catalog --limit 300
+
+# 3. Enrichissement IAM contrôlé sur les 300 lignes validées
+python scripts/import_medication_catalog.py \
+  --file /chemin/Lien_SPECIALITES-SUBSTANCES_CLEANED_11-06-2026.xlsx \
+  --apply-catalog --apply-iam-enrichment --limit 300
+
+# 4. Import complet après vérification du rapport
+python scripts/import_medication_catalog.py \
+  --file /chemin/Lien_SPECIALITES-SUBSTANCES_CLEANED_11-06-2026.xlsx \
+  --apply-catalog --apply-iam-enrichment
+```
+
+Sur Railway, préfixer les commandes par `railway run`.
 
 ---
 
@@ -114,6 +151,15 @@ Suggestions de médicaments pour l'autocomplétion.
 
 ### `POST /api/v1/summary`
 Résumé IA de l'interaction (Groq, llama-3.1-8b-instant). Nécessite `GROQ_API_KEY`.
+
+### `GET /api/v1/medications/search?q=aspirine`
+Recherche dans le catalogue ordonnance enrichi.
+
+### `GET /api/v1/medications/<id>`
+Détail d'un médicament du catalogue ordonnance.
+
+### `POST /api/v1/prescriptions/analyze`
+Analyse une ordonnance multi-médicaments : interactions, doublons thérapeutiques et médicaments non identifiés.
 
 ---
 

@@ -8,7 +8,9 @@ const Config = {
         validate: '/api/v1/validate',
         interactions: '/api/v1/interactions',
         autocomplete: '/api/v1/autocomplete',
-        classes: '/api/v1/classes'
+        classes: '/api/v1/classes',
+        medicationSearch: '/api/v1/medications/search',
+        prescriptionAnalyze: '/api/v1/prescriptions/analyze'
     },
 
     // Legacy endpoints (for backward compatibility)
