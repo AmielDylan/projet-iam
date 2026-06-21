@@ -16,6 +16,49 @@
         class="account-react-root"
         data-page="{{ account_page }}"
         data-next="{{ request.args.get('next', '') }}"
-    ></div>
+    >
+        <div class="account-fallback container">
+            {% if account_page == 'register' %}
+            <section class="account-panel account-form account-fallback__panel">
+                <div class="account-form-head">
+                    <h2>Demander un accès</h2>
+                    <p>Ce formulaire reste disponible si l'interface interactive ne se charge pas.</p>
+                </div>
+                <form method="post" class="account-form">
+                    <label class="account-field">
+                        <span>Type de compte</span>
+                        <select name="role" required>
+                            <option value="prescriber">Prescripteur</option>
+                            <option value="pharmacy">Pharmacie</option>
+                        </select>
+                    </label>
+                    <label class="account-field"><span>Prénom</span><input name="first_name" type="text" required></label>
+                    <label class="account-field"><span>Nom</span><input name="last_name" type="text" required></label>
+                    <label class="account-field"><span>Email</span><input name="email" type="email" required autocomplete="email"></label>
+                    <label class="account-field"><span>Mot de passe</span><input name="password" type="password" required autocomplete="new-password"></label>
+                    <div class="account-actions">
+                        <a class="account-link-button" href="/connexion">J'ai déjà un compte</a>
+                        <button class="account-button account-button--primary" type="submit">Envoyer la demande</button>
+                    </div>
+                </form>
+            </section>
+            {% else %}
+            <section class="account-panel account-form account-fallback__panel">
+                <div class="account-form-head">
+                    <h2>Se connecter</h2>
+                    <p>Ce formulaire reste disponible si l'interface interactive ne se charge pas.</p>
+                </div>
+                <form method="post" class="account-form" action="/connexion{% if request.args.get('next') %}?next={{ request.args.get('next')|urlencode }}{% endif %}">
+                    <label class="account-field"><span>Email</span><input name="email" type="email" required autocomplete="email"></label>
+                    <label class="account-field"><span>Mot de passe</span><input name="password" type="password" required autocomplete="current-password"></label>
+                    <div class="account-actions">
+                        <a class="account-link-button" href="/inscription">Demander un compte</a>
+                        <button class="account-button account-button--primary" type="submit">Se connecter</button>
+                    </div>
+                </form>
+            </section>
+            {% endif %}
+        </div>
+    </div>
 </main>
 {% endblock %}

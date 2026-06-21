@@ -91,7 +91,13 @@ def login():
         )
         flash(message, 'success' if success else 'danger')
         if success:
-            destination = request.args.get('next') or url_for('web.prescriptions')
+            user = AuthService.current_user() or {}
+            default_destination = (
+                url_for('web.prescriptions')
+                if user.get('role') == 'prescriber'
+                else url_for('web.admin')
+            )
+            destination = request.args.get('next') or default_destination
             return redirect(destination)
     return render_template('account_app.html', account_page='login')
 
