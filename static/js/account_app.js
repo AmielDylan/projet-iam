@@ -159,8 +159,13 @@
             event.preventDefault();
             setBusy(true);
             setMessage('');
+            const formData = new FormData(event.currentTarget);
+            const payload = {
+                email: String(formData.get('email') || form.email || '').trim(),
+                password: String(formData.get('password') || form.password || '')
+            };
             try {
-                const data = await jsonFetch(api.login, { method: 'POST', body: JSON.stringify(form) });
+                const data = await jsonFetch(api.login, { method: 'POST', body: JSON.stringify(payload) });
                 const user = data.user || {};
                 const destination = next || (user.role === 'prescriber' ? '/ordonnances' : '/admin');
                 window.location.assign(destination);
@@ -205,8 +210,16 @@
             event.preventDefault();
             setBusy(true);
             setMessage('');
+            const formData = new FormData(event.currentTarget);
+            const payload = {
+                first_name: String(formData.get('first_name') || form.first_name || '').trim(),
+                last_name: String(formData.get('last_name') || form.last_name || '').trim(),
+                email: String(formData.get('email') || form.email || '').trim(),
+                password: String(formData.get('password') || form.password || ''),
+                role: form.role
+            };
             try {
-                const data = await jsonFetch(api.register, { method: 'POST', body: JSON.stringify(form) });
+                const data = await jsonFetch(api.register, { method: 'POST', body: JSON.stringify(payload) });
                 setTone('success');
                 setMessage(data.message);
                 setForm({ first_name: '', last_name: '', email: '', password: '', role: form.role });

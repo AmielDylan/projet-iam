@@ -929,6 +929,28 @@
     min-height: calc(100vh - 52px);
 }
 
+.account-fallback {
+    display: grid;
+    min-height: calc(100vh - 52px);
+    place-items: center;
+    padding-top: var(--space-8);
+    padding-bottom: var(--space-8);
+}
+
+.account-fallback__panel {
+    width: min(100%, 460px);
+}
+
+.account-field select {
+    width: 100%;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    padding: var(--space-2) var(--space-3);
+    color: var(--color-text);
+    background: var(--color-surface);
+    font-size: var(--text-sm);
+}
+
 .account-header {
     margin-bottom: var(--space-5);
 }
