@@ -4,7 +4,7 @@ from flask import Blueprint, flash, redirect, render_template, request, url_for
 from app.services.auth import (
     AuthService,
     ProfileService,
-    require_admin,
+    require_account_reviewer,
     require_approved_prescriber,
 )
 from app.services.interaction import InteractionService
@@ -93,23 +93,24 @@ def login():
         if success:
             destination = request.args.get('next') or url_for('web.prescriptions')
             return redirect(destination)
-    return render_template('login.html')
+    return render_template('account_app.html', account_page='login')
 
 
 @web_bp.route('/inscription', methods=['GET', 'POST'])
 def register():
-    """Create a pending prescriber account request."""
+    """Create a pending pharmacy or prescriber account request."""
     if request.method == 'POST':
-        success, message = AuthService.create_prescriber_request(
+        success, message = AuthService.create_account_request(
             request.form.get('email', ''),
             request.form.get('password', ''),
             request.form.get('first_name', ''),
             request.form.get('last_name', ''),
+            request.form.get('role', 'prescriber'),
         )
         flash(message, 'success' if success else 'danger')
         if success:
             return redirect(url_for('web.login'))
-    return render_template('register.html')
+    return render_template('account_app.html', account_page='register')
 
 
 @web_bp.route('/deconnexion', methods=['POST', 'GET'])
@@ -129,29 +130,26 @@ def prescriber_profile():
         ProfileService.save_profile(int(user['id']), request.form.to_dict())
         flash('Profil prescripteur enregistré.', 'success')
         return redirect(url_for('web.prescriber_profile'))
-    return render_template(
-        'prescriber_profile.html',
-        profile=ProfileService.get_profile(int(user['id']))
-    )
+    return render_template('account_app.html', account_page='profile')
 
 
 @web_bp.route('/admin', methods=['GET', 'POST'])
-@require_admin
+@require_account_reviewer
 def admin():
-    """Review pending prescriber account requests."""
+    """Review account requests visible to the current reviewer."""
     user = AuthService.current_user()
     if request.method == 'POST':
         action = request.form.get('action')
         target_id = int(request.form.get('user_id') or 0)
-        AuthService.review_prescriber(
+        success, message = AuthService.review_account(
             target_id,
-            int(user['id']),
+            user,
             approve=action == 'approve',
             note=request.form.get('review_note', ''),
         )
-        flash('Demande mise à jour.', 'success')
+        flash(message, 'success' if success else 'danger')
         return redirect(url_for('web.admin'))
-    return render_template('admin.html', requests=AuthService.list_prescriber_requests())
+    return render_template('account_app.html', account_page='admin')
 
 
 @web_bp.route('/changelog')

@@ -43,6 +43,8 @@ PATIENT_FIELDS = (
 class AuthService:
     """Session-backed auth helpers for the Flask app."""
 
+    REQUESTABLE_ROLES = {"pharmacy", "prescriber"}
+
     @staticmethod
     def current_user() -> dict[str, Any] | None:
         user_id = session.get("user_id")
@@ -65,10 +67,19 @@ class AuthService:
         return rows[0] if rows else None
 
     @staticmethod
-    def create_prescriber_request(email: str, password: str, first_name: str, last_name: str) -> tuple[bool, str]:
+    def create_account_request(
+        email: str,
+        password: str,
+        first_name: str,
+        last_name: str,
+        role: str = "prescriber",
+    ) -> tuple[bool, str]:
         email = (email or "").strip().lower()
         first_name = (first_name or "").strip()
         last_name = (last_name or "").strip()
+        role = (role or "prescriber").strip().lower()
+        if role not in AuthService.REQUESTABLE_ROLES:
+            return False, "Type de compte invalide."
         if not email or not password or len(password) < 8:
             return False, "Email et mot de passe de 8 caractères minimum requis."
         try:
@@ -76,15 +87,20 @@ class AuthService:
                 cursor.execute(
                     """
                     INSERT INTO iam_users (email, password_hash, role, status, first_name, last_name)
-                    VALUES (%s, %s, 'prescriber', 'pending', %s, %s)
+                    VALUES (%s, %s, %s, 'pending', %s, %s)
                     """,
-                    (email, generate_password_hash(password), first_name, last_name),
+                    (email, generate_password_hash(password), role, first_name, last_name),
                 )
-            return True, "Demande créée. Un administrateur doit valider le compte."
+            reviewer = "un administrateur" if role == "pharmacy" else "la pharmacie modératrice"
+            return True, f"Demande créée. Elle doit être validée par {reviewer}."
         except Error as exc:
             if getattr(exc, "errno", None) == 1062:
                 return False, "Un compte existe déjà avec cet email."
             return False, "Impossible de créer la demande pour le moment."
+
+    @staticmethod
+    def create_prescriber_request(email: str, password: str, first_name: str, last_name: str) -> tuple[bool, str]:
+        return AuthService.create_account_request(email, password, first_name, last_name, "prescriber")
 
     @staticmethod
     def authenticate(email: str, password: str) -> tuple[bool, str]:
@@ -113,10 +129,36 @@ class AuthService:
         session.clear()
 
     @staticmethod
+    def list_account_requests(reviewer: dict[str, Any]) -> list[dict[str, Any]]:
+        """Return account requests the current reviewer is allowed to manage."""
+        role = reviewer.get("role")
+        if role == "admin":
+            params: tuple[Any, ...] = ("pharmacy",)
+            role_filter = "role = %s"
+        elif role == "pharmacy":
+            params = ("prescriber",)
+            role_filter = "role = %s"
+        else:
+            return []
+
+        return DatabasePool.execute_query(
+            """
+            SELECT id, email, role, first_name, last_name, status, requested_at, reviewed_at, review_note
+            FROM iam_users
+            WHERE """ + role_filter + """
+            ORDER BY
+                CASE status WHEN 'pending' THEN 0 WHEN 'approved' THEN 1 ELSE 2 END,
+                requested_at DESC
+            """,
+            params,
+            dictionary=True,
+        )
+
+    @staticmethod
     def list_prescriber_requests() -> list[dict[str, Any]]:
         return DatabasePool.execute_query(
             """
-            SELECT id, email, first_name, last_name, status, requested_at, reviewed_at, review_note
+            SELECT id, email, role, first_name, last_name, status, requested_at, reviewed_at, review_note
             FROM iam_users
             WHERE role = 'prescriber'
             ORDER BY
@@ -127,17 +169,38 @@ class AuthService:
         )
 
     @staticmethod
-    def review_prescriber(user_id: int, reviewer_id: int, approve: bool, note: str = "") -> None:
+    def can_review(reviewer: dict[str, Any], target: dict[str, Any]) -> bool:
+        if reviewer.get("status") != "approved":
+            return False
+        if reviewer.get("role") == "admin":
+            return target.get("role") == "pharmacy"
+        if reviewer.get("role") == "pharmacy":
+            return target.get("role") == "prescriber"
+        return False
+
+    @staticmethod
+    def review_account(user_id: int, reviewer: dict[str, Any], approve: bool, note: str = "") -> tuple[bool, str]:
+        target = AuthService.get_user(user_id)
+        if not target:
+            return False, "Compte introuvable."
+        if not AuthService.can_review(reviewer, target):
+            return False, "Vous ne pouvez pas traiter cette demande."
         status = "approved" if approve else "rejected"
         with DatabasePool.get_cursor() as cursor:
             cursor.execute(
                 """
                 UPDATE iam_users
                 SET status = %s, reviewed_by = %s, reviewed_at = CURRENT_TIMESTAMP, review_note = %s
-                WHERE id = %s AND role = 'prescriber'
+                WHERE id = %s
                 """,
-                (status, reviewer_id, (note or "").strip() or None, user_id),
+                (status, int(reviewer["id"]), (note or "").strip() or None, user_id),
             )
+        return True, "Demande mise à jour."
+
+    @staticmethod
+    def review_prescriber(user_id: int, reviewer_id: int, approve: bool, note: str = "") -> None:
+        reviewer = AuthService.get_user(reviewer_id) or {"id": reviewer_id, "role": "pharmacy", "status": "approved"}
+        AuthService.review_account(user_id, reviewer, approve, note)
 
     @staticmethod
     def create_admin(email: str, password: str, first_name: str = "", last_name: str = "") -> tuple[bool, str]:
@@ -313,6 +376,21 @@ def require_admin(view: Callable) -> Callable:
             return redirect(url_for("web.login", next=request.path))
         if user["role"] != "admin" or user["status"] != "approved":
             flash("Accès administrateur requis.", "warning")
+            return redirect(url_for("web.home"))
+        return view(*args, **kwargs)
+
+    return wrapped
+
+
+def require_account_reviewer(view: Callable) -> Callable:
+    @wraps(view)
+    def wrapped(*args, **kwargs):
+        user = AuthService.current_user()
+        if not user:
+            flash("Connexion requise.", "warning")
+            return redirect(url_for("web.login", next=request.path))
+        if user["role"] not in {"admin", "pharmacy"} or user["status"] != "approved":
+            flash("Accès modération requis.", "warning")
             return redirect(url_for("web.home"))
         return view(*args, **kwargs)
 

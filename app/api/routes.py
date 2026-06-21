@@ -21,9 +21,69 @@ def current_api_user(required_role=None):
         return None, (jsonify({'success': False, 'error': 'Connexion requise'}), 401)
     if user['status'] != 'approved':
         return None, (jsonify({'success': False, 'error': 'Compte non validé'}), 403)
-    if required_role and user['role'] != required_role:
-        return None, (jsonify({'success': False, 'error': 'Droits insuffisants'}), 403)
+    if required_role:
+        allowed_roles = {required_role} if isinstance(required_role, str) else set(required_role)
+        if user['role'] not in allowed_roles:
+            return None, (jsonify({'success': False, 'error': 'Droits insuffisants'}), 403)
     return user, None
+
+
+@api_bp.route('/auth/session', methods=['GET'])
+def auth_session():
+    """Return the current authenticated user, if any."""
+    user = AuthService.current_user()
+    return jsonify({'success': True, 'user': user})
+
+
+@api_bp.route('/auth/login', methods=['POST'])
+def auth_login():
+    """Authenticate using JSON credentials."""
+    data = request.get_json(silent=True) or {}
+    success, message = AuthService.authenticate(data.get('email', ''), data.get('password', ''))
+    status = 200 if success else 401
+    return jsonify({'success': success, 'message': message, 'user': AuthService.current_user() if success else None}), status
+
+
+@api_bp.route('/auth/register', methods=['POST'])
+def auth_register():
+    """Create a pending account request for pharmacy or prescriber."""
+    data = request.get_json(silent=True) or {}
+    success, message = AuthService.create_account_request(
+        data.get('email', ''),
+        data.get('password', ''),
+        data.get('first_name', ''),
+        data.get('last_name', ''),
+        data.get('role', 'prescriber'),
+    )
+    return jsonify({'success': success, 'message': message}), 200 if success else 400
+
+
+@api_bp.route('/auth/logout', methods=['POST'])
+def auth_logout():
+    """Clear the current session."""
+    AuthService.logout()
+    return jsonify({'success': True, 'message': 'Déconnexion effectuée.'})
+
+
+@api_bp.route('/accounts/requests', methods=['GET'])
+def account_requests():
+    """Return account requests visible to the current reviewer."""
+    user, error = current_api_user(required_role={'admin', 'pharmacy'})
+    if error:
+        return error
+    return jsonify({'success': True, 'results': AuthService.list_account_requests(user)})
+
+
+@api_bp.route('/accounts/<int:user_id>/review', methods=['POST'])
+def review_account(user_id):
+    """Approve or reject one visible account request."""
+    user, error = current_api_user(required_role={'admin', 'pharmacy'})
+    if error:
+        return error
+    data = request.get_json(silent=True) or {}
+    approve = data.get('action') == 'approve' or data.get('approve') is True
+    success, message = AuthService.review_account(user_id, user, approve, data.get('review_note', ''))
+    return jsonify({'success': success, 'message': message}), 200 if success else 403
 
 
 @api_bp.errorhandler(ValidationError)
