@@ -12,87 +12,13 @@
     <div class="container">
         <header class="workspace-header">
             <div>
-                <span class="workspace-kicker">Projet IAM v3.0</span>
-                <h1 class="workspace-title">Ordonnance classique</h1>
-            </div>
-            <div class="mode-switcher" role="tablist" aria-label="Mode de travail">
-                <button type="button" class="mode-switcher__button is-active" data-mode-target="prescription">Ordonnance</button>
-                <button type="button" class="mode-switcher__button" data-mode-target="interaction">Interaction rapide</button>
+                <span class="workspace-kicker">Projet IAM v3.1</span>
+                <h1 class="workspace-title">Interactions médicamenteuses</h1>
             </div>
         </header>
 
-        <section id="prescription-workspace" class="workspace-panel is-active" data-mode-panel="prescription">
-            <div class="prescription-layout">
-                <div class="prescription-editor">
-                    <div class="prescription-steps" aria-label="Progression ordonnance">
-                        <span>Prescripteur</span>
-                        <span>Patient</span>
-                        <span>Médicaments</span>
-                        <span>Analyse</span>
-                        <span>Impression</span>
-                    </div>
-
-                    <section class="rx-section-block" aria-labelledby="prescriber-title">
-                        <h2 id="prescriber-title">Prescripteur</h2>
-                        <form data-prescriber-form class="rx-form-grid">
-                            <label class="rx-field"><span>Civilité</span><input name="title" type="text" placeholder="Dr"></label>
-                            <label class="rx-field"><span>Prénom</span><input name="first_name" type="text"></label>
-                            <label class="rx-field"><span>Nom</span><input name="last_name" type="text"></label>
-                            <label class="rx-field"><span>Profession</span><input name="profession" type="text" placeholder="Médecin généraliste"></label>
-                            <label class="rx-field"><span>Organisme</span><input name="organization" type="text" placeholder="Cabinet, hôpital, dispensaire"></label>
-                            <label class="rx-field rx-field--wide"><span>Adresse</span><textarea name="address" rows="2"></textarea></label>
-                            <label class="rx-field"><span>Téléphone</span><input name="phone" type="text"></label>
-                            <label class="rx-field"><span>Email</span><input name="email" type="email"></label>
-                            <label class="rx-field"><span>Libellé identifiant</span><input name="identifier_label" type="text" placeholder="N° Ordre"></label>
-                            <label class="rx-field"><span>Valeur identifiant</span><input name="identifier_value" type="text"></label>
-                            <label class="rx-field"><span>Libellé secondaire</span><input name="secondary_identifier_label" type="text"></label>
-                            <label class="rx-field"><span>Valeur secondaire</span><input name="secondary_identifier_value" type="text"></label>
-                        </form>
-                    </section>
-
-                    <section class="rx-section-block" aria-labelledby="patient-title">
-                        <h2 id="patient-title">Patient</h2>
-                        <form data-patient-form class="rx-form-grid">
-                            <label class="rx-field"><span>Civilité</span><input name="patient_title" type="text" placeholder="Mme"></label>
-                            <label class="rx-field"><span>Prénom</span><input name="patient_first_name" type="text"></label>
-                            <label class="rx-field"><span>Nom</span><input name="patient_last_name" type="text"></label>
-                            <label class="rx-field"><span>Date de naissance</span><input name="patient_birthdate" type="date"></label>
-                            <label class="rx-field"><span>Poids</span><input name="patient_weight" type="number" min="0" step="0.1"></label>
-                            <label class="rx-field"><span>Date</span><input name="prescription_date" type="date"></label>
-                            <label class="rx-field rx-field--wide"><span>Adresse</span><textarea name="patient_address" rows="2"></textarea></label>
-                            <label class="rx-field rx-field--wide"><span>Notes cliniques</span><textarea name="clinical_notes" rows="2"></textarea></label>
-                        </form>
-                    </section>
-
-                    <section class="rx-section-block" aria-labelledby="medications-title">
-                        <div class="rx-section-head">
-                            <h2 id="medications-title">Médicaments</h2>
-                            <button type="button" class="btn btn-secondary btn-sm" data-add-medication>Ajouter</button>
-                        </div>
-                        <div class="rx-medication-list" data-medication-list></div>
-                    </section>
-                </div>
-
-                <aside class="prescription-sidebar" aria-label="Analyse et aperçu">
-                    <section class="rx-side-block">
-                        <div class="rx-section-head">
-                            <h2>Alertes IAM</h2>
-                            <button type="button" class="btn btn-primary btn-sm" data-analyze-prescription>Analyser</button>
-                        </div>
-                        <div data-prescription-alerts aria-live="polite"></div>
-                        <button type="button" class="btn btn-primary w-100 mt-3" data-print-prescription>Imprimer quand même</button>
-                    </section>
-
-                    <section class="rx-side-block rx-side-block--preview">
-                        <h2>Aperçu A4</h2>
-                        <div data-prescription-preview></div>
-                    </section>
-                </aside>
-            </div>
-        </section>
-
-        <section class="workspace-panel" data-mode-panel="interaction" hidden>
-            <section class="form-section" aria-labelledby="form-title">
+        <section class="workspace-panel">
+            <section class="form-section form-section--interaction" aria-labelledby="form-title">
                 <h2 id="form-title">Interaction rapide</h2>
 
                 <form id="medForm" autocomplete="off" action="/" method="post" novalidate>

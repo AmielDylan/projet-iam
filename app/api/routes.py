@@ -3,6 +3,7 @@ from flask import Blueprint, request, jsonify
 
 from app.services.interaction import InteractionService
 from app.services.autocomplete import AutocompleteService
+from app.services.auth import AuthService, ProfileService
 from app.services.catalog import MedicationCatalogService
 from app.api.validators import (
     sanitize_medication_name,
@@ -11,6 +12,18 @@ from app.api.validators import (
 )
 
 api_bp = Blueprint('api', __name__, url_prefix='/api/v1')
+
+
+def current_api_user(required_role=None):
+    """Return the current session user or a JSON response tuple."""
+    user = AuthService.current_user()
+    if not user:
+        return None, (jsonify({'success': False, 'error': 'Connexion requise'}), 401)
+    if user['status'] != 'approved':
+        return None, (jsonify({'success': False, 'error': 'Compte non validé'}), 403)
+    if required_role and user['role'] != required_role:
+        return None, (jsonify({'success': False, 'error': 'Droits insuffisants'}), 403)
+    return user, None
 
 
 @api_bp.errorhandler(ValidationError)
@@ -254,6 +267,10 @@ def get_medication(medication_id):
 @api_bp.route('/prescriptions/analyze', methods=['POST'])
 def analyze_prescription():
     """Analyze a prescription draft with IAM interactions and duplicate checks."""
+    user, error = current_api_user(required_role='prescriber')
+    if error:
+        return error
+
     data = request.get_json(silent=True) or {}
     items = data.get('items') or data.get('medications') or []
     if not isinstance(items, list):
@@ -268,3 +285,53 @@ def analyze_prescription():
 
     result = MedicationCatalogService.analyze_prescription(items)
     return jsonify(result)
+
+
+@api_bp.route('/prescriber/profile', methods=['GET', 'POST'])
+def prescriber_profile_api():
+    """Read or update the current prescriber profile."""
+    user, error = current_api_user(required_role='prescriber')
+    if error:
+        return error
+
+    if request.method == 'GET':
+        return jsonify({'success': True, 'profile': ProfileService.get_profile(int(user['id']))})
+
+    data = request.get_json(silent=True) or {}
+    profile = ProfileService.save_profile(int(user['id']), data)
+    return jsonify({'success': True, 'profile': profile})
+
+
+@api_bp.route('/patients/search', methods=['GET'])
+def search_patients():
+    """Search patient history for the current prescriber."""
+    user, error = current_api_user(required_role='prescriber')
+    if error:
+        return error
+
+    query = request.args.get('q') or request.args.get('query') or ''
+    if len(query.strip()) < 2:
+        return jsonify({'success': True, 'results': []})
+    results = ProfileService.search_patients(int(user['id']), query)
+    for item in results:
+        birthdate = item.get('patient_birthdate')
+        if birthdate is not None:
+            item['patient_birthdate'] = birthdate.isoformat()
+        last_seen = item.get('last_seen_at')
+        if last_seen is not None:
+            item['last_seen_at'] = last_seen.isoformat()
+        if item.get('patient_weight') is not None:
+            item['patient_weight'] = float(item['patient_weight'])
+    return jsonify({'success': True, 'results': results})
+
+
+@api_bp.route('/patients', methods=['POST'])
+def save_patient():
+    """Upsert a patient into the current prescriber's history."""
+    user, error = current_api_user(required_role='prescriber')
+    if error:
+        return error
+
+    data = request.get_json(silent=True) or {}
+    patient = ProfileService.upsert_patient(int(user['id']), data)
+    return jsonify({'success': True, 'patient': patient})

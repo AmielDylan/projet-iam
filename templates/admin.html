@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+
+{% block title %}Projet IAM — Administration{% endblock %}
+
+{% block content %}
+<main id="main-content" class="main-content">
+    <div class="container">
+        <header class="workspace-header">
+            <div>
+                <span class="workspace-kicker">Administration</span>
+                <h1 class="workspace-title">Demandes prescripteurs</h1>
+            </div>
+        </header>
+        <section class="rx-section-block">
+            <div class="admin-list">
+                {% for item in requests %}
+                <article class="admin-row">
+                    <div>
+                        <strong>{{ item.first_name }} {{ item.last_name }}</strong>
+                        <p>{{ item.email }} · {{ item.status }}</p>
+                    </div>
+                    <form method="post" class="admin-actions">
+                        <input type="hidden" name="user_id" value="{{ item.id }}">
+                        <input type="text" name="review_note" placeholder="Note admin">
+                        <button type="submit" name="action" value="approve" class="btn btn-primary btn-sm">Accepter</button>
+                        <button type="submit" name="action" value="reject" class="btn btn-secondary btn-sm">Refuser</button>
+                    </form>
+                </article>
+                {% else %}
+                <p class="rx-empty">Aucune demande prescripteur.</p>
+                {% endfor %}
+            </div>
+        </section>
+    </div>
+</main>
+{% endblock %}
