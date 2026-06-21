@@ -47,6 +47,8 @@ class TestMedicationCatalogService:
         ])
 
         assert result['summary']['interactions_count'] == 1
+        assert result['summary']['can_print'] is False
+        assert result['summary']['blocking_alerts_count'] == 1
         assert result['alerts'][0]['type'] == 'interaction'
         assert result['alerts'][0]['severity'] == 'major'
 
@@ -74,7 +76,9 @@ class TestMedicationCatalogApi:
         assert response.status_code == 404
 
     def test_analyze_prescription_endpoint(self, client):
-        with patch('app.api.routes.MedicationCatalogService.analyze_prescription') as mock_analyze:
+        with patch('app.api.routes.AuthService.current_user') as mock_user, \
+             patch('app.api.routes.MedicationCatalogService.analyze_prescription') as mock_analyze:
+            mock_user.return_value = {'id': 1, 'role': 'prescriber', 'status': 'approved'}
             mock_analyze.return_value = {
                 'success': True,
                 'items': [],
@@ -89,9 +93,16 @@ class TestMedicationCatalogApi:
         assert response.get_json()['success'] is True
 
     def test_analyze_prescription_rejects_invalid_items(self, client):
-        response = client.post('/api/v1/prescriptions/analyze', json={'items': 'ASPIRINE'})
+        with patch('app.api.routes.AuthService.current_user') as mock_user:
+            mock_user.return_value = {'id': 1, 'role': 'prescriber', 'status': 'approved'}
+            response = client.post('/api/v1/prescriptions/analyze', json={'items': 'ASPIRINE'})
 
         assert response.status_code == 400
+
+    def test_analyze_prescription_requires_login(self, client):
+        response = client.post('/api/v1/prescriptions/analyze', json={'items': [{'name': 'ASPIRINE'}]})
+
+        assert response.status_code == 401
 
 
 class TestMedicationCatalogImport:

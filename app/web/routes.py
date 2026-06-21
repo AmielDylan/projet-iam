@@ -1,6 +1,12 @@
 """Web page routes."""
-from flask import Blueprint, render_template, request
+from flask import Blueprint, flash, redirect, render_template, request, url_for
 
+from app.services.auth import (
+    AuthService,
+    ProfileService,
+    require_admin,
+    require_approved_prescriber,
+)
 from app.services.interaction import InteractionService
 from app.api.validators import sanitize_medication_name, ValidationError
 
@@ -9,7 +15,7 @@ web_bp = Blueprint('web', __name__)
 
 @web_bp.route('/', methods=['GET', 'POST'])
 def home():
-    """Render the main page with optional interaction results."""
+    """Render the public interaction page with optional interaction results."""
     result = []
     med_1_value = ''
     med_2_value = ''
@@ -62,6 +68,90 @@ def home():
         med_2_value=med_2_value,
         error_message=error_message
     )
+
+
+@web_bp.route('/ordonnances')
+@require_approved_prescriber
+def prescriptions():
+    """Render the protected prescription workspace."""
+    user = AuthService.current_user()
+    return render_template(
+        'prescription.html',
+        prescriber_profile=ProfileService.get_profile(int(user['id']))
+    )
+
+
+@web_bp.route('/connexion', methods=['GET', 'POST'])
+def login():
+    """Authenticate an approved user."""
+    if request.method == 'POST':
+        success, message = AuthService.authenticate(
+            request.form.get('email', ''),
+            request.form.get('password', ''),
+        )
+        flash(message, 'success' if success else 'danger')
+        if success:
+            destination = request.args.get('next') or url_for('web.prescriptions')
+            return redirect(destination)
+    return render_template('login.html')
+
+
+@web_bp.route('/inscription', methods=['GET', 'POST'])
+def register():
+    """Create a pending prescriber account request."""
+    if request.method == 'POST':
+        success, message = AuthService.create_prescriber_request(
+            request.form.get('email', ''),
+            request.form.get('password', ''),
+            request.form.get('first_name', ''),
+            request.form.get('last_name', ''),
+        )
+        flash(message, 'success' if success else 'danger')
+        if success:
+            return redirect(url_for('web.login'))
+    return render_template('register.html')
+
+
+@web_bp.route('/deconnexion', methods=['POST', 'GET'])
+def logout():
+    """Clear the current session."""
+    AuthService.logout()
+    flash('Déconnexion effectuée.', 'success')
+    return redirect(url_for('web.home'))
+
+
+@web_bp.route('/prescripteur', methods=['GET', 'POST'])
+@require_approved_prescriber
+def prescriber_profile():
+    """Manage the current prescriber's profile."""
+    user = AuthService.current_user()
+    if request.method == 'POST':
+        ProfileService.save_profile(int(user['id']), request.form.to_dict())
+        flash('Profil prescripteur enregistré.', 'success')
+        return redirect(url_for('web.prescriber_profile'))
+    return render_template(
+        'prescriber_profile.html',
+        profile=ProfileService.get_profile(int(user['id']))
+    )
+
+
+@web_bp.route('/admin', methods=['GET', 'POST'])
+@require_admin
+def admin():
+    """Review pending prescriber account requests."""
+    user = AuthService.current_user()
+    if request.method == 'POST':
+        action = request.form.get('action')
+        target_id = int(request.form.get('user_id') or 0)
+        AuthService.review_prescriber(
+            target_id,
+            int(user['id']),
+            approve=action == 'approve',
+            note=request.form.get('review_note', ''),
+        )
+        flash('Demande mise à jour.', 'success')
+        return redirect(url_for('web.admin'))
+    return render_template('admin.html', requests=AuthService.list_prescriber_requests())
 
 
 @web_bp.route('/changelog')

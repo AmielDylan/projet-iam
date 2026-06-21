@@ -1,0 +1,70 @@
+{% extends 'base.html' %}
+
+{% block title %}Projet IAM — Ordonnance{% endblock %}
+{% block meta_description %}Création d'ordonnance classique avec analyse IAM en temps réel{% endblock %}
+
+{% block extra_scripts %}
+<script type="module" src="{{ url_for('static', filename='js/main.js') }}"></script>
+{% endblock %}
+
+{% block content %}
+<main id="main-content" class="main-content main-content--workspace">
+    <div class="container">
+        <header class="workspace-header">
+            <div>
+                <span class="workspace-kicker">Projet IAM v3.1</span>
+                <h1 class="workspace-title">Ordonnance classique</h1>
+            </div>
+            <a href="/prescripteur" class="btn btn-secondary btn-sm">Profil prescripteur</a>
+        </header>
+
+        <section id="prescription-workspace" class="workspace-panel is-active" data-prescriber-profile='{{ prescriber_profile|tojson }}'>
+            <div class="prescription-layout prescription-layout--resizable" data-prescription-layout style="--rx-form-width: 58%;">
+                <div class="prescription-editor">
+                    <section class="rx-section-block" aria-labelledby="patient-title">
+                        <h2 id="patient-title">Patient</h2>
+                        <form data-patient-form class="rx-form-grid">
+                            <label class="rx-field input-wrapper"><span>Nom</span><input name="patient_last_name" type="text" autocomplete="off" data-patient-search><div class="rx-suggestions rx-suggestions--patient" data-patient-suggestions></div></label>
+                            <label class="rx-field"><span>Prénom</span><input name="patient_first_name" type="text"></label>
+                            <label class="rx-field"><span>Civilité</span><input name="patient_title" type="text" placeholder="Mme"></label>
+                            <label class="rx-field"><span>Date de naissance</span><input name="patient_birthdate" type="date"></label>
+                            <label class="rx-field"><span>Âge</span><input name="patient_age" type="text" readonly></label>
+                            <label class="rx-field"><span>Poids</span><input name="patient_weight" type="number" min="0" step="0.1"></label>
+                            <label class="rx-field"><span>Date</span><input name="prescription_date" type="date"></label>
+                            <label class="rx-field rx-field--wide"><span>Adresse</span><textarea name="patient_address" rows="2"></textarea></label>
+                            <label class="rx-field rx-field--wide"><span>Notes cliniques</span><textarea name="clinical_notes" rows="2"></textarea></label>
+                        </form>
+                    </section>
+
+                    <section class="rx-section-block" aria-labelledby="medications-title">
+                        <div class="rx-section-head">
+                            <h2 id="medications-title">Médicaments</h2>
+                            <button type="button" class="btn btn-secondary btn-sm" data-add-medication>Ajouter</button>
+                        </div>
+                        <div class="rx-medication-list" data-medication-list></div>
+                    </section>
+                </div>
+
+                <button type="button" class="rx-resizer" data-rx-resizer aria-label="Redimensionner l'ordonnance"></button>
+
+                <aside class="prescription-sidebar" aria-label="Analyse et aperçu">
+                    <section class="rx-side-block">
+                        <div class="rx-section-head">
+                            <h2>Alertes IAM</h2>
+                            <span class="rx-status rx-status--info" data-analysis-status>En attente</span>
+                        </div>
+                        <div data-prescription-alerts aria-live="polite"></div>
+                        <p class="rx-print-message" data-print-message>Ajoutez au moins deux médicaments pour déclencher l'analyse IAM.</p>
+                        <button type="button" class="btn btn-primary w-100 mt-3" data-print-prescription disabled>Imprimer</button>
+                    </section>
+
+                    <section class="rx-side-block rx-side-block--preview">
+                        <h2>Aperçu A4</h2>
+                        <div data-prescription-preview></div>
+                    </section>
+                </aside>
+            </div>
+        </section>
+    </div>
+</main>
+{% endblock %}
