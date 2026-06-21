@@ -143,6 +143,11 @@ class MedicationCatalogService:
 
         alerts.extend(MedicationCatalogService._duplicate_class_alerts(normalized_items))
 
+        blocking_alerts = [
+            alert for alert in alerts
+            if alert.get("severity") in {"critical", "major"}
+        ]
+
         return {
             "success": True,
             "items": normalized_items,
@@ -152,7 +157,8 @@ class MedicationCatalogService:
                 "items_count": len(normalized_items),
                 "alerts_count": len(alerts),
                 "interactions_count": len(interactions),
-                "can_print": True,
+                "blocking_alerts_count": len(blocking_alerts),
+                "can_print": not blocking_alerts,
             },
         }
 

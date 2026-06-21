@@ -105,6 +105,26 @@
     align-items: start;
 }
 
+.prescription-layout--resizable {
+    grid-template-columns: minmax(360px, var(--rx-form-width, 58%)) 8px minmax(320px, 1fr);
+    gap: var(--space-3);
+}
+
+.rx-resizer {
+    width: 8px;
+    min-height: 70vh;
+    border: 0;
+    border-radius: var(--radius-full);
+    background: linear-gradient(180deg, transparent, var(--color-border), transparent);
+    cursor: col-resize;
+}
+
+.rx-resizer:hover,
+.rx-resizer:focus-visible {
+    background: var(--color-border);
+    outline: none;
+}
+
 .prescription-editor,
 .prescription-sidebar {
     min-width: 0;
@@ -275,6 +295,13 @@
     cursor: pointer;
 }
 
+.rx-icon-button svg {
+    width: 16px;
+    height: 16px;
+    fill: currentColor;
+    display: block;
+}
+
 .rx-suggestions {
     position: absolute;
     z-index: var(--z-dropdown);
@@ -313,6 +340,36 @@
 .rx-suggestion__name {
     font-size: var(--text-sm);
     font-weight: var(--font-semibold);
+}
+
+.rx-suggestion__name strong {
+    font-weight: var(--font-extrabold);
+}
+
+.rx-suggestion__meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-1);
+}
+
+.rx-suggestion__badge {
+    display: inline-flex;
+    width: fit-content;
+    border-radius: var(--radius-full);
+    padding: 2px 7px;
+    font-size: 10px;
+    font-weight: var(--font-semibold);
+    line-height: 1.4;
+}
+
+.rx-suggestion__badge--dose {
+    color: var(--color-info-dark);
+    background: rgba(2, 132, 199, 0.12);
+}
+
+.rx-suggestion__badge--form {
+    color: var(--color-success-dark);
+    background: rgba(22, 163, 74, 0.12);
 }
 
 .rx-suggestion__substances {
@@ -383,6 +440,13 @@
     font-size: var(--text-sm);
 }
 
+.rx-print-message {
+    margin: var(--space-3) 0 0;
+    color: var(--color-text-secondary);
+    font-size: var(--text-sm);
+    line-height: var(--leading-normal);
+}
+
 .rx-prescription-page {
     width: 100%;
     aspect-ratio: 210 / 297;
@@ -447,12 +511,17 @@
 }
 
 @media (max-width: 1024px) {
-    .prescription-layout {
+    .prescription-layout,
+    .prescription-layout--resizable {
         grid-template-columns: 1fr;
     }
 
     .prescription-sidebar {
         position: static;
+    }
+
+    .rx-resizer {
+        display: none;
     }
 }
 
@@ -842,6 +911,85 @@
     margin: 0;
     white-space: nowrap;
     padding-bottom: 0.5rem;
+}
+
+.flash-stack {
+    padding-top: var(--space-4);
+}
+
+.auth-page {
+    max-width: 760px;
+}
+
+.auth-panel {
+    margin: var(--space-8) auto;
+}
+
+.rx-form-grid--single {
+    grid-template-columns: 1fr;
+}
+
+.admin-list {
+    display: grid;
+    gap: var(--space-3);
+}
+
+.admin-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(320px, auto);
+    gap: var(--space-4);
+    align-items: center;
+    padding: var(--space-4) 0;
+    border-bottom: 1px solid var(--color-border);
+}
+
+.admin-row:last-child {
+    border-bottom: 0;
+}
+
+.admin-row p {
+    margin: var(--space-1) 0 0;
+    color: var(--color-text-secondary);
+    font-size: var(--text-sm);
+}
+
+.admin-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: var(--space-2);
+}
+
+.admin-actions input {
+    min-width: 180px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    padding: var(--space-2) var(--space-3);
+    font-size: var(--text-sm);
+}
+
+@media (max-width: 760px) {
+    .site-nav__inner {
+        height: auto;
+        min-height: 52px;
+        align-items: flex-start;
+        gap: var(--space-3);
+        padding: var(--space-2) 0;
+    }
+
+    .site-nav__links {
+        flex-wrap: wrap;
+        justify-content: flex-end;
+    }
+
+    .admin-row {
+        grid-template-columns: 1fr;
+    }
+
+    .admin-actions {
+        justify-content: stretch;
+        flex-wrap: wrap;
+    }
 }
 
 /* ============================================

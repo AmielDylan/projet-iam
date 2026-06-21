@@ -6,6 +6,7 @@ from flask import Flask
 
 from app.config import get_config, Config
 from app.services.database import DatabasePool
+from app.services.auth import AuthService
 from app.api import api_bp
 from app.web import web_bp
 from app.errors import register_error_handlers
@@ -57,6 +58,11 @@ def create_app(config: Optional[Config] = None) -> Flask:
 
     # Register error handlers
     register_error_handlers(app)
+
+    @app.context_processor
+    def inject_current_user():
+        """Expose the current session user to templates."""
+        return {'current_user': AuthService.current_user()}
 
     # Ensure instance folder exists
     try:

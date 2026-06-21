@@ -10,7 +10,10 @@ const Config = {
         autocomplete: '/api/v1/autocomplete',
         classes: '/api/v1/classes',
         medicationSearch: '/api/v1/medications/search',
-        prescriptionAnalyze: '/api/v1/prescriptions/analyze'
+        prescriptionAnalyze: '/api/v1/prescriptions/analyze',
+        prescriberProfile: '/api/v1/prescriber/profile',
+        patientSearch: '/api/v1/patients/search',
+        patients: '/api/v1/patients'
     },
 
     // Legacy endpoints (for backward compatibility)

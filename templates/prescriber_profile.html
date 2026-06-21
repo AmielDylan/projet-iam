@@ -1,0 +1,38 @@
+{% extends 'base.html' %}
+
+{% block title %}Projet IAM — Profil prescripteur{% endblock %}
+
+{% block content %}
+<main id="main-content" class="main-content">
+    <div class="container">
+        <header class="workspace-header">
+            <div>
+                <span class="workspace-kicker">Compte prescripteur</span>
+                <h1 class="workspace-title">Profil prescripteur</h1>
+            </div>
+            <a href="/ordonnances" class="btn btn-secondary btn-sm">Retour ordonnance</a>
+        </header>
+        <section class="rx-section-block">
+            <form method="post" class="rx-form-grid">
+                <label class="rx-field"><span>Civilité</span><input name="title" type="text" value="{{ profile.title }}" placeholder="Dr"></label>
+                <label class="rx-field"><span>Prénom</span><input name="first_name" type="text" value="{{ profile.first_name }}"></label>
+                <label class="rx-field"><span>Nom</span><input name="last_name" type="text" value="{{ profile.last_name }}"></label>
+                <label class="rx-field"><span>Profession</span><input name="profession" type="text" value="{{ profile.profession }}" placeholder="Médecin généraliste"></label>
+                <label class="rx-field"><span>Organisme</span><input name="organization" type="text" value="{{ profile.organization }}" placeholder="Cabinet, hôpital, dispensaire"></label>
+                <label class="rx-field"><span>Pays</span><input name="country" type="text" value="{{ profile.country }}"></label>
+                <label class="rx-field rx-field--wide"><span>Adresse</span><textarea name="address" rows="2">{{ profile.address }}</textarea></label>
+                <label class="rx-field"><span>Téléphone</span><input name="phone" type="text" value="{{ profile.phone }}"></label>
+                <label class="rx-field"><span>Email professionnel</span><input name="email" type="email" value="{{ profile.email }}"></label>
+                <label class="rx-field"><span>Libellé identifiant</span><input name="identifier_label" type="text" value="{{ profile.identifier_label }}" placeholder="N° Ordre"></label>
+                <label class="rx-field"><span>Valeur identifiant</span><input name="identifier_value" type="text" value="{{ profile.identifier_value }}"></label>
+                <label class="rx-field"><span>Libellé secondaire</span><input name="secondary_identifier_label" type="text" value="{{ profile.secondary_identifier_label }}"></label>
+                <label class="rx-field"><span>Valeur secondaire</span><input name="secondary_identifier_value" type="text" value="{{ profile.secondary_identifier_value }}"></label>
+                <label class="rx-field rx-field--wide"><span>Détails complémentaires</span><textarea name="extra_details" rows="3">{{ profile.extra_details }}</textarea></label>
+                <div class="form-actions rx-field--wide">
+                    <button type="submit" class="btn btn-primary">Enregistrer</button>
+                </div>
+            </form>
+        </section>
+    </div>
+</main>
+{% endblock %}
