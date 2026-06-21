@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+
+{% block title %}Projet IAM — Comptes{% endblock %}
+{% block meta_description %}Connexion, demandes de comptes et modération Projet IAM{% endblock %}
+
+{% block extra_scripts %}
+<script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="{{ url_for('static', filename='js/account_app.js') }}"></script>
+{% endblock %}
+
+{% block content %}
+<main id="main-content" class="main-content main-content--workspace">
+    <div
+        id="account-app"
+        class="account-react-root"
+        data-page="{{ account_page }}"
+        data-next="{{ request.args.get('next', '') }}"
+    ></div>
+</main>
+{% endblock %}
