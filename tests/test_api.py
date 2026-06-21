@@ -177,3 +177,47 @@ class TestClassesEndpoint:
         )
 
         assert response.status_code == 400
+
+
+class TestAuthAccountEndpoints:
+    """Tests for account request and moderation endpoints."""
+
+    def test_register_pharmacy_request(self, client):
+        with patch('app.api.routes.AuthService.create_account_request') as mock_create:
+            mock_create.return_value = (True, 'Demande créée.')
+
+            response = client.post('/api/v1/auth/register', json={
+                'email': 'pharmacie@example.test',
+                'password': 'password123',
+                'first_name': 'Pharmacie',
+                'last_name': 'IAM',
+                'role': 'pharmacy',
+            })
+
+        assert response.status_code == 200
+        assert response.get_json()['success'] is True
+        mock_create.assert_called_once_with(
+            'pharmacie@example.test',
+            'password123',
+            'Pharmacie',
+            'IAM',
+            'pharmacy',
+        )
+
+    def test_account_requests_for_pharmacy_reviewer(self, client):
+        with patch('app.api.routes.AuthService.current_user') as mock_user, \
+             patch('app.api.routes.AuthService.list_account_requests') as mock_list:
+            reviewer = {'id': 2, 'role': 'pharmacy', 'status': 'approved'}
+            mock_user.return_value = reviewer
+            mock_list.return_value = [{'id': 3, 'role': 'prescriber', 'status': 'pending'}]
+
+            response = client.get('/api/v1/accounts/requests')
+
+        assert response.status_code == 200
+        assert response.get_json()['results'][0]['role'] == 'prescriber'
+        mock_list.assert_called_once_with(reviewer)
+
+    def test_review_account_requires_login(self, client):
+        response = client.post('/api/v1/accounts/3/review', json={'action': 'approve'})
+
+        assert response.status_code == 401
