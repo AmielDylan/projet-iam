@@ -207,6 +207,7 @@ class AuthService:
         email = (email or "").strip().lower()
         if not email or not password or len(password) < 8:
             return False, "ADMIN_EMAIL et ADMIN_PASSWORD de 8 caractères minimum sont requis."
+        password_hash = generate_password_hash(password)
         try:
             with DatabasePool.get_cursor() as cursor:
                 cursor.execute(
@@ -214,13 +215,24 @@ class AuthService:
                     INSERT INTO iam_users (email, password_hash, role, status, first_name, last_name, reviewed_at)
                     VALUES (%s, %s, 'admin', 'approved', %s, %s, CURRENT_TIMESTAMP)
                     ON DUPLICATE KEY UPDATE
-                        role = 'admin',
-                        status = 'approved',
-                        password_hash = VALUES(password_hash),
-                        first_name = VALUES(first_name),
-                        last_name = VALUES(last_name)
+                        role = %s,
+                        status = %s,
+                        password_hash = %s,
+                        first_name = %s,
+                        last_name = %s,
+                        reviewed_at = CURRENT_TIMESTAMP
                     """,
-                    (email, generate_password_hash(password), first_name, last_name),
+                    (
+                        email,
+                        password_hash,
+                        first_name,
+                        last_name,
+                        "admin",
+                        "approved",
+                        password_hash,
+                        first_name,
+                        last_name,
+                    ),
                 )
             return True, "Compte administrateur créé ou mis à jour."
         except Error:
