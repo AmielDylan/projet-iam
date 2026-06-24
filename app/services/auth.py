@@ -418,31 +418,48 @@ class AuthService:
         return False
 
     @staticmethod
-    def review_account(user_id: int, reviewer: dict[str, Any], approve: bool, note: str = "") -> tuple[bool, str]:
+    def build_temporary_password_message(target: dict[str, Any], password: str) -> str:
+        """Build the text an admin can send when SMTP is unavailable."""
+        full_name = " ".join([target.get("first_name") or "", target.get("last_name") or ""]).strip()
+        greeting = f"Bonjour {full_name}," if full_name else "Bonjour,"
+        return (
+            f"{greeting}\n\n"
+            "Votre compte prescripteur Projet IAM a été validé.\n\n"
+            f"Adresse de connexion: {target['email']}\n"
+            f"Mot de passe temporaire: {password}\n\n"
+            "Ce mot de passe est valable 24h. Vous devrez le changer à la première connexion.\n"
+            "Connexion: https://projet-iam-web-production.up.railway.app/connexion\n\n"
+            "Projet IAM"
+        )
+
+    @staticmethod
+    def review_account(user_id: int, reviewer: dict[str, Any], approve: bool, note: str = "") -> tuple[bool, str, dict[str, Any] | None]:
         target = AuthService.get_user(user_id)
         if not target:
-            return False, "Compte introuvable."
+            return False, "Compte introuvable.", None
         if not AuthService.can_review(reviewer, target):
-            return False, "Vous ne pouvez pas traiter cette demande."
+            return False, "Vous ne pouvez pas traiter cette demande.", None
         status = "approved" if approve else "rejected"
         password = secrets.token_urlsafe(12) if approve else ""
         password_hash = generate_password_hash(password) if approve else None
+        email_sent = False
+        manual_delivery = None
         if approve:
+            manual_message = AuthService.build_temporary_password_message(target, password)
             try:
                 EmailService.send(
                     target["email"],
                     "Votre compte Projet IAM est validé",
-                    (
-                        "Bonjour,\n\n"
-                        "Votre compte prescripteur Projet IAM a été validé.\n"
-                        f"Identifiant: {target['email']}\n"
-                        f"Mot de passe temporaire: {password}\n\n"
-                        "Ce mot de passe est valable 24h. Vous devrez le changer à la première connexion.\n\n"
-                        "Projet IAM"
-                    ),
+                    manual_message,
                 )
+                email_sent = True
             except EmailDeliveryError:
-                return False, "Email non envoyé. La demande reste en attente."
+                manual_delivery = {
+                    "required": True,
+                    "email": target["email"],
+                    "text": manual_message,
+                    "expires_in_hours": 24,
+                }
         with DatabasePool.get_cursor() as cursor:
             if approve:
                 cursor.execute(
@@ -472,7 +489,11 @@ class AuthService:
                     (status, int(reviewer["id"]), (note or "").strip() or None, user_id),
                 )
             cursor.execute("DELETE FROM identity_documents WHERE user_id = %s", (user_id,))
-        return True, "Demande acceptée et mot de passe envoyé." if approve else "Demande refusée."
+        if not approve:
+            return True, "Demande refusée.", None
+        if email_sent:
+            return True, "Demande acceptée et mot de passe envoyé.", None
+        return True, "Demande acceptée. SMTP indisponible: copiez le message de transmission.", {"manual_delivery": manual_delivery}
 
     @staticmethod
     def review_prescriber(user_id: int, reviewer_id: int, approve: bool, note: str = "") -> None:

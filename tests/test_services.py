@@ -230,11 +230,40 @@ class TestAuthV32:
         cursor = MagicMock()
         mock_cursor_cm.return_value.__enter__.return_value = cursor
 
-        success, message = AuthService.review_account(2, reviewer, True)
+        success, message, extra = AuthService.review_account(2, reviewer, True)
 
         assert success is True
         assert 'envoyé' in message
+        assert extra is None
         mock_send.assert_called_once()
+        assert any('DELETE FROM identity_documents' in call.args[0] for call in cursor.execute.call_args_list)
+
+    @patch('app.services.auth.EmailService.send')
+    @patch('app.services.auth.AuthService.get_user')
+    @patch('app.services.auth.DatabasePool.get_cursor')
+    def test_review_account_approves_with_manual_delivery_when_email_fails(self, mock_cursor_cm, mock_get_user, mock_send):
+        from app.services.email import EmailDeliveryError
+
+        reviewer = {'id': 1, 'role': 'admin', 'status': 'approved'}
+        mock_get_user.return_value = {
+            'id': 2,
+            'email': 'doc@example.test',
+            'role': 'prescriber',
+            'status': 'pending',
+            'first_name': 'Jean',
+            'last_name': 'ADJOVI',
+        }
+        mock_send.side_effect = EmailDeliveryError('SMTP non configuré')
+        cursor = MagicMock()
+        mock_cursor_cm.return_value.__enter__.return_value = cursor
+
+        success, message, extra = AuthService.review_account(2, reviewer, True)
+
+        assert success is True
+        assert 'SMTP indisponible' in message
+        assert extra['manual_delivery']['email'] == 'doc@example.test'
+        assert 'Mot de passe temporaire:' in extra['manual_delivery']['text']
+        assert any('UPDATE iam_users' in call.args[0] for call in cursor.execute.call_args_list)
         assert any('DELETE FROM identity_documents' in call.args[0] for call in cursor.execute.call_args_list)
 
     @patch('app.services.auth.DatabasePool.execute_query')

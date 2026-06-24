@@ -253,6 +253,23 @@ class TestAuthAccountEndpoints:
 
         assert response.status_code == 401
 
+    def test_review_account_returns_manual_delivery(self, client):
+        with patch('app.api.routes.AuthService.current_user') as mock_user, \
+             patch('app.api.routes.AuthService.review_account') as mock_review:
+            mock_user.return_value = {'id': 1, 'role': 'admin', 'status': 'approved'}
+            mock_review.return_value = (
+                True,
+                'Demande acceptée. SMTP indisponible: copiez le message de transmission.',
+                {'manual_delivery': {'email': 'doc@example.test', 'text': 'Message à envoyer'}},
+            )
+
+            response = client.post('/api/v1/accounts/3/review', json={'action': 'approve'})
+
+        assert response.status_code == 200
+        data = response.get_json()
+        assert data['success'] is True
+        assert data['manual_delivery']['email'] == 'doc@example.test'
+
     def test_change_password_requires_login(self, client):
         response = client.post('/api/v1/auth/change-password', json={
             'current_password': 'temporary',
