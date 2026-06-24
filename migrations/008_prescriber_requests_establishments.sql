@@ -7,7 +7,7 @@ ALTER TABLE `iam_users`
     ADD COLUMN `order_number` VARCHAR(160) NULL AFTER `profession`,
     ADD COLUMN `phone` VARCHAR(80) NULL AFTER `order_number`,
     ADD COLUMN `temporary_password_expires_at` DATETIME NULL AFTER `review_note`,
-    ADD COLUMN `must_change_password` TINYINT(1) NOT NULL DEFAULT 0 AFTER `temporary_password_expires_at`;
+    ADD COLUMN `must_change_password` TINYINT NOT NULL DEFAULT 0 AFTER `temporary_password_expires_at`;
 
 CREATE TABLE IF NOT EXISTS `identity_documents` (
     `id` BIGINT PRIMARY KEY AUTO_INCREMENT,
@@ -38,7 +38,7 @@ CREATE TABLE IF NOT EXISTS `prescriber_establishments` (
     `logo_mime_type` VARCHAR(120) NULL,
     `logo_size_bytes` INT NULL,
     `logo_content` LONGBLOB NULL,
-    `is_active` TINYINT(1) NOT NULL DEFAULT 1,
+    `is_active` TINYINT NOT NULL DEFAULT 1,
     `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     KEY `idx_prescriber_establishments_user` (`user_id`, `is_active`),

@@ -99,7 +99,7 @@ class AuthService:
                     `reviewed_by` BIGINT NULL,
                     `review_note` TEXT NULL,
                     `temporary_password_expires_at` DATETIME NULL,
-                    `must_change_password` TINYINT(1) NOT NULL DEFAULT 0,
+                    `must_change_password` TINYINT NOT NULL DEFAULT 0,
                     `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
                     `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
                     UNIQUE KEY `uq_iam_users_email` (`email`),
@@ -114,7 +114,7 @@ class AuthService:
                 ("order_number", "VARCHAR(160) NULL AFTER `profession`"),
                 ("phone", "VARCHAR(80) NULL AFTER `order_number`"),
                 ("temporary_password_expires_at", "DATETIME NULL AFTER `review_note`"),
-                ("must_change_password", "TINYINT(1) NOT NULL DEFAULT 0 AFTER `temporary_password_expires_at`"),
+                ("must_change_password", "TINYINT NOT NULL DEFAULT 0 AFTER `temporary_password_expires_at`"),
             ):
                 add_column("iam_users", column, definition)
 
@@ -178,7 +178,7 @@ class AuthService:
                     `logo_mime_type` VARCHAR(120) NULL,
                     `logo_size_bytes` INT NULL,
                     `logo_content` LONGBLOB NULL,
-                    `is_active` TINYINT(1) NOT NULL DEFAULT 1,
+                    `is_active` TINYINT NOT NULL DEFAULT 1,
                     `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
                     `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
                     KEY `idx_prescriber_establishments_user` (`user_id`, `is_active`),
