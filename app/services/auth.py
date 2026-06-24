@@ -258,7 +258,7 @@ class AuthService:
         order_number: str = "",
         phone: str = "",
         identity_document: Any = None,
-    ) -> tuple[bool, str]:
+    ) -> tuple[bool, str, dict | None]:
         email = (email or "").strip().lower()
         first_name = (first_name or "").strip()
         last_name = (last_name or "").strip()
@@ -268,12 +268,12 @@ class AuthService:
         phone = (phone or "").strip()
         role = "prescriber"
         if not all([email, first_name, last_name, birthdate, profession, order_number, phone]):
-            return False, "Tous les champs d'identité prescripteur sont requis."
+            return False, "Tous les champs d'identité prescripteur sont requis.", None
         if profession not in PROFESSIONS:
-            return False, "Profession invalide."
+            return False, "Profession invalide.", None
         document, error = AuthService.validate_identity_document(identity_document)
         if error:
-            return False, error
+            return False, error, None
         try:
             with DatabasePool.get_cursor() as cursor:
                 cursor.execute(
@@ -299,11 +299,13 @@ class AuthService:
                         document["content"],
                     ),
                 )
-            return True, "Demande créée. Elle doit être validée par l'administrateur."
+            return True, "Demande créée. Elle doit être validée par l'administrateur.", None
         except Error as exc:
+            # Duplicate email
             if getattr(exc, "errno", None) == 1062:
-                return False, "Un compte existe déjà avec cet email."
-            return False, "Impossible de créer la demande pour le moment."
+                return False, "Un compte existe déjà avec cet email.", {"error_source": "duplicate_email"}
+            # Return a safe, user-friendly message plus a minimal error source for diagnostics
+            return False, "Impossible de créer la demande pour le moment.", {"error_source": "database"}
 
     @staticmethod
     def create_prescriber_request(email: str, password: str, first_name: str, last_name: str) -> tuple[bool, str]:

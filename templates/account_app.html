@@ -24,12 +24,12 @@
                     <h2>Demander un accès</h2>
                     <p>Demande prescripteur validée par l'administrateur.</p>
                 </div>
-                <form method="post" class="account-form" enctype="multipart/form-data">
-                    <label class="account-field"><span>Noms</span><input name="last_name" type="text" required></label>
-                    <label class="account-field"><span>Prénoms</span><input name="first_name" type="text" required></label>
-                    <label class="account-field"><span>Date de naissance</span><input name="birthdate" type="date" required></label>
+                <form method="post" class="account-form account-form--wide" enctype="multipart/form-data">
+                    <label class="account-field"><span>Noms<span class="account-required"> *</span></span><input name="last_name" type="text" required></label>
+                    <label class="account-field"><span>Prénoms<span class="account-required"> *</span></span><input name="first_name" type="text" required></label>
+                    <label class="account-field"><span>Date de naissance<span class="account-required"> *</span></span><input name="birthdate" type="date" required></label>
                     <label class="account-field">
-                        <span>Profession</span>
+                        <span>Profession<span class="account-required"> *</span></span>
                         <select name="profession" required>
                             <option value="Médecin">Médecin</option>
                             <option value="Pharmacien">Pharmacien</option>
@@ -39,10 +39,10 @@
                             <option value="Autre professionnel autorisé">Autre professionnel autorisé</option>
                         </select>
                     </label>
-                    <label class="account-field"><span>Numéro d'inscription à l'ordre</span><input name="order_number" type="text" required></label>
-                    <label class="account-field"><span>Email</span><input name="email" type="email" required autocomplete="email"></label>
-                    <label class="account-field"><span>Téléphone</span><input name="phone" type="tel" required></label>
-                    <label class="account-field"><span>Pièce d'identité</span><input name="identity_document" type="file" accept="application/pdf,image/jpeg,image/png" required></label>
+                    <label class="account-field"><span>Numéro d'inscription à l'ordre<span class="account-required"> *</span></span><input name="order_number" type="text" required></label>
+                    <label class="account-field"><span>Email<span class="account-required"> *</span></span><input name="email" type="email" required autocomplete="email"></label>
+                    <label class="account-field"><span>Téléphone<span class="account-required"> *</span></span><input name="phone" type="tel" required></label>
+                    <label class="account-field"><span>Pièce d'identité<span class="account-required"> *</span></span><input name="identity_document" type="file" accept="application/pdf,image/jpeg,image/png" required></label>
                     <p class="account-help">La pièce est utilisée uniquement pour la vérification du profil. Elle est supprimée après acceptation ou refus.</p>
                     <div class="account-actions">
                         <a class="account-link-button" href="/connexion">J'ai déjà un compte</a>

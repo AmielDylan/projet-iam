@@ -29,7 +29,15 @@
         });
         const data = await response.json().catch(() => ({}));
         if (!response.ok || data.success === false) {
-            throw new Error(data.message || data.error || 'Une erreur est survenue.');
+            const msg = data.message || data.error || 'Une erreur est survenue.';
+            const err = new Error(msg);
+            err.status = response.status;
+            err.body = data;
+            // attach readable source if provided by the server
+            if (data.error_source) err.message = `${err.message} (${data.error_source})`;
+            else if (data.details) err.message = `${err.message} — ${data.details}`;
+            else if (response.status) err.message = `${err.message} (HTTP ${response.status})`;
+            throw err;
         }
         return data;
     }
@@ -66,7 +74,7 @@
     function Field({ label, name, type = 'text', value, onChange, placeholder, required, children, rows }) {
         const Control = rows ? 'textarea' : 'input';
         return h('label', { className: cx('account-field', rows && 'account-field--wide') }, [
-            h('span', { key: 'label' }, label),
+            h('span', { key: 'label' }, [label, required ? h('span', { key: 'req', className: 'account-required' }, ' *') : null]),
             children || h(Control, {
                 key: 'control',
                 name,
@@ -221,9 +229,15 @@
         const [message, setMessage] = React.useState('');
         const [tone, setTone] = React.useState('info');
         const [busy, setBusy] = React.useState(false);
+        const [isValid, setIsValid] = React.useState(false);
+        const formRef = React.useRef(null);
 
         function update(name, value) {
             setForm((current) => ({ ...current, [name]: value }));
+            // update validity when textual fields change
+            try {
+                setTimeout(() => setIsValid(formRef.current ? formRef.current.checkValidity() : false), 0);
+            } catch (e) {}
         }
 
         async function submit(event) {
@@ -245,9 +259,15 @@
                     email: '',
                     phone: ''
                 });
+                setIsValid(false);
             } catch (error) {
                 setTone('danger');
-                setMessage(error.message);
+                // Prefer detailed body message if available
+                if (error && error.body && (error.body.message || error.body.error)) {
+                    setMessage(`${error.body.message || error.body.error}` + (error.body.error_source ? ` (${error.body.error_source})` : ''));
+                } else {
+                    setMessage(error.message || 'Une erreur est survenue.');
+                }
             } finally {
                 setBusy(false);
             }
@@ -258,7 +278,7 @@
             title: 'Demande prescripteur',
             description: 'Votre demande est vérifiée par l’administrateur du site.',
             active: 'register'
-        }, h('form', { className: 'account-panel account-form account-form--wide', onSubmit: submit, encType: 'multipart/form-data' }, [
+        }, h('form', { ref: formRef, className: 'account-panel account-form account-form--wide', onSubmit: submit, encType: 'multipart/form-data' }, [
             h('div', { key: 'head', className: 'account-form-head' }, [
                 h('h2', null, 'Demander un accès'),
                 h('p', null, 'Renseignez les informations dans l’ordre de votre pièce d’identité.')
@@ -280,12 +300,13 @@
                 name: 'identity_document',
                 type: 'file',
                 accept: 'application/pdf,image/jpeg,image/png',
-                required: true
+                required: true,
+                onChange: () => setIsValid(formRef.current ? formRef.current.checkValidity() : false)
             })),
             h('p', { key: 'privacy', className: 'account-help account-form-toolbar' }, "La pièce est utilisée uniquement pour la vérification du profil. Elle est supprimée après acceptation ou refus et n’est pas conservée."),
             h('div', { key: 'actions', className: 'account-actions' }, [
                 h('a', { key: 'login', className: 'account-link-button', href: '/connexion' }, 'J’ai déjà un compte'),
-                h(Button, { key: 'submit', type: 'submit', disabled: busy }, busy ? 'Envoi...' : 'Envoyer la demande')
+                h(Button, { key: 'submit', type: 'submit', disabled: busy || !isValid }, busy ? 'Envoi...' : 'Envoyer la demande')
             ])
         ]));
     }

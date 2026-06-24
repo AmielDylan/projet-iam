@@ -133,7 +133,7 @@ def login():
 def register():
     """Create a pending prescriber account request."""
     if request.method == 'POST':
-        success, message = AuthService.create_account_request(
+        result = AuthService.create_account_request(
             request.form.get('email', ''),
             '',
             request.form.get('first_name', ''),
@@ -145,6 +145,10 @@ def register():
             request.form.get('phone', ''),
             request.files.get('identity_document'),
         )
+        if isinstance(result, tuple) and len(result) == 3:
+            success, message, _extra = result
+        else:
+            success, message = result
         flash(message, 'success' if success else 'danger')
         if success:
             return redirect(url_for('web.login'))
