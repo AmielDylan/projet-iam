@@ -1,9 +1,11 @@
 """API routes for the application."""
-from flask import Blueprint, request, jsonify
+from io import BytesIO
+
+from flask import Blueprint, request, jsonify, send_file
 
 from app.services.interaction import InteractionService
 from app.services.autocomplete import AutocompleteService
-from app.services.auth import AuthService, ProfileService
+from app.services.auth import AuthService, ProfileService, EstablishmentService, PROFESSIONS
 from app.services.catalog import MedicationCatalogService
 from app.api.validators import (
     sanitize_medication_name,
@@ -21,6 +23,8 @@ def current_api_user(required_role=None):
         return None, (jsonify({'success': False, 'error': 'Connexion requise'}), 401)
     if user['status'] != 'approved':
         return None, (jsonify({'success': False, 'error': 'Compte non validé'}), 403)
+    if user.get('must_change_password') and request.endpoint != 'api.auth_change_password':
+        return None, (jsonify({'success': False, 'error': 'Changement de mot de passe requis', 'code': 'must_change_password'}), 403)
     if required_role:
         allowed_roles = {required_role} if isinstance(required_role, str) else set(required_role)
         if user['role'] not in allowed_roles:
@@ -47,14 +51,34 @@ def auth_login():
 
 @api_bp.route('/auth/register', methods=['POST'])
 def auth_register():
-    """Create a pending account request for pharmacy or prescriber."""
-    data = request.get_json(silent=True) or {}
+    """Create a pending prescriber account request."""
+    data = request.form if request.form else (request.get_json(silent=True) or {})
     success, message = AuthService.create_account_request(
         data.get('email', ''),
-        data.get('password', ''),
+        '',
         data.get('first_name', ''),
         data.get('last_name', ''),
-        data.get('role', 'prescriber'),
+        'prescriber',
+        data.get('birthdate', ''),
+        data.get('profession', ''),
+        data.get('order_number', ''),
+        data.get('phone', ''),
+        request.files.get('identity_document'),
+    )
+    return jsonify({'success': success, 'message': message}), 200 if success else 400
+
+
+@api_bp.route('/auth/change-password', methods=['POST'])
+def auth_change_password():
+    """Change the current user's password."""
+    user = AuthService.current_user()
+    if not user:
+        return jsonify({'success': False, 'error': 'Connexion requise'}), 401
+    data = request.get_json(silent=True) or {}
+    success, message = AuthService.change_password(
+        int(user['id']),
+        data.get('current_password', ''),
+        data.get('new_password', ''),
     )
     return jsonify({'success': success, 'message': message}), 200 if success else 400
 
@@ -69,7 +93,7 @@ def auth_logout():
 @api_bp.route('/accounts/requests', methods=['GET'])
 def account_requests():
     """Return account requests visible to the current reviewer."""
-    user, error = current_api_user(required_role={'admin', 'pharmacy'})
+    user, error = current_api_user(required_role='admin')
     if error:
         return error
     return jsonify({'success': True, 'results': AuthService.list_account_requests(user)})
@@ -78,13 +102,36 @@ def account_requests():
 @api_bp.route('/accounts/<int:user_id>/review', methods=['POST'])
 def review_account(user_id):
     """Approve or reject one visible account request."""
-    user, error = current_api_user(required_role={'admin', 'pharmacy'})
+    user, error = current_api_user(required_role='admin')
     if error:
         return error
     data = request.get_json(silent=True) or {}
     approve = data.get('action') == 'approve' or data.get('approve') is True
     success, message = AuthService.review_account(user_id, user, approve, data.get('review_note', ''))
     return jsonify({'success': success, 'message': message}), 200 if success else 403
+
+
+@api_bp.route('/accounts/<int:user_id>/identity-document', methods=['GET'])
+def identity_document(user_id):
+    """Return one pending identity document to the global admin."""
+    user, error = current_api_user(required_role='admin')
+    if error:
+        return error
+    document = AuthService.get_identity_document(user_id)
+    if not document:
+        return jsonify({'success': False, 'error': 'Pièce indisponible'}), 404
+    return send_file(
+        BytesIO(document['content']),
+        mimetype=document['mime_type'],
+        as_attachment=True,
+        download_name=document['filename'],
+    )
+
+
+@api_bp.route('/professions', methods=['GET'])
+def professions():
+    """Return requestable prescriber professions."""
+    return jsonify({'success': True, 'results': list(PROFESSIONS)})
 
 
 @api_bp.errorhandler(ValidationError)
@@ -361,6 +408,54 @@ def prescriber_profile_api():
     data = request.get_json(silent=True) or {}
     profile = ProfileService.save_profile(int(user['id']), data)
     return jsonify({'success': True, 'profile': profile})
+
+
+@api_bp.route('/prescriber/establishments', methods=['GET', 'POST'])
+def prescriber_establishments():
+    """List or create establishments for the current prescriber."""
+    user, error = current_api_user(required_role='prescriber')
+    if error:
+        return error
+    if request.method == 'GET':
+        return jsonify({
+            'success': True,
+            'results': EstablishmentService.list_for_prescriber(int(user['id']), active_only=False),
+        })
+    payload = request.form if request.form else (request.get_json(silent=True) or {})
+    success, message, establishment = EstablishmentService.upsert(
+        int(user['id']),
+        payload,
+        request.files.get('logo'),
+    )
+    return jsonify({'success': success, 'message': message, 'establishment': establishment}), 200 if success else 400
+
+
+@api_bp.route('/prescriber/establishments/<int:establishment_id>', methods=['PUT', 'POST', 'DELETE'])
+def prescriber_establishment(establishment_id):
+    """Update or deactivate one establishment for the current prescriber."""
+    user, error = current_api_user(required_role='prescriber')
+    if error:
+        return error
+    if request.method == 'DELETE':
+        deleted = EstablishmentService.delete(int(user['id']), establishment_id)
+        return jsonify({'success': deleted}), 200 if deleted else 404
+    payload = request.form if request.form else (request.get_json(silent=True) or {})
+    success, message, establishment = EstablishmentService.upsert(
+        int(user['id']),
+        payload,
+        request.files.get('logo'),
+        establishment_id,
+    )
+    return jsonify({'success': success, 'message': message, 'establishment': establishment}), 200 if success else 400
+
+
+@api_bp.route('/admin/establishments', methods=['GET'])
+def admin_establishments():
+    """Return all prescriber establishments to the global admin."""
+    user, error = current_api_user(required_role='admin')
+    if error:
+        return error
+    return jsonify({'success': True, 'results': EstablishmentService.list_all_for_admin()})
 
 
 @api_bp.route('/patients/search', methods=['GET'])

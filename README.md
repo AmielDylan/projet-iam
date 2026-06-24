@@ -17,7 +17,7 @@ L'utilisateur saisit deux médicaments (spécialité, substance active ou classe
 | **PE** | Précaution d'emploi | Jaune |
 | **APEC** | À prendre en compte | Gris |
 
-La version 3 ajoute un module d'ordonnance classique : profil prescripteur multi-pays, patient, liste de médicaments, saisie libre, analyse IAM avant impression et aperçu A4.
+La version 3 ajoute un module d'ordonnance classique : profil prescripteur, établissements, patient, liste de médicaments, saisie libre, analyse IAM avant impression et aperçu A4.
 
 ---
 
@@ -97,8 +97,23 @@ Tables V3 d'enrichissement ordonnance :
 - `medication_catalog` — catalogue médicament enrichi pour l'ordonnance
 - `medication_enrichment_audit` — journal des enrichissements et doublons
 - `medication_search_miss` — recherches ordonnance sans résultat
+- `iam_users` — comptes administrateur et prescripteurs validés
+- `identity_documents` — pièces justificatives temporaires des demandes prescripteur, supprimées après décision
+- `prescriber_profiles` — profil professionnel du prescripteur
+- `prescriber_establishments` — établissements du prescripteur utilisés sur l'ordonnance
+- `patient_history` — historique patient par prescripteur
 
 Les tables IAM historiques ne sont pas écrasées. L'enrichissement ajoute uniquement des spécialités, substances et liaisons manquantes quand la correspondance est sûre.
+
+### Comptes prescripteurs
+
+Le parcours public reste l'interface d'interactions. La création d'ordonnance nécessite un compte prescripteur approuvé par l'administrateur global.
+
+1. Le prescripteur dépose une demande via `/inscription` avec identité, profession, numéro d'ordre, coordonnées et justificatif PDF/JPG/PNG.
+2. L'administrateur consulte `/admin`, vérifie le justificatif puis accepte ou refuse la demande.
+3. En cas d'acceptation, un mot de passe temporaire valable 24h est envoyé par SMTP et doit être changé au premier login.
+4. Le justificatif binaire est supprimé de la base dès la décision.
+5. Le prescripteur configure ses établissements depuis `/etablissements`, ou en crée un directement pendant la rédaction d'une ordonnance.
 
 ### Import du catalogue médicament
 
@@ -212,3 +227,10 @@ Voir [`.env.example`](.env.example) pour la liste complète.
 | `DB_PASSWORD` | Mot de passe MySQL |
 | `DB_NAME` | Nom de la base |
 | `GROQ_API_KEY` | Clé API Groq (optionnel — désactive le résumé IA si absent) |
+| `MAX_IDENTITY_DOCUMENT_BYTES` | Taille maximale des pièces justificatives prescripteur |
+| `SMTP_HOST` | Serveur SMTP utilisé pour envoyer le mot de passe temporaire |
+| `SMTP_PORT` | Port SMTP |
+| `SMTP_USER` | Utilisateur SMTP |
+| `SMTP_PASSWORD` | Mot de passe SMTP |
+| `SMTP_FROM` | Expéditeur des emails d'acceptation |
+| `SMTP_TLS` | Active TLS SMTP si `true` |
