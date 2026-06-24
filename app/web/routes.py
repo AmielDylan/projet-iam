@@ -1,4 +1,6 @@
 """Web page routes."""
+from urllib.parse import urlparse
+
 from flask import Blueprint, flash, redirect, render_template, request, url_for
 
 from app.services.auth import (
@@ -11,6 +13,33 @@ from app.services.interaction import InteractionService
 from app.api.validators import sanitize_medication_name, ValidationError
 
 web_bp = Blueprint('web', __name__)
+
+
+def login_destination_for(user: dict, requested_next: str | None = None) -> str:
+    """Return a safe post-login destination compatible with the user role."""
+    role = user.get('role')
+    default_destination = (
+        url_for('web.prescriptions')
+        if role == 'prescriber'
+        else url_for('web.admin')
+    )
+    if not requested_next:
+        return default_destination
+
+    parsed = urlparse(requested_next)
+    if parsed.scheme or parsed.netloc or not parsed.path.startswith('/'):
+        return default_destination
+
+    path = parsed.path.rstrip('/') or '/'
+    allowed_prefixes = {
+        'prescriber': ('/ordonnances', '/prescripteur'),
+        'admin': ('/admin',),
+        'pharmacy': ('/admin',),
+    }.get(role, ())
+    public_paths = ('/', '/changelog')
+    if path in public_paths or any(path == prefix or path.startswith(f'{prefix}/') for prefix in allowed_prefixes):
+        return requested_next
+    return default_destination
 
 
 @web_bp.route('/', methods=['GET', 'POST'])
@@ -92,13 +121,7 @@ def login():
         flash(message, 'success' if success else 'danger')
         if success:
             user = AuthService.current_user() or {}
-            default_destination = (
-                url_for('web.prescriptions')
-                if user.get('role') == 'prescriber'
-                else url_for('web.admin')
-            )
-            destination = request.args.get('next') or default_destination
-            return redirect(destination)
+            return redirect(login_destination_for(user, request.args.get('next')))
     return render_template('account_app.html', account_page='login')
 
 

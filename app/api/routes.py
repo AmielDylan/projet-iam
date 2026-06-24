@@ -41,7 +41,8 @@ def auth_login():
     data = request.get_json(silent=True) or {}
     success, message = AuthService.authenticate(data.get('email', ''), data.get('password', ''))
     status = 200 if success else 401
-    return jsonify({'success': success, 'message': message, 'user': AuthService.current_user() if success else None}), status
+    user = AuthService.current_session_user() if success else None
+    return jsonify({'success': success, 'message': message, 'user': user}), status
 
 
 @api_bp.route('/auth/register', methods=['POST'])
