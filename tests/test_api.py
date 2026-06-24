@@ -182,6 +182,28 @@ class TestClassesEndpoint:
 class TestAuthAccountEndpoints:
     """Tests for account request and moderation endpoints."""
 
+    def test_login_returns_session_user(self, client):
+        with patch('app.api.routes.AuthService.authenticate') as mock_auth, \
+             patch('app.api.routes.AuthService.current_session_user') as mock_session_user:
+            mock_auth.return_value = (True, 'Connexion réussie.')
+            mock_session_user.return_value = {
+                'id': 3,
+                'email': 'iarappbj@gmail.com',
+                'role': 'admin',
+                'status': 'approved',
+            }
+
+            response = client.post('/api/v1/auth/login', json={
+                'email': 'iarappbj@gmail.com',
+                'password': 'temporary-password',
+            })
+
+        assert response.status_code == 200
+        data = response.get_json()
+        assert data['success'] is True
+        assert data['user']['role'] == 'admin'
+        mock_session_user.assert_called_once_with()
+
     def test_register_pharmacy_request(self, client):
         with patch('app.api.routes.AuthService.create_account_request') as mock_create:
             mock_create.return_value = (True, 'Demande créée.')

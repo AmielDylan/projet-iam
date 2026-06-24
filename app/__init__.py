@@ -51,6 +51,15 @@ def create_app(config: Optional[Config] = None) -> Flask:
         pool_size=config.DB_POOL_SIZE,
         pool_name=config.DB_POOL_NAME
     )
+    if not app.config['TESTING']:
+        AuthService.ensure_schema()
+        if os.environ.get("ADMIN_EMAIL") and os.environ.get("ADMIN_PASSWORD"):
+            AuthService.create_admin(
+                os.environ.get("ADMIN_EMAIL", ""),
+                os.environ.get("ADMIN_PASSWORD", ""),
+                os.environ.get("ADMIN_FIRST_NAME", ""),
+                os.environ.get("ADMIN_LAST_NAME", ""),
+            )
 
     # Register blueprints
     app.register_blueprint(api_bp)
