@@ -357,7 +357,6 @@ def require_login(view: Callable) -> Callable:
     @wraps(view)
     def wrapped(*args, **kwargs):
         if not AuthService.current_user():
-            flash("Connexion requise.", "warning")
             return redirect(url_for("web.login", next=request.path))
         return view(*args, **kwargs)
 
@@ -369,7 +368,6 @@ def require_approved_prescriber(view: Callable) -> Callable:
     def wrapped(*args, **kwargs):
         user = AuthService.current_user()
         if not user:
-            flash("Connexion requise.", "warning")
             return redirect(url_for("web.login", next=request.path))
         if user["role"] != "prescriber" or user["status"] != "approved":
             flash("Compte prescripteur validé requis.", "warning")
@@ -384,7 +382,6 @@ def require_admin(view: Callable) -> Callable:
     def wrapped(*args, **kwargs):
         user = AuthService.current_user()
         if not user:
-            flash("Connexion administrateur requise.", "warning")
             return redirect(url_for("web.login", next=request.path))
         if user["role"] != "admin" or user["status"] != "approved":
             flash("Accès administrateur requis.", "warning")
@@ -399,7 +396,6 @@ def require_account_reviewer(view: Callable) -> Callable:
     def wrapped(*args, **kwargs):
         user = AuthService.current_user()
         if not user:
-            flash("Connexion requise.", "warning")
             return redirect(url_for("web.login", next=request.path))
         if user["role"] not in {"admin", "pharmacy"} or user["status"] != "approved":
             flash("Accès modération requis.", "warning")
