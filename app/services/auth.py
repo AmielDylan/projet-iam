@@ -384,7 +384,7 @@ class AuthService:
                    d.filename AS identity_document_filename,
                    d.mime_type AS identity_document_mime_type,
                    d.size_bytes AS identity_document_size
-            FROM iam_users
+            FROM iam_users u
             LEFT JOIN identity_documents d ON d.user_id = u.id
             WHERE u.role = 'prescriber'
             ORDER BY
