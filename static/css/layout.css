@@ -1190,6 +1190,12 @@
     font-weight: var(--font-semibold);
 }
 
+.account-required {
+    color: var(--color-danger);
+    margin-left: 0.35rem;
+    font-weight: var(--font-bold);
+}
+
 .account-field input,
 .account-field textarea {
     width: 100%;

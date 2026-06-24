@@ -53,7 +53,7 @@ def auth_login():
 def auth_register():
     """Create a pending prescriber account request."""
     data = request.form if request.form else (request.get_json(silent=True) or {})
-    success, message = AuthService.create_account_request(
+    result = AuthService.create_account_request(
         data.get('email', ''),
         '',
         data.get('first_name', ''),
@@ -65,7 +65,16 @@ def auth_register():
         data.get('phone', ''),
         request.files.get('identity_document'),
     )
-    return jsonify({'success': success, 'message': message}), 200 if success else 400
+    # support both (success, message) and (success, message, extra)
+    if isinstance(result, tuple) and len(result) == 3:
+        success, message, extra = result
+    else:
+        success, message = result
+        extra = None
+    payload = {'success': success, 'message': message}
+    if extra:
+        payload.update(extra)
+    return jsonify(payload), 200 if success else 400
 
 
 @api_bp.route('/auth/change-password', methods=['POST'])
