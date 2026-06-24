@@ -967,33 +967,13 @@
     display: grid;
     grid-template-columns: minmax(0, 1fr);
     min-height: calc(100vh - 52px);
-    background:
-        linear-gradient(180deg, rgba(248, 250, 252, 0.96), rgba(255, 255, 255, 1));
 }
 
-.account-auth-visual {
-    display: grid;
-    align-content: space-between;
-    min-height: calc(100vh - 52px);
-    padding: clamp(28px, 5vw, 56px);
-    background:
-        linear-gradient(135deg, rgba(26, 26, 26, 0.92), rgba(26, 26, 26, 0.74)),
-        repeating-linear-gradient(135deg, rgba(255,255,255,0.04) 0 1px, transparent 1px 18px);
-    color: #fff;
-}
-
-.account-auth-brand,
-.account-auth-steps div,
 .account-sidebar__head,
 .account-sidebar__link,
 .account-sidebar__logout {
     display: flex;
     align-items: center;
-}
-
-.account-auth-brand {
-    justify-content: space-between;
-    gap: var(--space-4);
 }
 
 .account-auth-mark {
@@ -1008,59 +988,12 @@
     letter-spacing: 0;
 }
 
-.account-auth-visual .account-auth-mark {
-    background: rgba(255,255,255,0.12);
-    color: #fff;
-    border: 1px solid rgba(255,255,255,0.16);
-}
-
-.account-auth-copy {
-    max-width: 520px;
-}
-
-.account-auth-copy .workspace-kicker {
-    color: rgba(255,255,255,0.62);
-}
-
-.account-auth-copy h1 {
-    margin: var(--space-3) 0;
-    max-width: 10ch;
-    font-size: clamp(2.4rem, 5vw, 4.5rem);
-    line-height: 0.96;
-    letter-spacing: 0;
-}
-
-.account-auth-copy p {
-    max-width: 420px;
-    margin: 0;
-    color: rgba(255,255,255,0.72);
-    font-size: var(--text-base);
-    line-height: var(--leading-relaxed);
-}
-
-.account-auth-steps {
-    display: grid;
-    gap: var(--space-3);
-    max-width: 460px;
-}
-
-.account-auth-steps div {
-    gap: var(--space-3);
-    padding: var(--space-3);
-    border: 1px solid rgba(255,255,255,0.12);
-    border-radius: var(--radius-md);
-    background: rgba(255,255,255,0.06);
-    color: rgba(255,255,255,0.82);
-    font-size: var(--text-sm);
-}
-
 .account-auth-content {
     display: grid;
     align-content: center;
     justify-items: center;
-    gap: var(--space-6);
     place-items: center;
-    width: min(100%, 520px);
+    width: min(100%, 470px);
     margin: 0 auto;
     padding: clamp(32px, 7vw, 80px) var(--space-5);
     background: transparent;
@@ -1068,34 +1001,6 @@
 
 .account-auth-content .account-panel {
     width: 100%;
-}
-
-.account-auth-intro {
-    display: grid;
-    justify-items: center;
-    gap: var(--space-2);
-    text-align: center;
-}
-
-.account-auth-intro .account-auth-mark {
-    margin-bottom: var(--space-2);
-}
-
-.account-auth-intro h1 {
-    margin: 0;
-    color: var(--color-text);
-    font-size: clamp(2rem, 5vw, 3.25rem);
-    font-weight: var(--font-extrabold);
-    line-height: 1;
-    letter-spacing: 0;
-}
-
-.account-auth-intro p {
-    max-width: 390px;
-    margin: 0;
-    color: var(--color-text-secondary);
-    font-size: var(--text-sm);
-    line-height: var(--leading-relaxed);
 }
 
 .account-form-head {
@@ -1522,17 +1427,6 @@
     .account-form--wide,
     .account-request-row {
         grid-template-columns: 1fr;
-    }
-
-    .account-auth-visual {
-        min-height: auto;
-        padding: var(--space-6);
-        gap: var(--space-8);
-    }
-
-    .account-auth-copy h1 {
-        max-width: 12ch;
-        font-size: clamp(2rem, 12vw, 3rem);
     }
 
     .account-auth-content {

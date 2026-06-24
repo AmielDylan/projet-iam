@@ -80,17 +80,9 @@
         return h('div', { className: cx('account-notice', `account-notice--${tone}`) }, message);
     }
 
-    function AuthShell({ title, eyebrow, description, children, active }) {
+    function AuthShell({ children }) {
         return h('div', { className: 'account-auth-shell' }, [
-            h('section', { key: 'form', className: 'account-auth-content' }, [
-                h('div', { key: 'intro', className: 'account-auth-intro' }, [
-                    h('span', { className: 'account-auth-mark' }, 'IAM'),
-                    h('span', { className: 'workspace-kicker' }, eyebrow),
-                    h('h1', null, title),
-                    h('p', null, description)
-                ]),
-                children
-            ])
+            h('section', { key: 'form', className: 'account-auth-content' }, children)
         ]);
     }
 
