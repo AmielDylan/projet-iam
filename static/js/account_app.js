@@ -5,8 +5,12 @@
         session: '/api/v1/auth/session',
         login: '/api/v1/auth/login',
         register: '/api/v1/auth/register',
+        changePassword: '/api/v1/auth/change-password',
         requests: '/api/v1/accounts/requests',
-        profile: '/api/v1/prescriber/profile'
+        profile: '/api/v1/prescriber/profile',
+        establishments: '/api/v1/prescriber/establishments',
+        adminEstablishments: '/api/v1/admin/establishments',
+        professions: '/api/v1/professions'
     };
 
     function cx(...parts) {
@@ -14,11 +18,12 @@
     }
 
     async function jsonFetch(url, options = {}) {
+        const isFormData = options.body instanceof FormData;
         const response = await fetch(url, {
             ...options,
             headers: {
-                'Content-Type': 'application/json',
                 'Accept': 'application/json',
+                ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
                 ...(options.headers || {})
             }
         });
@@ -93,9 +98,8 @@
             return fallback;
         }
         const allowedPrefixes = {
-            prescriber: ['/ordonnances', '/prescripteur'],
-            admin: ['/admin'],
-            pharmacy: ['/admin']
+            prescriber: ['/ordonnances', '/prescripteur', '/etablissements', '/changer-mot-de-passe'],
+            admin: ['/admin', '/changer-mot-de-passe']
         }[role] || [];
         if (path === '/' || path === '/changelog') return requestedNext;
         return allowedPrefixes.some((prefix) => path === prefix || path.startsWith(`${prefix}/`))
@@ -115,7 +119,8 @@
             ['/', 'home', 'Interactions', true],
             ['/ordonnances', 'fileText', 'Ordonnances', role === 'prescriber'],
             ['/prescripteur', 'user', 'Prescripteur', role === 'prescriber'],
-            ['/admin', 'clipboard', 'Demandes', role === 'admin' || role === 'pharmacy'],
+            ['/etablissements', 'home', 'Établissements', role === 'prescriber'],
+            ['/admin', 'clipboard', 'Demandes', role === 'admin'],
         ].filter((item) => item[3]);
 
         return h('aside', { className: 'account-sidebar' }, [
@@ -123,7 +128,7 @@
                 h('span', { className: 'account-auth-mark' }, 'IAM'),
                 h('div', null, [
                     h('strong', null, user?.first_name || user?.email || 'Compte'),
-                    h('small', null, role === 'pharmacy' ? 'Pharmacie' : role === 'admin' ? 'Admin' : 'Prescripteur')
+                    h('small', null, role === 'admin' ? 'Admin' : 'Prescripteur')
                 ])
             ]),
             h('nav', { key: 'nav', className: 'account-sidebar__nav', 'aria-label': 'Navigation compte' }, items.map(([href, icon, label]) => (
@@ -174,7 +179,7 @@
             try {
                 const data = await jsonFetch(api.login, { method: 'POST', body: JSON.stringify(payload) });
                 const user = data.user || {};
-                window.location.assign(loginDestinationFor(user, next));
+                window.location.assign(user.must_change_password ? '/changer-mot-de-passe' : loginDestinationFor(user, next));
             } catch (error) {
                 setMessage(error.message);
             } finally {
@@ -190,7 +195,7 @@
         }, h('form', { className: 'account-panel account-form', onSubmit: submit }, [
             h('div', { key: 'head', className: 'account-form-head' }, [
                 h('h2', null, 'Se connecter'),
-                h('p', null, 'Utilisez le compte validé par votre administrateur ou votre pharmacie.')
+                h('p', null, 'Utilisez le compte validé par l’administrateur global.')
             ]),
             h(Notice, { key: 'notice', message, tone: 'danger' }),
             h(Field, { key: 'email', label: 'Email', name: 'email', type: 'email', value: form.email, onChange: update, required: true }),
@@ -203,7 +208,16 @@
     }
 
     function Register() {
-        const [form, setForm] = React.useState({ first_name: '', last_name: '', email: '', password: '', role: 'prescriber' });
+        const professionOptions = ['Médecin', 'Pharmacien', 'Chirurgien-dentiste', 'Sage-femme', 'Infirmier', 'Autre professionnel autorisé'];
+        const [form, setForm] = React.useState({
+            first_name: '',
+            last_name: '',
+            birthdate: '',
+            profession: professionOptions[0],
+            order_number: '',
+            email: '',
+            phone: ''
+        });
         const [message, setMessage] = React.useState('');
         const [tone, setTone] = React.useState('info');
         const [busy, setBusy] = React.useState(false);
@@ -217,18 +231,20 @@
             setBusy(true);
             setMessage('');
             const formData = new FormData(event.currentTarget);
-            const payload = {
-                first_name: String(formData.get('first_name') || form.first_name || '').trim(),
-                last_name: String(formData.get('last_name') || form.last_name || '').trim(),
-                email: String(formData.get('email') || form.email || '').trim(),
-                password: String(formData.get('password') || form.password || ''),
-                role: form.role
-            };
             try {
-                const data = await jsonFetch(api.register, { method: 'POST', body: JSON.stringify(payload) });
+                const data = await jsonFetch(api.register, { method: 'POST', body: formData });
                 setTone('success');
                 setMessage(data.message);
-                setForm({ first_name: '', last_name: '', email: '', password: '', role: form.role });
+                event.currentTarget.reset();
+                setForm({
+                    first_name: '',
+                    last_name: '',
+                    birthdate: '',
+                    profession: professionOptions[0],
+                    order_number: '',
+                    email: '',
+                    phone: ''
+                });
             } catch (error) {
                 setTone('danger');
                 setMessage(error.message);
@@ -239,33 +255,34 @@
 
         return h(AuthShell, {
             eyebrow: 'Demande de compte',
-            title: 'Choisir le bon accès',
-            description: 'La pharmacie est validée par l’admin. Les prescripteurs sont validés par la pharmacie modératrice.',
+            title: 'Demande prescripteur',
+            description: 'Votre demande est vérifiée par l’administrateur du site.',
             active: 'register'
-        }, h('form', { className: 'account-panel account-form', onSubmit: submit }, [
+        }, h('form', { className: 'account-panel account-form account-form--wide', onSubmit: submit, encType: 'multipart/form-data' }, [
             h('div', { key: 'head', className: 'account-form-head' }, [
                 h('h2', null, 'Demander un accès'),
-                h('p', null, 'Sélectionnez le type de compte avant l’envoi.')
+                h('p', null, 'Renseignez les informations dans l’ordre de votre pièce d’identité.')
             ]),
             h(Notice, { key: 'notice', message, tone }),
-            h('div', { key: 'role', className: 'account-toggle', role: 'radiogroup', 'aria-label': 'Type de compte' }, [
-                h('button', {
-                    key: 'prescriber',
-                    type: 'button',
-                    className: cx('account-toggle__item', form.role === 'prescriber' && 'is-active'),
-                    onClick: () => update('role', 'prescriber')
-                }, 'Prescripteur'),
-                h('button', {
-                    key: 'pharmacy',
-                    type: 'button',
-                    className: cx('account-toggle__item', form.role === 'pharmacy' && 'is-active'),
-                    onClick: () => update('role', 'pharmacy')
-                }, 'Pharmacie')
-            ]),
-            h(Field, { key: 'first', label: 'Prénom', name: 'first_name', value: form.first_name, onChange: update, required: true }),
-            h(Field, { key: 'last', label: 'Nom', name: 'last_name', value: form.last_name, onChange: update, required: true }),
+            h(Field, { key: 'last', label: 'Noms', name: 'last_name', value: form.last_name, onChange: update, required: true }),
+            h(Field, { key: 'first', label: 'Prénoms', name: 'first_name', value: form.first_name, onChange: update, required: true }),
+            h(Field, { key: 'birthdate', label: 'Date de naissance', name: 'birthdate', type: 'date', value: form.birthdate, onChange: update, required: true }),
+            h(Field, { key: 'profession', label: 'Profession', name: 'profession', value: form.profession, onChange: update, required: true }, h('select', {
+                name: 'profession',
+                value: form.profession,
+                required: true,
+                onChange: (event) => update('profession', event.target.value)
+            }, professionOptions.map((option) => h('option', { key: option, value: option }, option)))),
+            h(Field, { key: 'order', label: "Numéro d'inscription à l'ordre", name: 'order_number', value: form.order_number, onChange: update, required: true }),
             h(Field, { key: 'email', label: 'Email', name: 'email', type: 'email', value: form.email, onChange: update, required: true }),
-            h(Field, { key: 'password', label: 'Mot de passe', name: 'password', type: 'password', value: form.password, onChange: update, required: true }),
+            h(Field, { key: 'phone', label: 'Téléphone', name: 'phone', type: 'tel', value: form.phone, onChange: update, required: true }),
+            h(Field, { key: 'document', label: "Pièce d'identité", name: 'identity_document', required: true }, h('input', {
+                name: 'identity_document',
+                type: 'file',
+                accept: 'application/pdf,image/jpeg,image/png',
+                required: true
+            })),
+            h('p', { key: 'privacy', className: 'account-help account-form-toolbar' }, "La pièce est utilisée uniquement pour la vérification du profil. Elle est supprimée après acceptation ou refus et n’est pas conservée."),
             h('div', { key: 'actions', className: 'account-actions' }, [
                 h('a', { key: 'login', className: 'account-link-button', href: '/connexion' }, 'J’ai déjà un compte'),
                 h(Button, { key: 'submit', type: 'submit', disabled: busy }, busy ? 'Envoi...' : 'Envoyer la demande')
@@ -276,6 +293,7 @@
     function AdminRequests() {
         const [session, setSession] = React.useState(null);
         const [requests, setRequests] = React.useState([]);
+        const [establishments, setEstablishments] = React.useState([]);
         const [message, setMessage] = React.useState('');
         const [tone, setTone] = React.useState('info');
 
@@ -284,6 +302,8 @@
             setSession(sessionData.user);
             const requestData = await jsonFetch(api.requests);
             setRequests(requestData.results || []);
+            const establishmentData = await jsonFetch(api.adminEstablishments);
+            setEstablishments(establishmentData.results || []);
         }
 
         React.useEffect(() => {
@@ -308,45 +328,68 @@
             }
         }
 
-        const reviewerLabel = session?.role === 'admin' ? 'Demandes pharmacie' : 'Demandes prescripteurs';
-        const description = session?.role === 'admin'
-            ? 'L’admin valide les comptes pharmacie modératrice.'
-            : 'La pharmacie modératrice valide les comptes prescripteurs.';
-
         return h(WorkspaceShell, {
             eyebrow: 'Modération',
-            title: reviewerLabel,
-            description,
+            title: 'Demandes prescripteurs',
+            description: 'Validation globale des comptes prescripteurs et consultation des établissements.',
             user: session,
             active: '/admin'
-        }, h('section', { className: 'account-panel' }, [
-            h('div', { key: 'toolbar', className: 'account-panel-toolbar' }, [
-                h('div', null, [
-                    h('strong', null, 'Files de demandes'),
-                    h('p', null, requests.length ? `${requests.length} demande(s) visible(s)` : 'Aucune demande active')
+        }, [
+            h('section', { key: 'requests', className: 'account-panel' }, [
+                h('div', { key: 'toolbar', className: 'account-panel-toolbar' }, [
+                    h('div', null, [
+                        h('strong', null, 'Files de demandes'),
+                        h('p', null, requests.length ? `${requests.length} demande(s) visible(s)` : 'Aucune demande active')
+                    ]),
+                    h(Badge, { tone: 'warning' }, 'Admin')
                 ]),
-                h(Badge, { tone: session?.role === 'admin' ? 'warning' : 'success' }, session?.role === 'admin' ? 'Admin' : 'Pharmacie')
-            ]),
-            h(Notice, { key: 'notice', message, tone }),
-            requests.length
-                ? h('div', { key: 'list', className: 'account-request-list' }, requests.map((item) => (
-                    h('article', { key: item.id, className: 'account-request-row' }, [
-                        h('div', { key: 'identity' }, [
-                            h('strong', null, [item.first_name, item.last_name].filter(Boolean).join(' ') || item.email),
-                            h('p', null, item.email),
-                            h('div', { className: 'account-row-badges' }, [
-                                h(Badge, { key: 'role', tone: item.role === 'pharmacy' ? 'warning' : 'info' }, item.role === 'pharmacy' ? 'Pharmacie' : 'Prescripteur'),
-                                h(Badge, { key: 'status', tone: item.status === 'approved' ? 'success' : item.status === 'rejected' ? 'danger' : 'neutral' }, item.status)
+                h(Notice, { key: 'notice', message, tone }),
+                requests.length
+                    ? h('div', { key: 'list', className: 'account-request-list' }, requests.map((item) => (
+                        h('article', { key: item.id, className: 'account-request-row' }, [
+                            h('div', { key: 'identity' }, [
+                                h('strong', null, [item.last_name, item.first_name].filter(Boolean).join(' ') || item.email),
+                                h('p', null, [item.email, item.phone].filter(Boolean).join(' · ')),
+                                h('p', null, [item.birthdate, item.profession, item.order_number].filter(Boolean).join(' · ')),
+                                h('div', { className: 'account-row-badges' }, [
+                                    h(Badge, { key: 'role', tone: 'info' }, 'Prescripteur'),
+                                    h(Badge, { key: 'status', tone: item.status === 'approved' ? 'success' : item.status === 'rejected' ? 'danger' : 'neutral' }, item.status),
+                                    item.has_identity_document ? h('a', {
+                                        key: 'doc',
+                                        className: 'account-link-button account-link-button--small',
+                                        href: `/api/v1/accounts/${item.id}/identity-document`
+                                    }, 'Pièce') : null
+                                ])
+                            ]),
+                            h('div', { key: 'actions', className: 'account-row-actions' }, [
+                                h(Button, { key: 'approve', variant: 'primary', disabled: item.status !== 'pending', onClick: () => review(item, 'approve') }, 'Accepter'),
+                                h(Button, { key: 'reject', variant: 'outline', disabled: item.status !== 'pending', onClick: () => review(item, 'reject') }, 'Refuser')
                             ])
-                        ]),
-                        h('div', { key: 'actions', className: 'account-row-actions' }, [
-                            h(Button, { key: 'approve', variant: 'primary', disabled: item.status !== 'pending', onClick: () => review(item, 'approve') }, 'Accepter'),
-                            h(Button, { key: 'reject', variant: 'outline', disabled: item.status !== 'pending', onClick: () => review(item, 'reject') }, 'Refuser')
                         ])
+                    )))
+                    : h('p', { key: 'empty', className: 'account-empty' }, 'Aucune demande à traiter.')
+            ]),
+            h('section', { key: 'establishments', className: 'account-panel account-panel--stacked' }, [
+                h('div', { key: 'toolbar', className: 'account-panel-toolbar' }, [
+                    h('div', null, [
+                        h('strong', null, 'Établissements des prescripteurs'),
+                        h('p', null, establishments.length ? `${establishments.length} établissement(s)` : 'Aucun établissement enregistré')
                     ])
-                )))
-                : h('p', { key: 'empty', className: 'account-empty' }, 'Aucune demande à traiter.')
-        ]));
+                ]),
+                establishments.length
+                    ? h('div', { className: 'account-request-list' }, establishments.map((item) => (
+                        h('article', { key: item.id, className: 'account-request-row' }, [
+                            h('div', null, [
+                                h('strong', null, item.name),
+                                h('p', null, [item.type, item.address].filter(Boolean).join(' · ')),
+                                h('p', null, [item.prescriber?.last_name, item.prescriber?.first_name, item.prescriber?.email].filter(Boolean).join(' · '))
+                            ]),
+                            h(Badge, { tone: item.is_active ? 'success' : 'neutral' }, item.is_active ? 'Actif' : 'Inactif')
+                        ])
+                    )))
+                    : h('p', { className: 'account-empty' }, 'Aucun établissement à afficher.')
+            ])
+        ]);
     }
 
     function Profile() {
@@ -423,10 +466,193 @@
         ]));
     }
 
+    function ChangePassword() {
+        const [form, setForm] = React.useState({ current_password: '', new_password: '', confirm_password: '' });
+        const [message, setMessage] = React.useState('');
+        const [tone, setTone] = React.useState('info');
+        const [busy, setBusy] = React.useState(false);
+
+        function update(name, value) {
+            setForm((current) => ({ ...current, [name]: value }));
+        }
+
+        async function submit(event) {
+            event.preventDefault();
+            setBusy(true);
+            setMessage('');
+            if (form.new_password !== form.confirm_password) {
+                setTone('danger');
+                setMessage('Les deux mots de passe ne correspondent pas.');
+                setBusy(false);
+                return;
+            }
+            try {
+                const data = await jsonFetch(api.changePassword, { method: 'POST', body: JSON.stringify(form) });
+                setTone('success');
+                setMessage(data.message);
+                window.setTimeout(() => window.location.assign('/ordonnances'), 700);
+            } catch (error) {
+                setTone('danger');
+                setMessage(error.message);
+            } finally {
+                setBusy(false);
+            }
+        }
+
+        return h(AuthShell, null, h('form', { className: 'account-panel account-form', onSubmit: submit }, [
+            h('div', { key: 'head', className: 'account-form-head' }, [
+                h('h2', null, 'Changer le mot de passe'),
+                h('p', null, 'Votre mot de passe temporaire doit être remplacé avant de continuer.')
+            ]),
+            h(Notice, { key: 'notice', message, tone }),
+            h(Field, { key: 'current', label: 'Mot de passe temporaire', name: 'current_password', type: 'password', value: form.current_password, onChange: update, required: true }),
+            h(Field, { key: 'new', label: 'Nouveau mot de passe', name: 'new_password', type: 'password', value: form.new_password, onChange: update, required: true }),
+            h(Field, { key: 'confirm', label: 'Confirmer', name: 'confirm_password', type: 'password', value: form.confirm_password, onChange: update, required: true }),
+            h('div', { key: 'actions', className: 'account-actions account-actions--end' }, [
+                h(Button, { key: 'submit', type: 'submit', disabled: busy }, busy ? 'Enregistrement...' : 'Enregistrer')
+            ])
+        ]));
+    }
+
+    function Establishments() {
+        const empty = {
+            id: '',
+            name: '',
+            type: '',
+            address: '',
+            phone: '',
+            email: '',
+            identifier_label: '',
+            identifier_value: '',
+            secondary_identifier_label: '',
+            secondary_identifier_value: '',
+            free_text: '',
+            is_active: true
+        };
+        const [session, setSession] = React.useState(null);
+        const [items, setItems] = React.useState([]);
+        const [form, setForm] = React.useState(empty);
+        const [message, setMessage] = React.useState('');
+        const [tone, setTone] = React.useState('info');
+        const [busy, setBusy] = React.useState(false);
+
+        async function load() {
+            const sessionData = await jsonFetch(api.session);
+            setSession(sessionData.user);
+            const data = await jsonFetch(api.establishments);
+            setItems(data.results || []);
+        }
+
+        React.useEffect(() => {
+            load().catch((error) => {
+                setTone('danger');
+                setMessage(error.message);
+            });
+        }, []);
+
+        function update(name, value) {
+            setForm((current) => ({ ...current, [name]: value }));
+        }
+
+        async function submit(event) {
+            event.preventDefault();
+            setBusy(true);
+            setMessage('');
+            const formData = new FormData(event.currentTarget);
+            formData.set('is_active', form.is_active ? '1' : '0');
+            try {
+                const url = form.id ? `${api.establishments}/${form.id}` : api.establishments;
+                const data = await jsonFetch(url, { method: form.id ? 'PUT' : 'POST', body: formData });
+                setTone('success');
+                setMessage(data.message);
+                setForm(empty);
+                event.currentTarget.reset();
+                await load();
+            } catch (error) {
+                setTone('danger');
+                setMessage(error.message);
+            } finally {
+                setBusy(false);
+            }
+        }
+
+        async function deactivate(item) {
+            await jsonFetch(`${api.establishments}/${item.id}`, { method: 'DELETE' });
+            await load();
+        }
+
+        const fields = [
+            ['name', 'Nom'],
+            ['type', 'Type'],
+            ['phone', 'Téléphone'],
+            ['email', 'Email'],
+            ['identifier_label', 'Libellé identifiant'],
+            ['identifier_value', 'Valeur identifiant'],
+            ['secondary_identifier_label', 'Libellé secondaire'],
+            ['secondary_identifier_value', 'Valeur secondaire']
+        ];
+
+        return h(WorkspaceShell, {
+            eyebrow: 'Prescripteur',
+            title: 'Établissements',
+            description: 'Créez les structures utilisées dans l’en-tête des ordonnances.',
+            user: session,
+            active: '/etablissements'
+        }, [
+            h('form', { key: 'form', className: 'account-panel account-form account-form--wide', onSubmit: submit }, [
+                h('div', { key: 'toolbar', className: 'account-panel-toolbar account-form-toolbar' }, [
+                    h('div', null, [
+                        h('strong', null, form.id ? 'Modifier un établissement' : 'Nouvel établissement'),
+                        h('p', null, 'Ces informations seront proposées dans la liste déroulante de l’ordonnance.')
+                    ]),
+                    form.id ? h(Button, { variant: 'outline', onClick: () => setForm(empty) }, 'Nouveau') : null
+                ]),
+                h(Notice, { key: 'notice', message, tone }),
+                ...fields.map(([name, label]) => h(Field, { key: name, label, name, value: form[name], onChange: update, required: name === 'name' })),
+                h(Field, { key: 'address', label: 'Adresse', name: 'address', value: form.address, onChange: update, rows: 3 }),
+                h(Field, { key: 'free', label: 'Mentions libres', name: 'free_text', value: form.free_text, onChange: update, rows: 3 }),
+                h(Field, { key: 'logo', label: 'Logo', name: 'logo' }, h('input', { name: 'logo', type: 'file', accept: 'image/jpeg,image/png' })),
+                h('label', { key: 'active', className: 'account-check account-form-toolbar' }, [
+                    h('input', { type: 'checkbox', checked: form.is_active, onChange: (event) => update('is_active', event.target.checked) }),
+                    h('span', null, 'Établissement actif')
+                ]),
+                h('div', { key: 'actions', className: 'account-actions account-actions--end' }, [
+                    h(Button, { key: 'submit', type: 'submit', disabled: busy }, busy ? 'Enregistrement...' : 'Enregistrer')
+                ])
+            ]),
+            h('section', { key: 'list', className: 'account-panel account-panel--stacked' }, [
+                h('div', { className: 'account-panel-toolbar' }, [
+                    h('div', null, [
+                        h('strong', null, 'Liste des établissements'),
+                        h('p', null, items.length ? `${items.length} établissement(s)` : 'Aucun établissement enregistré')
+                    ])
+                ]),
+                items.length ? h('div', { className: 'account-request-list' }, items.map((item) => (
+                    h('article', { key: item.id, className: 'account-request-row' }, [
+                        h('div', null, [
+                            h('strong', null, item.name),
+                            h('p', null, [item.type, item.address].filter(Boolean).join(' · ')),
+                            h('div', { className: 'account-row-badges' }, [
+                                h(Badge, { tone: item.is_active ? 'success' : 'neutral' }, item.is_active ? 'Actif' : 'Inactif'),
+                                item.has_logo ? h(Badge, { tone: 'info' }, 'Logo') : null
+                            ])
+                        ]),
+                        h('div', { className: 'account-row-actions' }, [
+                            h(Button, { variant: 'outline', onClick: () => setForm({ ...empty, ...item }) }, 'Modifier'),
+                            h(Button, { variant: 'outline', disabled: !item.is_active, onClick: () => deactivate(item) }, 'Désactiver')
+                        ])
+                    ])
+                ))) : h('p', { className: 'account-empty' }, 'Aucun établissement à afficher.')
+            ])
+        ]);
+    }
+
     function App({ page, next }) {
         if (page === 'register') return h(Register);
         if (page === 'admin') return h(AdminRequests);
         if (page === 'profile') return h(Profile);
+        if (page === 'change-password') return h(ChangePassword);
+        if (page === 'establishments') return h(Establishments);
         return h(Login, { next });
     }
 

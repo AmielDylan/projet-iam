@@ -22,23 +22,45 @@
             <section class="account-panel account-form account-fallback__panel">
                 <div class="account-form-head">
                     <h2>Demander un accès</h2>
-                    <p>Ce formulaire reste disponible si l'interface interactive ne se charge pas.</p>
+                    <p>Demande prescripteur validée par l'administrateur.</p>
                 </div>
-                <form method="post" class="account-form">
+                <form method="post" class="account-form" enctype="multipart/form-data">
+                    <label class="account-field"><span>Noms</span><input name="last_name" type="text" required></label>
+                    <label class="account-field"><span>Prénoms</span><input name="first_name" type="text" required></label>
+                    <label class="account-field"><span>Date de naissance</span><input name="birthdate" type="date" required></label>
                     <label class="account-field">
-                        <span>Type de compte</span>
-                        <select name="role" required>
-                            <option value="prescriber">Prescripteur</option>
-                            <option value="pharmacy">Pharmacie</option>
+                        <span>Profession</span>
+                        <select name="profession" required>
+                            <option value="Médecin">Médecin</option>
+                            <option value="Pharmacien">Pharmacien</option>
+                            <option value="Chirurgien-dentiste">Chirurgien-dentiste</option>
+                            <option value="Sage-femme">Sage-femme</option>
+                            <option value="Infirmier">Infirmier</option>
+                            <option value="Autre professionnel autorisé">Autre professionnel autorisé</option>
                         </select>
                     </label>
-                    <label class="account-field"><span>Prénom</span><input name="first_name" type="text" required></label>
-                    <label class="account-field"><span>Nom</span><input name="last_name" type="text" required></label>
+                    <label class="account-field"><span>Numéro d'inscription à l'ordre</span><input name="order_number" type="text" required></label>
                     <label class="account-field"><span>Email</span><input name="email" type="email" required autocomplete="email"></label>
-                    <label class="account-field"><span>Mot de passe</span><input name="password" type="password" required autocomplete="new-password"></label>
+                    <label class="account-field"><span>Téléphone</span><input name="phone" type="tel" required></label>
+                    <label class="account-field"><span>Pièce d'identité</span><input name="identity_document" type="file" accept="application/pdf,image/jpeg,image/png" required></label>
+                    <p class="account-help">La pièce est utilisée uniquement pour la vérification du profil. Elle est supprimée après acceptation ou refus.</p>
                     <div class="account-actions">
                         <a class="account-link-button" href="/connexion">J'ai déjà un compte</a>
                         <button class="account-button account-button--primary" type="submit">Envoyer la demande</button>
+                    </div>
+                </form>
+            </section>
+            {% elif account_page == 'change-password' %}
+            <section class="account-panel account-form account-fallback__panel">
+                <div class="account-form-head">
+                    <h2>Changer le mot de passe</h2>
+                    <p>Remplacez le mot de passe temporaire avant de continuer.</p>
+                </div>
+                <form method="post" class="account-form">
+                    <label class="account-field"><span>Mot de passe temporaire</span><input name="current_password" type="password" required autocomplete="current-password"></label>
+                    <label class="account-field"><span>Nouveau mot de passe</span><input name="new_password" type="password" required autocomplete="new-password"></label>
+                    <div class="account-actions">
+                        <button class="account-button account-button--primary" type="submit">Enregistrer</button>
                     </div>
                 </form>
             </section>

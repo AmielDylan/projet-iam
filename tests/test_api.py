@@ -1,4 +1,5 @@
 """Tests for API endpoints."""
+from io import BytesIO
 import json
 import pytest
 from unittest.mock import patch, MagicMock
@@ -204,32 +205,40 @@ class TestAuthAccountEndpoints:
         assert data['user']['role'] == 'admin'
         mock_session_user.assert_called_once_with()
 
-    def test_register_pharmacy_request(self, client):
+    def test_register_prescriber_request(self, client):
         with patch('app.api.routes.AuthService.create_account_request') as mock_create:
             mock_create.return_value = (True, 'Demande créée.')
 
-            response = client.post('/api/v1/auth/register', json={
-                'email': 'pharmacie@example.test',
-                'password': 'password123',
-                'first_name': 'Pharmacie',
-                'last_name': 'IAM',
-                'role': 'pharmacy',
-            })
+            response = client.post('/api/v1/auth/register', data={
+                'email': 'prescripteur@example.test',
+                'first_name': 'Jean',
+                'last_name': 'ADJOVI',
+                'birthdate': '1980-01-02',
+                'profession': 'Médecin',
+                'order_number': 'BJ-123',
+                'phone': '+22901020304',
+                'identity_document': (BytesIO(b'%PDF-1.4'), 'piece.pdf'),
+            }, content_type='multipart/form-data')
 
         assert response.status_code == 200
         assert response.get_json()['success'] is True
         mock_create.assert_called_once_with(
-            'pharmacie@example.test',
-            'password123',
-            'Pharmacie',
-            'IAM',
-            'pharmacy',
+            'prescripteur@example.test',
+            '',
+            'Jean',
+            'ADJOVI',
+            'prescriber',
+            '1980-01-02',
+            'Médecin',
+            'BJ-123',
+            '+22901020304',
+            mock_create.call_args.args[-1],
         )
 
-    def test_account_requests_for_pharmacy_reviewer(self, client):
+    def test_account_requests_for_admin_reviewer(self, client):
         with patch('app.api.routes.AuthService.current_user') as mock_user, \
              patch('app.api.routes.AuthService.list_account_requests') as mock_list:
-            reviewer = {'id': 2, 'role': 'pharmacy', 'status': 'approved'}
+            reviewer = {'id': 2, 'role': 'admin', 'status': 'approved'}
             mock_user.return_value = reviewer
             mock_list.return_value = [{'id': 3, 'role': 'prescriber', 'status': 'pending'}]
 
@@ -243,3 +252,31 @@ class TestAuthAccountEndpoints:
         response = client.post('/api/v1/accounts/3/review', json={'action': 'approve'})
 
         assert response.status_code == 401
+
+    def test_change_password_requires_login(self, client):
+        response = client.post('/api/v1/auth/change-password', json={
+            'current_password': 'temporary',
+            'new_password': 'new-password',
+        })
+
+        assert response.status_code == 401
+
+    def test_prescriber_establishments_list(self, client):
+        with patch('app.api.routes.AuthService.current_user') as mock_user, \
+             patch('app.api.routes.EstablishmentService.list_for_prescriber') as mock_list:
+            mock_user.return_value = {'id': 4, 'role': 'prescriber', 'status': 'approved'}
+            mock_list.return_value = [{'id': 1, 'name': 'Clinique IAM'}]
+
+            response = client.get('/api/v1/prescriber/establishments')
+
+        assert response.status_code == 200
+        assert response.get_json()['results'][0]['name'] == 'Clinique IAM'
+        mock_list.assert_called_once_with(4, active_only=False)
+
+    def test_admin_establishments_requires_admin(self, client):
+        with patch('app.api.routes.AuthService.current_user') as mock_user:
+            mock_user.return_value = {'id': 4, 'role': 'prescriber', 'status': 'approved'}
+
+            response = client.get('/api/v1/admin/establishments')
+
+        assert response.status_code == 403

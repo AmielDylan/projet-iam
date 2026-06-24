@@ -16,8 +16,14 @@ class PrescriptionWorkspace {
         this.analysisSeq = 0;
         this.latestAppliedSeq = 0;
         this.prescriber = this.readInitialProfile();
+        this.establishments = this.readInitialEstablishments();
+        this.selectedEstablishment = this.establishments.find(item => item.is_active) || null;
         this.elements = {
             layout: root.querySelector('[data-prescription-layout]'),
+            establishment: root.querySelector('[data-establishment-form]'),
+            establishmentSelect: root.querySelector('[data-establishment-select]'),
+            establishmentStatus: root.querySelector('[data-establishment-status]'),
+            saveEstablishment: root.querySelector('[data-save-establishment]'),
             patient: root.querySelector('[data-patient-form]'),
             patientSearch: root.querySelector('[data-patient-search]'),
             patientSuggestions: root.querySelector('[data-patient-suggestions]'),
@@ -48,14 +54,29 @@ class PrescriptionWorkspace {
         }
     }
 
+    readInitialEstablishments() {
+        try {
+            return JSON.parse(this.root.dataset.establishments || '[]') || [];
+        } catch {
+            return [];
+        }
+    }
+
     bindEvents() {
         this.elements.addMedication?.addEventListener('click', () => this.addMedication());
         this.elements.print?.addEventListener('click', () => this.print());
         this.elements.resizer?.addEventListener('pointerdown', (event) => this.startResize(event));
+        this.elements.saveEstablishment?.addEventListener('click', () => this.saveEstablishment());
+        this.elements.establishmentSelect?.addEventListener('change', () => this.applyEstablishmentSelection());
 
         this.root.addEventListener('input', (event) => {
             const input = event.target;
             if (!(input instanceof HTMLElement)) return;
+
+            if (input.dataset.establishmentField !== undefined) {
+                this.selectedEstablishment = this.formData(this.elements.establishment);
+                this.renderPreview();
+            }
 
             if (input.closest('[data-patient-form]')) {
                 if (input.name === 'patient_birthdate') this.updateAge();
@@ -393,8 +414,68 @@ class PrescriptionWorkspace {
 
     render() {
         this.renderMedicationList();
+        this.renderEstablishmentSelect();
         this.renderAlerts();
         this.renderPreview();
+    }
+
+    renderEstablishmentSelect() {
+        const select = this.elements.establishmentSelect;
+        if (!select) return;
+        const current = String(this.selectedEstablishment?.id || '');
+        select.innerHTML = [
+            '<option value="">Nouvel établissement</option>',
+            ...this.establishments.map(item => `<option value="${item.id}" ${String(item.id) === current ? 'selected' : ''}>${escapeHtml(item.name)}</option>`)
+        ].join('');
+        if (current) select.value = current;
+        this.fillEstablishmentForm(this.selectedEstablishment || {});
+    }
+
+    applyEstablishmentSelection() {
+        const value = this.elements.establishmentSelect?.value || '';
+        this.selectedEstablishment = this.establishments.find(item => String(item.id) === value) || null;
+        this.fillEstablishmentForm(this.selectedEstablishment || {});
+        this.renderPreview();
+    }
+
+    fillEstablishmentForm(establishment) {
+        if (!this.elements.establishment) return;
+        ['name', 'type', 'address', 'phone', 'email', 'identifier_value', 'free_text'].forEach((field) => {
+            const input = this.elements.establishment.querySelector(`[name="${field}"]`);
+            if (input) input.value = establishment?.[field] || '';
+        });
+    }
+
+    async saveEstablishment() {
+        const payload = this.formData(this.elements.establishment);
+        const id = payload.establishment_id;
+        if (!payload.name?.trim()) {
+            this.setEstablishmentStatus("Nom d'établissement requis.", false);
+            return;
+        }
+        const response = await fetch(id ? `${Config.api.prescriberEstablishments}/${id}` : Config.api.prescriberEstablishments, {
+            method: id ? 'PUT' : 'POST',
+            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        const data = await response.json();
+        if (!response.ok || data.success === false) {
+            this.setEstablishmentStatus(data.message || data.error || "Établissement non enregistré.", false);
+            return;
+        }
+        const saved = data.establishment;
+        const index = this.establishments.findIndex(item => String(item.id) === String(saved.id));
+        if (index >= 0) this.establishments[index] = saved;
+        else this.establishments.push(saved);
+        this.selectedEstablishment = saved;
+        this.setEstablishmentStatus('Établissement enregistré.', true);
+        this.render();
+    }
+
+    setEstablishmentStatus(message, success) {
+        if (!this.elements.establishmentStatus) return;
+        this.elements.establishmentStatus.textContent = message;
+        this.elements.establishmentStatus.classList.toggle('is-error', !success);
     }
 
     renderMedicationList() {
@@ -480,6 +561,7 @@ class PrescriptionWorkspace {
         const preview = this.elements.preview;
         if (!preview) return;
         const prescriber = this.prescriber || {};
+        const establishment = this.selectedEstablishment || this.formData(this.elements.establishment) || {};
         const patient = this.formData(this.elements.patient);
         const patientLine = [patient.patient_title, patient.patient_first_name, patient.patient_last_name].filter(Boolean).join(' ');
         const age = this.formatAge(patient.patient_birthdate);
@@ -489,14 +571,15 @@ class PrescriptionWorkspace {
             <div class="rx-prescription-page">
                 <header class="rx-prescription-head">
                     <div>
-                        <strong>${escapeHtml(prescriber.organization || 'Nom du cabinet')}</strong>
-                        <p>${escapeHtml(prescriber.profession || '')}</p>
-                        <p>${escapeHtml(prescriber.address || '')}</p>
-                        <p>${escapeHtml([prescriber.phone, prescriber.email].filter(Boolean).join(' - '))}</p>
+                        <strong>${escapeHtml(establishment.name || prescriber.organization || 'Nom du cabinet')}</strong>
+                        <p>${escapeHtml(establishment.type || prescriber.profession || '')}</p>
+                        <p>${escapeHtml(establishment.address || prescriber.address || '')}</p>
+                        <p>${escapeHtml([establishment.phone || prescriber.phone, establishment.email || prescriber.email].filter(Boolean).join(' - '))}</p>
+                        <p>${escapeHtml(establishment.free_text || '')}</p>
                     </div>
                     <div>
                         <p>${escapeHtml([prescriber.title, prescriber.first_name, prescriber.last_name].filter(Boolean).join(' '))}</p>
-                        <p>${escapeHtml(this.identifierLine(prescriber.identifier_label, prescriber.identifier_value))}</p>
+                        <p>${escapeHtml(this.identifierLine(establishment.identifier_label || prescriber.identifier_label, establishment.identifier_value || prescriber.identifier_value))}</p>
                         <p>${escapeHtml(this.identifierLine(prescriber.secondary_identifier_label, prescriber.secondary_identifier_value))}</p>
                     </div>
                 </header>

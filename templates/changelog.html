@@ -25,7 +25,7 @@
                 <div class="timeline__body">
                     <div class="timeline__card">
                         <div class="timeline__card-header">
-                            <h2 class="timeline__card-title">Comptes pharmacie &amp; interfaces React</h2>
+                            <h2 class="timeline__card-title">Demandes prescripteur &amp; établissements</h2>
                             <time class="timeline__date">Juin 2026</time>
                         </div>
                         <div class="timeline__section">
@@ -33,10 +33,11 @@
                                 <span class="timeline__section-badge timeline__section-badge--new">Nouveau</span>
                             </div>
                             <ul class="timeline__list">
-                                <li>Introduction de React pour les interfaces connexion, inscription, demandes et profil prescripteur</li>
-                                <li>Demande de compte pharmacie distincte, validée par le compte administrateur</li>
-                                <li>Rôle pharmacie modératrice chargé de valider les comptes prescripteurs</li>
-                                <li>Endpoints JSON de session, connexion, inscription, déconnexion et modération des demandes</li>
+                                <li>Inscription remplacée par une demande de compte prescripteur validée par l’administrateur global</li>
+                                <li>Collecte des informations identité/profession et pièce justificative temporaire limitée à 5 Mo</li>
+                                <li>Acceptation avec mot de passe temporaire valable 24h, envoi SMTP et changement obligatoire au premier login</li>
+                                <li>Gestion des établissements du prescripteur avec logo, adresse, identifiants et mentions libres</li>
+                                <li>Création d’un établissement depuis la page dédiée ou directement depuis l’ordonnance</li>
                             </ul>
                         </div>
                         <div class="timeline__section">
@@ -44,9 +45,19 @@
                                 <span class="timeline__section-badge timeline__section-badge--update">Amélioration</span>
                             </div>
                             <ul class="timeline__list">
-                                <li>Interfaces compte inspirées shadcn/Dice UI : champs structurés, boutons sobres, badges de statut et contrôles segmentés</li>
-                                <li>Règle de validation clarifiée : admin pour pharmacie, pharmacie pour prescripteurs</li>
-                                <li>Navigation adaptée avec un accès "Demandes" pour admin et pharmacie</li>
+                                <li>Interfaces compte inspirées shadcn/Dice UI : formulaires plus lisibles, états sobres et actions explicites</li>
+                                <li>Suppression du flux pharmacie et centralisation de la validation côté administrateur global</li>
+                                <li>Vue admin lecture seule des établissements associés aux prescripteurs</li>
+                                <li>Ordonnance enrichie par le choix d’établissement et le préremplissage de l’en-tête A4</li>
+                            </ul>
+                        </div>
+                        <div class="timeline__section">
+                            <div class="timeline__section-label">
+                                <span class="timeline__section-badge timeline__section-badge--fix">Sécurité</span>
+                            </div>
+                            <ul class="timeline__list">
+                                <li>Suppression du document justificatif dès acceptation ou refus de la demande</li>
+                                <li>Endpoints protégés pour consultation du justificatif, décision admin et changement de mot de passe</li>
                             </ul>
                         </div>
                     </div>

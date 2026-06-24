@@ -37,8 +37,9 @@
                         <li><a href="/ordonnances" class="site-nav__link{% if request.endpoint == 'web.prescriptions' %} active{% endif %}">Ordonnances</a></li>
                         {% if current_user and current_user.role == 'prescriber' %}
                         <li><a href="/prescripteur" class="site-nav__link{% if request.endpoint == 'web.prescriber_profile' %} active{% endif %}">Prescripteur</a></li>
+                        <li><a href="/etablissements" class="site-nav__link{% if request.endpoint == 'web.establishments' %} active{% endif %}">Établissements</a></li>
                         {% endif %}
-                        {% if current_user and current_user.role in ['admin', 'pharmacy'] %}
+                        {% if current_user and current_user.role == 'admin' %}
                         <li><a href="/admin" class="site-nav__link{% if request.endpoint == 'web.admin' %} active{% endif %}">Demandes</a></li>
                         {% endif %}
                         <li><a href="/changelog" class="site-nav__link{% if request.endpoint == 'web.changelog' %} active{% endif %}">Changelog</a></li>
