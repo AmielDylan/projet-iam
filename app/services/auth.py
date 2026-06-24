@@ -1,6 +1,7 @@
 """Authentication, prescriber profile, and patient history services."""
 from __future__ import annotations
 
+import base64
 import hashlib
 import secrets
 from datetime import datetime
@@ -356,11 +357,13 @@ class AuthService:
                 mime_type = 'image/png'
         if mime_type not in IDENTITY_DOCUMENT_MIME_TYPES:
             return None, "Format de pièce invalide: PDF, JPG ou PNG uniquement."
+        # Base64-encode binary content to avoid UTF-8 charset errors in database
+        content_b64 = base64.b64encode(content).decode('ascii')
         return {
             "filename": filename,
             "mime_type": mime_type,
             "size_bytes": len(content),
-            "content": content,
+            "content": content_b64,
         }, None
 
     @staticmethod
