@@ -1,7 +1,10 @@
 """Tests for service layer."""
+from io import BytesIO
 import pytest
 from unittest.mock import patch, MagicMock
+from werkzeug.datastructures import FileStorage
 
+from app.services.auth import AuthService, EstablishmentService
 from app.services.interaction import InteractionService, MedicationType
 from app.services.autocomplete import AutocompleteService
 from app.api.validators import (
@@ -181,3 +184,86 @@ class TestValidators:
         """Test autocomplete validation raises for too long query."""
         with pytest.raises(ValidationError):
             validate_autocomplete_query('A' * 200)
+
+
+class TestAuthV32:
+    """Tests for V3.2 account verification helpers."""
+
+    def test_validate_identity_document_accepts_pdf(self, app):
+        with app.app_context():
+            file_storage = FileStorage(
+                stream=BytesIO(b'%PDF-1.4'),
+                filename='piece.pdf',
+                content_type='application/pdf',
+            )
+
+            document, error = AuthService.validate_identity_document(file_storage)
+
+        assert error is None
+        assert document['filename'] == 'piece.pdf'
+        assert document['mime_type'] == 'application/pdf'
+
+    def test_validate_identity_document_rejects_bad_mime(self, app):
+        with app.app_context():
+            file_storage = FileStorage(
+                stream=BytesIO(b'hello'),
+                filename='piece.txt',
+                content_type='text/plain',
+            )
+
+            document, error = AuthService.validate_identity_document(file_storage)
+
+        assert document is None
+        assert 'Format' in error
+
+    @patch('app.services.auth.EmailService.send')
+    @patch('app.services.auth.AuthService.get_user')
+    @patch('app.services.auth.DatabasePool.get_cursor')
+    def test_review_account_approves_with_email_and_deletes_document(self, mock_cursor_cm, mock_get_user, mock_send):
+        reviewer = {'id': 1, 'role': 'admin', 'status': 'approved'}
+        mock_get_user.return_value = {
+            'id': 2,
+            'email': 'doc@example.test',
+            'role': 'prescriber',
+            'status': 'pending',
+        }
+        cursor = MagicMock()
+        mock_cursor_cm.return_value.__enter__.return_value = cursor
+
+        success, message = AuthService.review_account(2, reviewer, True)
+
+        assert success is True
+        assert 'envoyé' in message
+        mock_send.assert_called_once()
+        assert any('DELETE FROM identity_documents' in call.args[0] for call in cursor.execute.call_args_list)
+
+
+class TestEstablishmentService:
+    """Tests for prescriber establishment helpers."""
+
+    @patch('app.services.auth.DatabasePool.execute_query')
+    def test_list_for_prescriber_serializes_flags(self, mock_query):
+        mock_query.return_value = [{
+            'id': 1,
+            'name': 'Clinique IAM',
+            'type': 'Clinique',
+            'address': 'Cotonou',
+            'phone': None,
+            'email': None,
+            'identifier_label': None,
+            'identifier_value': None,
+            'secondary_identifier_label': None,
+            'secondary_identifier_value': None,
+            'free_text': None,
+            'logo_filename': None,
+            'logo_mime_type': None,
+            'logo_size_bytes': None,
+            'has_logo': 0,
+            'is_active': 1,
+        }]
+
+        results = EstablishmentService.list_for_prescriber(3)
+
+        assert results[0]['name'] == 'Clinique IAM'
+        assert results[0]['is_active'] is True
+        assert results[0]['has_logo'] is False

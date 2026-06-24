@@ -12,6 +12,8 @@ const Config = {
         medicationSearch: '/api/v1/medications/search',
         prescriptionAnalyze: '/api/v1/prescriptions/analyze',
         prescriberProfile: '/api/v1/prescriber/profile',
+        prescriberEstablishments: '/api/v1/prescriber/establishments',
+        adminEstablishments: '/api/v1/admin/establishments',
         patientSearch: '/api/v1/patients/search',
         patients: '/api/v1/patients'
     },

@@ -18,10 +18,34 @@
             <a href="/prescripteur" class="btn btn-secondary btn-sm">Profil prescripteur</a>
         </header>
 
-        <section id="prescription-workspace" class="workspace-panel is-active" data-prescriber-profile='{{ prescriber_profile|tojson }}'>
+        <section
+            id="prescription-workspace"
+            class="workspace-panel is-active"
+            data-prescriber-profile='{{ prescriber_profile|tojson }}'
+            data-establishments='{{ establishments|tojson }}'
+        >
             <div class="prescription-layout prescription-layout--resizable" data-prescription-layout style="--rx-form-width: 58%;">
                 <div class="prescription-editor">
                     <section class="rx-section-block" aria-labelledby="patient-title">
+                        <h2>Établissement</h2>
+                        <form data-establishment-form class="rx-form-grid">
+                            <label class="rx-field rx-field--wide">
+                                <span>Établissement</span>
+                                <select name="establishment_id" data-establishment-select></select>
+                            </label>
+                            <label class="rx-field rx-field--wide"><span>Nom</span><input name="name" type="text" data-establishment-field></label>
+                            <label class="rx-field"><span>Type</span><input name="type" type="text" data-establishment-field placeholder="Cabinet, clinique..."></label>
+                            <label class="rx-field"><span>Téléphone</span><input name="phone" type="tel" data-establishment-field></label>
+                            <label class="rx-field rx-field--wide"><span>Adresse</span><textarea name="address" rows="2" data-establishment-field></textarea></label>
+                            <label class="rx-field"><span>Email</span><input name="email" type="email" data-establishment-field></label>
+                            <label class="rx-field"><span>Identifiant</span><input name="identifier_value" type="text" data-establishment-field></label>
+                            <label class="rx-field rx-field--wide"><span>Mentions</span><textarea name="free_text" rows="2" data-establishment-field></textarea></label>
+                            <div class="rx-form-actions rx-field--wide">
+                                <button type="button" class="btn btn-secondary btn-sm" data-save-establishment>Enregistrer l'établissement</button>
+                                <span class="rx-inline-status" data-establishment-status></span>
+                            </div>
+                        </form>
+
                         <h2 id="patient-title">Patient</h2>
                         <form data-patient-form class="rx-form-grid">
                             <label class="rx-field input-wrapper"><span>Nom</span><input name="patient_last_name" type="text" autocomplete="off" data-patient-search><div class="rx-suggestions rx-suggestions--patient" data-patient-suggestions></div></label>

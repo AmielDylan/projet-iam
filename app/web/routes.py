@@ -5,8 +5,10 @@ from flask import Blueprint, flash, redirect, render_template, request, url_for
 
 from app.services.auth import (
     AuthService,
+    EstablishmentService,
     ProfileService,
     require_account_reviewer,
+    require_login,
     require_approved_prescriber,
 )
 from app.services.interaction import InteractionService
@@ -32,9 +34,8 @@ def login_destination_for(user: dict, requested_next: str | None = None) -> str:
 
     path = parsed.path.rstrip('/') or '/'
     allowed_prefixes = {
-        'prescriber': ('/ordonnances', '/prescripteur'),
+        'prescriber': ('/ordonnances', '/prescripteur', '/etablissements', '/changer-mot-de-passe'),
         'admin': ('/admin',),
-        'pharmacy': ('/admin',),
     }.get(role, ())
     public_paths = ('/', '/changelog')
     if path in public_paths or any(path == prefix or path.startswith(f'{prefix}/') for prefix in allowed_prefixes):
@@ -106,7 +107,8 @@ def prescriptions():
     user = AuthService.current_user()
     return render_template(
         'prescription.html',
-        prescriber_profile=ProfileService.get_profile(int(user['id']))
+        prescriber_profile=ProfileService.get_profile(int(user['id'])),
+        establishments=EstablishmentService.list_for_prescriber(int(user['id'])),
     )
 
 
@@ -121,25 +123,49 @@ def login():
         flash(message, 'success' if success else 'danger')
         if success:
             user = AuthService.current_user() or {}
+            if user.get('must_change_password'):
+                return redirect(url_for('web.change_password', next=request.args.get('next') or ''))
             return redirect(login_destination_for(user, request.args.get('next')))
     return render_template('account_app.html', account_page='login')
 
 
 @web_bp.route('/inscription', methods=['GET', 'POST'])
 def register():
-    """Create a pending pharmacy or prescriber account request."""
+    """Create a pending prescriber account request."""
     if request.method == 'POST':
         success, message = AuthService.create_account_request(
             request.form.get('email', ''),
-            request.form.get('password', ''),
+            '',
             request.form.get('first_name', ''),
             request.form.get('last_name', ''),
-            request.form.get('role', 'prescriber'),
+            'prescriber',
+            request.form.get('birthdate', ''),
+            request.form.get('profession', ''),
+            request.form.get('order_number', ''),
+            request.form.get('phone', ''),
+            request.files.get('identity_document'),
         )
         flash(message, 'success' if success else 'danger')
         if success:
             return redirect(url_for('web.login'))
     return render_template('account_app.html', account_page='register')
+
+
+@web_bp.route('/changer-mot-de-passe', methods=['GET', 'POST'])
+@require_login
+def change_password():
+    """Force or allow a password change."""
+    user = AuthService.current_user()
+    if request.method == 'POST':
+        success, message = AuthService.change_password(
+            int(user['id']),
+            request.form.get('current_password', ''),
+            request.form.get('new_password', ''),
+        )
+        flash(message, 'success' if success else 'danger')
+        if success:
+            return redirect(login_destination_for(user, request.args.get('next')))
+    return render_template('account_app.html', account_page='change-password')
 
 
 @web_bp.route('/deconnexion', methods=['POST', 'GET'])
@@ -160,6 +186,13 @@ def prescriber_profile():
         flash('Profil prescripteur enregistré.', 'success')
         return redirect(url_for('web.prescriber_profile'))
     return render_template('account_app.html', account_page='profile')
+
+
+@web_bp.route('/etablissements')
+@require_approved_prescriber
+def establishments():
+    """Manage the current prescriber's establishments."""
+    return render_template('account_app.html', account_page='establishments')
 
 
 @web_bp.route('/admin', methods=['GET', 'POST'])

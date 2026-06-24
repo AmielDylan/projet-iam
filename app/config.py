@@ -58,6 +58,13 @@ class Config:
 
     # Application settings
     AUTOCOMPLETE_LIMIT: int = int(os.environ.get('AUTOCOMPLETE_LIMIT', 6))
+    MAX_IDENTITY_DOCUMENT_BYTES: int = int(os.environ.get('MAX_IDENTITY_DOCUMENT_BYTES', 5 * 1024 * 1024))
+    SMTP_HOST: str = os.environ.get('SMTP_HOST', '')
+    SMTP_PORT: int = int(os.environ.get('SMTP_PORT', 587))
+    SMTP_USER: str = os.environ.get('SMTP_USER', '')
+    SMTP_PASSWORD: str = os.environ.get('SMTP_PASSWORD', '')
+    SMTP_FROM: str = os.environ.get('SMTP_FROM', '')
+    SMTP_TLS: bool = os.environ.get('SMTP_TLS', 'true').lower() not in {'0', 'false', 'no'}
 
 
 class DevelopmentConfig(Config):
