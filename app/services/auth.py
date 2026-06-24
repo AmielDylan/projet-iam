@@ -49,7 +49,14 @@ class AuthService:
     def ensure_schema() -> None:
         """Create the auth tables when a deployment has not run migration 007."""
         with DatabasePool.get_cursor() as cursor:
-            cursor.execute(
+            def create_table(sql: str) -> None:
+                try:
+                    cursor.execute(sql)
+                except Error as exc:
+                    if getattr(exc, "errno", None) != 1050:
+                        raise
+
+            create_table(
                 """
                 CREATE TABLE IF NOT EXISTS `iam_users` (
                     `id` BIGINT PRIMARY KEY AUTO_INCREMENT,
@@ -71,7 +78,7 @@ class AuthService:
                 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
                 """
             )
-            cursor.execute(
+            create_table(
                 """
                 CREATE TABLE IF NOT EXISTS `prescriber_profiles` (
                     `id` BIGINT PRIMARY KEY AUTO_INCREMENT,
@@ -97,7 +104,7 @@ class AuthService:
                 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
                 """
             )
-            cursor.execute(
+            create_table(
                 """
                 CREATE TABLE IF NOT EXISTS `patient_history` (
                     `id` BIGINT PRIMARY KEY AUTO_INCREMENT,
