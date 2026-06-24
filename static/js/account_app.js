@@ -82,23 +82,15 @@
 
     function AuthShell({ title, eyebrow, description, children, active }) {
         return h('div', { className: 'account-auth-shell' }, [
-            h('aside', { key: 'visual', className: 'account-auth-visual' }, [
-                h('div', { key: 'brand', className: 'account-auth-brand' }, [
+            h('section', { key: 'form', className: 'account-auth-content' }, [
+                h('div', { key: 'intro', className: 'account-auth-intro' }, [
                     h('span', { className: 'account-auth-mark' }, 'IAM'),
-                    h(Badge, { tone: active === 'register' ? 'warning' : 'info' }, active === 'register' ? 'Compte validé' : 'Accès sécurisé')
-                ]),
-                h('div', { key: 'copy', className: 'account-auth-copy' }, [
                     h('span', { className: 'workspace-kicker' }, eyebrow),
                     h('h1', null, title),
                     h('p', null, description)
                 ]),
-                h('div', { key: 'steps', className: 'account-auth-steps' }, [
-                    h('div', null, [h(Icon, { name: 'shield' }), h('span', null, 'Admin valide la pharmacie')]),
-                    h('div', null, [h(Icon, { name: 'userPlus' }), h('span', null, 'Pharmacie valide les prescripteurs')]),
-                    h('div', null, [h(Icon, { name: 'fileText' }), h('span', null, 'Ordonnance réservée aux prescripteurs')])
-                ])
-            ]),
-            h('section', { key: 'form', className: 'account-auth-content' }, children)
+                children
+            ])
         ]);
     }
 

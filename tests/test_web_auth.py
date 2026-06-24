@@ -5,6 +5,14 @@ from unittest.mock import patch
 class TestWebLogin:
     """Regression tests for role-aware login redirects."""
 
+    def test_prescription_redirect_to_login_has_no_required_flash(self, client):
+        response = client.get('/ordonnances')
+
+        assert response.status_code == 302
+        assert '/connexion?next=/ordonnances' in response.headers['Location']
+        with client.session_transaction() as session:
+            assert session.get('_flashes') is None
+
     def test_admin_login_redirects_to_admin_page(self, client):
         with patch('app.web.routes.AuthService.authenticate') as mock_auth, \
              patch('app.web.routes.AuthService.current_user') as mock_user:
