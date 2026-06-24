@@ -107,8 +107,11 @@ def review_account(user_id):
         return error
     data = request.get_json(silent=True) or {}
     approve = data.get('action') == 'approve' or data.get('approve') is True
-    success, message = AuthService.review_account(user_id, user, approve, data.get('review_note', ''))
-    return jsonify({'success': success, 'message': message}), 200 if success else 403
+    success, message, extra = AuthService.review_account(user_id, user, approve, data.get('review_note', ''))
+    payload = {'success': success, 'message': message}
+    if extra:
+        payload.update(extra)
+    return jsonify(payload), 200 if success else 403
 
 
 @api_bp.route('/accounts/<int:user_id>/identity-document', methods=['GET'])

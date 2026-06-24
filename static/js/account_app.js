@@ -296,6 +296,7 @@
         const [establishments, setEstablishments] = React.useState([]);
         const [message, setMessage] = React.useState('');
         const [tone, setTone] = React.useState('info');
+        const [manualDelivery, setManualDelivery] = React.useState(null);
 
         async function load() {
             const sessionData = await jsonFetch(api.session);
@@ -315,16 +316,32 @@
 
         async function review(item, action) {
             try {
+                setManualDelivery(null);
                 const data = await jsonFetch(`/api/v1/accounts/${item.id}/review`, {
                     method: 'POST',
                     body: JSON.stringify({ action })
                 });
                 setTone('success');
                 setMessage(data.message);
+                if (data.manual_delivery) {
+                    setManualDelivery(data.manual_delivery);
+                }
                 await load();
             } catch (error) {
                 setTone('danger');
                 setMessage(error.message);
+            }
+        }
+
+        async function copyManualMessage() {
+            if (!manualDelivery?.text) return;
+            try {
+                await navigator.clipboard.writeText(manualDelivery.text);
+                setTone('success');
+                setMessage('Message copié. Il peut être transmis au prescripteur par le canal choisi.');
+            } catch (error) {
+                setTone('danger');
+                setMessage('Copie automatique impossible. Sélectionnez le texte et copiez-le manuellement.');
             }
         }
 
@@ -344,6 +361,27 @@
                     h(Badge, { tone: 'warning' }, 'Admin')
                 ]),
                 h(Notice, { key: 'notice', message, tone }),
+                manualDelivery ? h('div', { key: 'manual-delivery', className: 'account-manual-delivery' }, [
+                    h('div', { key: 'head', className: 'account-panel-toolbar' }, [
+                        h('div', null, [
+                            h('strong', null, 'Transmission manuelle'),
+                            h('p', null, `SMTP indisponible. Envoyer ce texte à ${manualDelivery.email}.`)
+                        ]),
+                        h(Button, { variant: 'outline', onClick: copyManualMessage }, [
+                            h(Icon, { key: 'icon', name: 'clipboard' }),
+                            'Copier'
+                        ])
+                    ]),
+                    h('textarea', {
+                        key: 'text',
+                        className: 'account-manual-delivery__text',
+                        readOnly: true,
+                        value: manualDelivery.text,
+                        rows: 9,
+                        onFocus: (event) => event.target.select()
+                    }),
+                    h('p', { key: 'help' }, `Mot de passe temporaire valable ${manualDelivery.expires_in_hours || 24}h. Ce message n’est affiché qu’immédiatement après acceptation.`)
+                ]) : null,
                 requests.length
                     ? h('div', { key: 'list', className: 'account-request-list' }, requests.map((item) => (
                         h('article', { key: item.id, className: 'account-request-row' }, [

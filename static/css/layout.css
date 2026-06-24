@@ -1322,6 +1322,34 @@
     border-color: rgba(220, 38, 38, 0.25);
 }
 
+.account-manual-delivery {
+    display: grid;
+    gap: var(--space-3);
+    border: 1px solid rgba(217, 119, 6, 0.28);
+    border-radius: var(--radius-md);
+    padding: var(--space-4);
+    background: rgba(217, 119, 6, 0.08);
+}
+
+.account-manual-delivery__text {
+    width: 100%;
+    min-height: 180px;
+    resize: vertical;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    padding: var(--space-3);
+    background: var(--color-surface);
+    color: var(--color-text);
+    font: inherit;
+    line-height: 1.5;
+}
+
+.account-manual-delivery p {
+    margin: 0;
+    color: var(--color-text-secondary);
+    font-size: var(--text-sm);
+}
+
 .account-badge {
     display: inline-flex;
     width: fit-content;
