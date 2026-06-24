@@ -303,7 +303,10 @@ class AuthService:
         except Error as exc:
             # Log full exception for diagnosis (not returned to client)
             try:
-                current_app.logger.exception("Failed to create account request")
+                current_app.logger.exception("Failed to create account request - document data: filename=%s, size=%d, mime=%s", 
+                                            document.get('filename', 'unknown'),
+                                            document.get('size_bytes', 0),
+                                            document.get('mime_type', 'unknown'))
             except Exception:
                 # current_app may not be available in some contexts; ignore logging failures
                 pass
@@ -324,7 +327,14 @@ class AuthService:
     def validate_identity_document(file_storage: Any) -> tuple[dict[str, Any] | None, str | None]:
         if not file_storage or not getattr(file_storage, "filename", ""):
             return None, "Pièce d'identité requise."
+        # Sanitize filename: secure + encode to UTF-8 to avoid encoding issues
         filename = secure_filename(file_storage.filename) or "piece-identite"
+        try:
+            # Ensure filename is valid UTF-8 by encoding and re-decoding
+            filename = filename.encode('utf-8', 'replace').decode('utf-8')
+        except Exception:
+            filename = "piece-identite"
+        
         content = file_storage.read()
         try:
             file_storage.stream.seek(0)
@@ -334,8 +344,16 @@ class AuthService:
         if not content:
             return None, "Pièce d'identité vide."
         if len(content) > max_size:
-            return None, "Pièce d'identité trop volumineuse: limite 5 Mo."
+            return None, f"Pièce d'identité trop volumineuse: limite {max_size // (1024*1024)} Mo."
         mime_type = (getattr(file_storage, "mimetype", "") or "").lower()
+        # Fallback: if mime type empty, try to infer from filename extension
+        if not mime_type or mime_type not in IDENTITY_DOCUMENT_MIME_TYPES:
+            if filename.endswith('.pdf'):
+                mime_type = 'application/pdf'
+            elif filename.endswith(('.jpg', '.jpeg')):
+                mime_type = 'image/jpeg'
+            elif filename.endswith('.png'):
+                mime_type = 'image/png'
         if mime_type not in IDENTITY_DOCUMENT_MIME_TYPES:
             return None, "Format de pièce invalide: PDF, JPG ou PNG uniquement."
         return {
