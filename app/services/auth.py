@@ -277,6 +277,11 @@ class AuthService:
             return False, error, None
         try:
             with DatabasePool.get_cursor() as cursor:
+                # Pre-check: avoid hitting unique constraint and provide a clearer response
+                cursor.execute("SELECT id FROM iam_users WHERE email = %s", (email,))
+                if cursor.fetchone():
+                    return False, "Un compte existe déjà avec cet email.", {"error_source": "duplicate_email"}
+
                 cursor.execute(
                     """
                     INSERT INTO iam_users
