@@ -80,6 +80,29 @@
         return h('div', { className: cx('account-notice', `account-notice--${tone}`) }, message);
     }
 
+    function loginDestinationFor(user, requestedNext) {
+        const role = user?.role;
+        const fallback = role === 'prescriber' ? '/ordonnances' : '/admin';
+        if (!requestedNext || !requestedNext.startsWith('/') || requestedNext.startsWith('//')) {
+            return fallback;
+        }
+        let path = requestedNext;
+        try {
+            path = new URL(requestedNext, window.location.origin).pathname.replace(/\/$/, '') || '/';
+        } catch (error) {
+            return fallback;
+        }
+        const allowedPrefixes = {
+            prescriber: ['/ordonnances', '/prescripteur'],
+            admin: ['/admin'],
+            pharmacy: ['/admin']
+        }[role] || [];
+        if (path === '/' || path === '/changelog') return requestedNext;
+        return allowedPrefixes.some((prefix) => path === prefix || path.startsWith(`${prefix}/`))
+            ? requestedNext
+            : fallback;
+    }
+
     function AuthShell({ children }) {
         return h('div', { className: 'account-auth-shell' }, [
             h('section', { key: 'form', className: 'account-auth-content' }, children)
@@ -151,8 +174,7 @@
             try {
                 const data = await jsonFetch(api.login, { method: 'POST', body: JSON.stringify(payload) });
                 const user = data.user || {};
-                const destination = next || (user.role === 'prescriber' ? '/ordonnances' : '/admin');
-                window.location.assign(destination);
+                window.location.assign(loginDestinationFor(user, next));
             } catch (error) {
                 setMessage(error.message);
             } finally {

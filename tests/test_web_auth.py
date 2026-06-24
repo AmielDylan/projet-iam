@@ -54,3 +54,31 @@ class TestWebLogin:
 
         assert response.status_code == 302
         assert response.headers['Location'].endswith('/admin')
+
+    def test_admin_login_ignores_prescription_next_parameter(self, client):
+        with patch('app.web.routes.AuthService.authenticate') as mock_auth, \
+             patch('app.web.routes.AuthService.current_user') as mock_user:
+            mock_auth.return_value = (True, 'Connexion réussie.')
+            mock_user.return_value = {'id': 3, 'role': 'admin', 'status': 'approved'}
+
+            response = client.post('/connexion?next=/ordonnances', data={
+                'email': 'iarappbj@gmail.com',
+                'password': 'temporary-password',
+            })
+
+        assert response.status_code == 302
+        assert response.headers['Location'].endswith('/admin')
+
+    def test_prescriber_login_accepts_prescription_next_parameter(self, client):
+        with patch('app.web.routes.AuthService.authenticate') as mock_auth, \
+             patch('app.web.routes.AuthService.current_user') as mock_user:
+            mock_auth.return_value = (True, 'Connexion réussie.')
+            mock_user.return_value = {'id': 4, 'role': 'prescriber', 'status': 'approved'}
+
+            response = client.post('/connexion?next=/ordonnances', data={
+                'email': 'prescriber@example.test',
+                'password': 'temporary-password',
+            })
+
+        assert response.status_code == 302
+        assert response.headers['Location'].endswith('/ordonnances')
