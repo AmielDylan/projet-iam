@@ -263,6 +263,9 @@
                     phone: ''
                 });
                 setIsValid(false);
+                window.setTimeout(() => {
+                    window.location.assign('/connexion');
+                }, 1200);
             } catch (error) {
                 setTone('danger');
                 // Prefer detailed body message if available
