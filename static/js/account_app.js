@@ -179,7 +179,9 @@
             event.preventDefault();
             setBusy(true);
             setMessage('');
-            const formData = new FormData(event.currentTarget);
+            // Capture the real form element before any await — React pools synthetic events
+            const formEl = event.currentTarget;
+            const formData = new FormData(formEl);
             const payload = {
                 email: String(formData.get('email') || form.email || '').trim(),
                 password: String(formData.get('password') || form.password || '')
@@ -249,7 +251,8 @@
                 const data = await jsonFetch(api.register, { method: 'POST', body: formData });
                 setTone('success');
                 setMessage(data.message);
-                event.currentTarget.reset();
+                // Use captured DOM node to reset; synthetic event may be null after await
+                try { formEl.reset(); } catch (e) {}
                 setForm({
                     first_name: '',
                     last_name: '',
@@ -625,7 +628,8 @@
                 setTone('success');
                 setMessage(data.message);
                 setForm(empty);
-                event.currentTarget.reset();
+                // Capture the form element before await above, reset using it
+                try { formEl.reset(); } catch (e) {}
                 await load();
             } catch (error) {
                 setTone('danger');
