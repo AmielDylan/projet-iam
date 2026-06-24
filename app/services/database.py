@@ -37,6 +37,7 @@ class DatabasePool:
                 user=user,
                 password=password,
                 database=database,
+                charset='utf8mb4',
                 raise_on_warnings=True
             )
         except Error as err:
