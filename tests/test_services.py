@@ -237,6 +237,16 @@ class TestAuthV32:
         mock_send.assert_called_once()
         assert any('DELETE FROM identity_documents' in call.args[0] for call in cursor.execute.call_args_list)
 
+    @patch('app.services.auth.DatabasePool.execute_query')
+    def test_list_account_requests_declares_iam_users_alias(self, mock_query):
+        mock_query.return_value = []
+
+        AuthService.list_account_requests({'id': 1, 'role': 'admin', 'status': 'approved'})
+
+        sql = mock_query.call_args.args[0]
+        assert 'FROM iam_users u' in sql
+        assert 'LEFT JOIN identity_documents d ON d.user_id = u.id' in sql
+
 
 class TestEstablishmentService:
     """Tests for prescriber establishment helpers."""
