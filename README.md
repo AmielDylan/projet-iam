@@ -112,6 +112,7 @@ Le parcours public reste l'interface d'interactions. La création d'ordonnance n
 1. Le prescripteur dépose une demande via `/inscription` avec identité, profession, numéro d'ordre, coordonnées et justificatif PDF/JPG/PNG.
 2. L'administrateur consulte `/admin`, vérifie le justificatif puis accepte ou refuse la demande.
 3. En cas d'acceptation, un mot de passe temporaire valable 24h est envoyé par SMTP et doit être changé au premier login.
+   Si SMTP n'est pas configuré, l'acceptation reste possible et l'interface admin génère un texte à copier pour transmettre le mot de passe par un autre canal.
 4. Le justificatif binaire est supprimé de la base dès la décision.
 5. Le prescripteur configure ses établissements depuis `/etablissements`, ou en crée un directement pendant la rédaction d'une ordonnance.
 

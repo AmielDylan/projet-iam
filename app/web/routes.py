@@ -203,7 +203,7 @@ def admin():
     if request.method == 'POST':
         action = request.form.get('action')
         target_id = int(request.form.get('user_id') or 0)
-        success, message = AuthService.review_account(
+        success, message, _extra = AuthService.review_account(
             target_id,
             user,
             approve=action == 'approve',
