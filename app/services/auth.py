@@ -310,6 +310,9 @@ class AuthService:
             # Duplicate email
             if getattr(exc, "errno", None) == 1062:
                 return False, "Un compte existe déjà avec cet email.", {"error_source": "duplicate_email"}
+            # Charset/encoding issue (e.g., malformed identity document or invalid characters)
+            if getattr(exc, "errno", None) == 1300:
+                return False, "Pièce d'identité invalide ou caractères non reconnus. Vérifiez le fichier.", {"error_source": "invalid_characters"}
             # Return a safe, user-friendly message plus a minimal error source for diagnostics
             return False, "Impossible de créer la demande pour le moment.", {"error_source": "database"}
 
