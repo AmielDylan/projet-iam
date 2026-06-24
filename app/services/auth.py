@@ -301,6 +301,12 @@ class AuthService:
                 )
             return True, "Demande créée. Elle doit être validée par l'administrateur.", None
         except Error as exc:
+            # Log full exception for diagnosis (not returned to client)
+            try:
+                current_app.logger.exception("Failed to create account request")
+            except Exception:
+                # current_app may not be available in some contexts; ignore logging failures
+                pass
             # Duplicate email
             if getattr(exc, "errno", None) == 1062:
                 return False, "Un compte existe déjà avec cet email.", {"error_source": "duplicate_email"}
