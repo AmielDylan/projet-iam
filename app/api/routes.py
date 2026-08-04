@@ -132,12 +132,17 @@ def identity_document(user_id):
     document = AuthService.get_identity_document(user_id)
     if not document:
         return jsonify({'success': False, 'error': 'Pièce indisponible'}), 404
-    return send_file(
+    response = send_file(
         BytesIO(document['content']),
         mimetype=document['mime_type'],
-        as_attachment=True,
+        as_attachment=False,
         download_name=document['filename'],
     )
+    response.headers['Content-Disposition'] = f'inline; filename="{document["filename"]}"'
+    response.headers['Cache-Control'] = 'no-store, private'
+    response.headers['X-Content-Type-Options'] = 'nosniff'
+    response.headers['Permissions-Policy'] = 'clipboard-write=(), fullscreen=()'
+    return response
 
 
 @api_bp.route('/professions', methods=['GET'])

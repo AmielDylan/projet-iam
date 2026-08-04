@@ -151,6 +151,7 @@
 
     function AccountSidebar({ user, active }) {
         const role = user?.role || 'guest';
+        const avatarSeed = encodeURIComponent(user?.email || role || 'digiremed');
         const items = [
             ['/', 'home', 'Interactions', true],
             ['/ordonnances', 'fileText', 'Ordonnances', role === 'prescriber'],
@@ -161,7 +162,14 @@
 
         return h('aside', { className: 'account-sidebar' }, [
             h('div', { key: 'head', className: 'account-sidebar__head' }, [
-                h('span', { className: 'account-auth-mark' }, 'IAM'),
+                h('img', {
+                    key: 'avatar',
+                    className: 'account-sidebar__avatar',
+                    src: `https://api.dicebear.com/10.x/glyphs/svg?seed=${avatarSeed}&backgroundColor=e0f2fe,dbeafe,dcfce7&radius=50`,
+                    alt: '',
+                    referrerPolicy: 'no-referrer',
+                    loading: 'lazy'
+                }),
                 h('div', null, [
                     h('strong', null, user?.first_name || user?.email || 'Compte'),
                     h('small', null, role === 'admin' ? 'Admin' : 'Prescripteur')
@@ -226,7 +234,7 @@
         }
 
         return h(AuthShell, {
-            eyebrow: 'Compte IAM',
+            eyebrow: 'Compte DigiRemed',
             title: 'Connexion',
             description: 'Accès réservé aux comptes validés.',
             active: 'login'
@@ -358,14 +366,25 @@
         const [message, setMessage] = React.useState('');
         const [tone, setTone] = React.useState('info');
         const [manualDelivery, setManualDelivery] = React.useState(null);
+        const [selectedRequestId, setSelectedRequestId] = React.useState(null);
+        const [lastUpdatedAt, setLastUpdatedAt] = React.useState(null);
 
-        async function load() {
+        async function load({ silent = false } = {}) {
             const sessionData = await jsonFetch(api.session);
             setSession(sessionData.user);
             const requestData = await jsonFetch(api.requests);
-            setRequests(requestData.results || []);
+            const nextRequests = requestData.results || [];
+            setRequests(nextRequests);
+            setLastUpdatedAt(new Date());
+            setSelectedRequestId((current) => {
+                if (!current) return nextRequests[0]?.id || null;
+                return nextRequests.some((item) => item.id === current) ? current : nextRequests[0]?.id || null;
+            });
             const establishmentData = await jsonFetch(api.adminEstablishments);
             setEstablishments(establishmentData.results || []);
+            if (!silent) {
+                setTone('info');
+            }
         }
 
         React.useEffect(() => {
@@ -373,7 +392,16 @@
                 setTone('danger');
                 setMessage(error.message);
             });
+            const timer = window.setInterval(() => {
+                load({ silent: true }).catch((error) => {
+                    setTone('danger');
+                    setMessage(error.message);
+                });
+            }, 15000);
+            return () => window.clearInterval(timer);
         }, []);
+
+        const selectedRequest = requests.find((item) => item.id === selectedRequestId) || requests[0] || null;
 
         async function review(item, action) {
             try {
@@ -392,6 +420,33 @@
                 setTone('danger');
                 setMessage(error.message);
             }
+        }
+
+        function renderDocumentPreview(item) {
+            if (!item?.has_identity_document || item.status !== 'pending') {
+                return h('div', { className: 'account-document-empty' }, 'Pièce indisponible ou déjà supprimée après décision.');
+            }
+            const documentUrl = `/api/v1/accounts/${item.id}/identity-document`;
+            const mime = item.identity_document_mime_type || '';
+            if (mime.startsWith('image/')) {
+                return h('div', { className: 'account-document-preview' }, [
+                    h('img', {
+                        key: 'image',
+                        src: documentUrl,
+                        alt: 'Pièce justificative du prescripteur',
+                        draggable: false,
+                        onContextMenu: (event) => event.preventDefault()
+                    })
+                ]);
+            }
+                return h('div', { className: 'account-document-preview' }, [
+                    h('iframe', {
+                        key: 'pdf',
+                        src: `${documentUrl}#toolbar=0&navpanes=0&scrollbar=1`,
+                        title: 'Pièce justificative du prescripteur',
+                        referrerPolicy: 'no-referrer'
+                    })
+                ]);
         }
 
         async function copyManualMessage() {
@@ -419,7 +474,10 @@
                         h('strong', null, 'Files de demandes'),
                         h('p', null, requests.length ? `${requests.length} demande(s) visible(s)` : 'Aucune demande active')
                     ]),
-                    h(Badge, { tone: 'warning' }, 'Admin')
+                    h('div', { className: 'account-toolbar-status' }, [
+                        lastUpdatedAt ? h('span', null, `Actualisé ${lastUpdatedAt.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}`) : null,
+                        h(Badge, { tone: 'warning' }, 'Auto')
+                    ])
                 ]),
                 h(Notice, { key: 'notice', message, tone }),
                 manualDelivery ? h('div', { key: 'manual-delivery', className: 'account-manual-delivery' }, [
@@ -444,8 +502,14 @@
                     h('p', { key: 'help' }, `Mot de passe temporaire valable ${manualDelivery.expires_in_hours || 24}h. Ce message n’est affiché qu’immédiatement après acceptation.`)
                 ]) : null,
                 requests.length
-                    ? h('div', { key: 'list', className: 'account-request-list' }, requests.map((item) => (
-                        h('article', { key: item.id, className: 'account-request-row' }, [
+                    ? h('div', { key: 'review-layout', className: 'account-review-layout' }, [
+                        h('div', { key: 'list', className: 'account-request-list account-request-list--compact' }, requests.map((item) => (
+                        h('button', {
+                            key: item.id,
+                            type: 'button',
+                            className: cx('account-request-row account-request-row--button', selectedRequest?.id === item.id && 'is-selected'),
+                            onClick: () => setSelectedRequestId(item.id)
+                        }, [
                             h('div', { key: 'identity' }, [
                                 h('strong', null, [item.last_name, item.first_name].filter(Boolean).join(' ') || item.email),
                                 h('p', null, [item.email, item.phone].filter(Boolean).join(' · ')),
@@ -453,19 +517,38 @@
                                 h('div', { className: 'account-row-badges' }, [
                                     h(Badge, { key: 'role', tone: 'info' }, 'Prescripteur'),
                                     h(Badge, { key: 'status', tone: item.status === 'approved' ? 'success' : item.status === 'rejected' ? 'danger' : 'neutral' }, item.status),
-                                    item.has_identity_document ? h('a', {
-                                        key: 'doc',
-                                        className: 'account-link-button account-link-button--small',
-                                        href: `/api/v1/accounts/${item.id}/identity-document`
-                                    }, 'Pièce') : null
+                                    item.has_identity_document ? h(Badge, { key: 'doc', tone: 'warning' }, 'Pièce à vérifier') : null
                                 ])
-                            ]),
-                            h('div', { key: 'actions', className: 'account-row-actions' }, [
-                                h(Button, { key: 'approve', variant: 'primary', disabled: item.status !== 'pending', onClick: () => review(item, 'approve') }, 'Accepter'),
-                                h(Button, { key: 'reject', variant: 'outline', disabled: item.status !== 'pending', onClick: () => review(item, 'reject') }, 'Refuser')
                             ])
                         ])
-                    )))
+                    ))),
+                        selectedRequest ? h('article', { key: 'detail', className: 'account-request-detail' }, [
+                            h('div', { key: 'detail-head', className: 'account-panel-toolbar' }, [
+                                h('div', null, [
+                                    h('strong', null, [selectedRequest.last_name, selectedRequest.first_name].filter(Boolean).join(' ') || selectedRequest.email),
+                                    h('p', null, 'Détails de vérification')
+                                ]),
+                                h(Badge, { tone: selectedRequest.status === 'approved' ? 'success' : selectedRequest.status === 'rejected' ? 'danger' : 'neutral' }, selectedRequest.status)
+                            ]),
+                            h('dl', { key: 'meta', className: 'account-detail-grid' }, [
+                                h('div', null, [h('dt', null, 'Email'), h('dd', null, selectedRequest.email || '-')]),
+                                h('div', null, [h('dt', null, 'Téléphone'), h('dd', null, selectedRequest.phone || '-')]),
+                                h('div', null, [h('dt', null, 'Naissance'), h('dd', null, selectedRequest.birthdate || '-')]),
+                                h('div', null, [h('dt', null, 'Profession'), h('dd', null, selectedRequest.profession || '-')]),
+                                h('div', null, [h('dt', null, "N° d'ordre"), h('dd', null, selectedRequest.order_number || '-')]),
+                                h('div', null, [h('dt', null, 'Demandé le'), h('dd', null, selectedRequest.requested_at || '-')])
+                            ]),
+                            h('div', { key: 'doc-head', className: 'account-document-head' }, [
+                                h('strong', null, 'Pièce justificative'),
+                                h('span', null, 'Consultation protégée sans téléchargement direct')
+                            ]),
+                            renderDocumentPreview(selectedRequest),
+                            h('div', { key: 'actions', className: 'account-actions account-actions--end' }, [
+                                h(Button, { key: 'reject', variant: 'outline', disabled: selectedRequest.status !== 'pending', onClick: () => review(selectedRequest, 'reject') }, 'Refuser'),
+                                h(Button, { key: 'approve', variant: 'primary', disabled: selectedRequest.status !== 'pending', onClick: () => review(selectedRequest, 'approve') }, 'Accepter')
+                            ])
+                        ]) : null
+                    ])
                     : h('p', { key: 'empty', className: 'account-empty' }, 'Aucune demande à traiter.')
             ]),
             h('section', { key: 'establishments', className: 'account-panel account-panel--stacked' }, [

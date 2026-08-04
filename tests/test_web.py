@@ -10,7 +10,7 @@ class TestHomeRoute:
         """Test GET request to home page."""
         response = client.get('/')
         assert response.status_code == 200
-        assert b'Projet IAM' in response.data
+        assert b'DigiRemed' in response.data
 
     def test_home_post_with_results(self, client, sample_interaction_data):
         """Test POST request with medication search."""
