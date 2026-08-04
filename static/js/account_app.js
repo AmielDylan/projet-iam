@@ -17,6 +17,38 @@
         return parts.filter(Boolean).join(' ');
     }
 
+    const registerFieldLabels = {
+        last_name: 'Noms',
+        first_name: 'Prénoms',
+        birthdate: 'Date de naissance',
+        profession: 'Profession',
+        order_number: "Numéro d'inscription à l'ordre",
+        email: 'Email',
+        phone: 'Téléphone',
+        identity_document: "Pièce d'identité"
+    };
+
+    const errorSourceLabels = {
+        missing_required_fields: 'Champs obligatoires manquants',
+        duplicate_email: 'Email déjà utilisé',
+        profession: 'Profession',
+        identity_document: "Pièce d'identité",
+        invalid_characters: 'Caractères ou fichier invalides',
+        database_schema: 'Configuration de la base de données',
+        database_connection: 'Connexion base de données',
+        database: 'Base de données'
+    };
+
+    function formatApiError(error) {
+        const body = error?.body || {};
+        const source = body.error_source ? (errorSourceLabels[body.error_source] || body.error_source) : '';
+        const fields = Array.isArray(body.fields)
+            ? body.fields.map((field) => registerFieldLabels[field] || field).join(', ')
+            : '';
+        const details = body.details ? `Détail: ${body.details}` : '';
+        return [source, fields, details].filter(Boolean).join(' · ') || error.message || 'Une erreur est survenue.';
+    }
+
     async function jsonFetch(url, options = {}) {
         const isFormData = options.body instanceof FormData;
         const response = await fetch(url, {
@@ -33,10 +65,6 @@
             const err = new Error(msg);
             err.status = response.status;
             err.body = data;
-            // attach readable source if provided by the server
-            if (data.error_source) err.message = `${err.message} (${data.error_source})`;
-            else if (data.details) err.message = `${err.message} — ${data.details}`;
-            else if (response.status) err.message = `${err.message} (HTTP ${response.status})`;
             throw err;
         }
         return data;
@@ -234,19 +262,29 @@
         const [isValid, setIsValid] = React.useState(false);
         const formRef = React.useRef(null);
 
+        function updateValidity() {
+            const formElement = formRef.current;
+            setIsValid(Boolean(formElement && formElement.checkValidity()));
+        }
+
         function update(name, value) {
             setForm((current) => ({ ...current, [name]: value }));
-            // update validity when textual fields change
-            try {
-                setTimeout(() => setIsValid(formRef.current ? formRef.current.checkValidity() : false), 0);
-            } catch (e) {}
+            window.setTimeout(updateValidity, 0);
         }
 
         async function submit(event) {
             event.preventDefault();
+            const formEl = event.currentTarget;
+            if (!formEl.checkValidity()) {
+                formEl.reportValidity();
+                setTone('danger');
+                setMessage('Formulaire incomplet. Renseignez tous les champs obligatoires marqués par une étoile.');
+                updateValidity();
+                return;
+            }
             setBusy(true);
             setMessage('');
-            const formData = new FormData(event.currentTarget);
+            const formData = new FormData(formEl);
             try {
                 const data = await jsonFetch(api.register, { method: 'POST', body: formData });
                 setTone('success');
@@ -268,12 +306,7 @@
                 }, 1200);
             } catch (error) {
                 setTone('danger');
-                // Prefer detailed body message if available
-                if (error && error.body && (error.body.message || error.body.error)) {
-                    setMessage(`${error.body.message || error.body.error}` + (error.body.error_source ? ` (${error.body.error_source})` : ''));
-                } else {
-                    setMessage(error.message || 'Une erreur est survenue.');
-                }
+                setMessage(`${error.message || 'Une erreur est survenue.'}${error?.body ? ` — ${formatApiError(error)}` : ''}`);
             } finally {
                 setBusy(false);
             }
@@ -290,8 +323,8 @@
                 h('p', null, 'Renseignez les informations dans l’ordre de votre pièce d’identité.')
             ]),
             h(Notice, { key: 'notice', message, tone }),
-            h(Field, { key: 'last', label: 'Noms', name: 'last_name', value: form.last_name, onChange: update, required: true }),
-            h(Field, { key: 'first', label: 'Prénoms', name: 'first_name', value: form.first_name, onChange: update, required: true }),
+            h(Field, { key: 'last', label: 'Noms', name: 'last_name', value: form.last_name, onChange: update, required: true, placeholder: 'Ex. ADJOVI' }),
+            h(Field, { key: 'first', label: 'Prénoms', name: 'first_name', value: form.first_name, onChange: update, required: true, placeholder: 'Ex. Jean Marc' }),
             h(Field, { key: 'birthdate', label: 'Date de naissance', name: 'birthdate', type: 'date', value: form.birthdate, onChange: update, required: true }),
             h(Field, { key: 'profession', label: 'Profession', name: 'profession', value: form.profession, onChange: update, required: true }, h('select', {
                 name: 'profession',
@@ -307,13 +340,14 @@
                 type: 'file',
                 accept: 'application/pdf,image/jpeg,image/png',
                 required: true,
-                onChange: () => setIsValid(formRef.current ? formRef.current.checkValidity() : false)
+                onChange: updateValidity
             })),
             h('p', { key: 'privacy', className: 'account-help account-form-toolbar' }, "La pièce est utilisée uniquement pour la vérification du profil. Elle est supprimée après acceptation ou refus et n’est pas conservée."),
             h('div', { key: 'actions', className: 'account-actions' }, [
                 h('a', { key: 'login', className: 'account-link-button', href: '/connexion' }, 'J’ai déjà un compte'),
                 h(Button, { key: 'submit', type: 'submit', disabled: busy || !isValid }, busy ? 'Envoi...' : 'Envoyer la demande')
-            ])
+            ]),
+            !isValid ? h('p', { key: 'required-help', className: 'account-help account-form-toolbar' }, 'Tous les champs marqués par une étoile rouge sont obligatoires.') : null
         ]));
     }
 
