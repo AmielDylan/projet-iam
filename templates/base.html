@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description" content="{% block meta_description %}Plateforme de visualisation des interactions médicamenteuses{% endblock %}">
-    <title>{% block title %}Projet IAM{% endblock %}</title>
+    <title>{% block title %}DigiRemed{% endblock %}</title>
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -31,7 +31,7 @@
         <nav class="site-nav" aria-label="Navigation principale">
             <div class="container">
                 <div class="site-nav__inner">
-                    <a href="/" class="site-nav__logo">IAM</a>
+                    <a href="/" class="site-nav__logo">DigiRemed</a>
                     <ul class="site-nav__links">
                         <li><a href="/" class="site-nav__link{% if request.endpoint == 'web.home' %} active{% endif %}">Interactions</a></li>
                         <li><a href="/ordonnances" class="site-nav__link{% if request.endpoint == 'web.prescriptions' %} active{% endif %}">Ordonnances</a></li>
@@ -42,9 +42,23 @@
                         {% if current_user and current_user.role == 'admin' %}
                         <li><a href="/admin" class="site-nav__link{% if request.endpoint == 'web.admin' %} active{% endif %}">Demandes</a></li>
                         {% endif %}
+                        {% if not current_user or current_user.role != 'admin' %}
                         <li><a href="/changelog" class="site-nav__link{% if request.endpoint == 'web.changelog' %} active{% endif %}">Changelog</a></li>
+                        {% endif %}
                         {% if current_user %}
-                        <li><a href="/deconnexion" class="site-nav__link">Déconnexion</a></li>
+                        <li class="site-nav__account">
+                            <span class="site-nav__user" title="{{ current_user.email }}">
+                                <img
+                                    class="site-nav__avatar"
+                                    src="https://api.dicebear.com/10.x/glyphs/svg?seed={{ current_user.email|urlencode }}&backgroundColor=e0f2fe,dbeafe,dcfce7&radius=50"
+                                    alt=""
+                                    loading="lazy"
+                                    referrerpolicy="no-referrer"
+                                >
+                                <span>{{ current_user.first_name or current_user.email }}</span>
+                            </span>
+                            <a href="/deconnexion" class="site-nav__link">Déconnexion</a>
+                        </li>
                         {% else %}
                         <li><a href="/connexion" class="site-nav__link{% if request.endpoint == 'web.login' %} active{% endif %}">Connexion</a></li>
                         {% endif %}
@@ -87,8 +101,10 @@
                     <div>
                         <p class="footer-col__title">À propos</p>
                         <ul class="footer-col__list">
-                            <li>Projet IAM</li>
+                            <li>DigiRemed</li>
+                            {% if not current_user or current_user.role != 'admin' %}
                             <li><a href="/changelog" class="footer-link">Changelog</a></li>
+                            {% endif %}
                         </ul>
                     </div>
                     <div>
@@ -100,8 +116,8 @@
                     </div>
                 </div>
                 <div class="footer-bottom">
-                    <span class="footer-brand">IAM</span>
-                    <p class="footer-copy">&copy; 2022&ndash;2026 Projet IAM &mdash; Tous droits réservés</p>
+                    <span class="footer-brand">DigiRemed</span>
+                    <p class="footer-copy">&copy; 2022&ndash;2026 DigiRemed &mdash; Tous droits réservés</p>
                 </div>
             </div>
         </footer>

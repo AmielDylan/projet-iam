@@ -317,3 +317,19 @@ class TestAuthAccountEndpoints:
             response = client.get('/api/v1/admin/establishments')
 
         assert response.status_code == 403
+
+    def test_identity_document_is_inline_for_admin(self, client):
+        with patch('app.api.routes.AuthService.current_user') as mock_user, \
+             patch('app.api.routes.AuthService.get_identity_document') as mock_document:
+            mock_user.return_value = {'id': 1, 'role': 'admin', 'status': 'approved'}
+            mock_document.return_value = {
+                'filename': 'piece.pdf',
+                'mime_type': 'application/pdf',
+                'content': b'%PDF-1.4',
+            }
+
+            response = client.get('/api/v1/accounts/3/identity-document')
+
+        assert response.status_code == 200
+        assert response.headers['Content-Disposition'].startswith('inline;')
+        assert response.headers['Cache-Control'] == 'no-store, private'
