@@ -268,13 +268,26 @@ class AuthService:
         order_number = (order_number or "").strip()
         phone = (phone or "").strip()
         role = "prescriber"
-        if not all([email, first_name, last_name, birthdate, profession, order_number, phone]):
-            return False, "Tous les champs d'identité prescripteur sont requis.", None
+        required_fields = {
+            "email": email,
+            "first_name": first_name,
+            "last_name": last_name,
+            "birthdate": birthdate,
+            "profession": profession,
+            "order_number": order_number,
+            "phone": phone,
+        }
+        missing_fields = [field for field, value in required_fields.items() if not value]
+        if missing_fields:
+            return False, "Tous les champs d'identité prescripteur sont requis.", {
+                "error_source": "missing_required_fields",
+                "fields": missing_fields,
+            }
         if profession not in PROFESSIONS:
-            return False, "Profession invalide.", None
+            return False, "Profession invalide.", {"error_source": "profession", "fields": ["profession"]}
         document, error = AuthService.validate_identity_document(identity_document)
         if error:
-            return False, error, None
+            return False, error, {"error_source": "identity_document", "fields": ["identity_document"]}
         try:
             with DatabasePool.get_cursor() as cursor:
                 # Pre-check: avoid hitting unique constraint and provide a clearer response
@@ -307,23 +320,29 @@ class AuthService:
                 )
             return True, "Demande créée. Elle doit être validée par l'administrateur.", None
         except Error as exc:
-            # Log full exception for diagnosis (not returned to client)
             try:
-                current_app.logger.exception("Failed to create account request - document data: filename=%s, size=%d, mime=%s", 
-                                            document.get('filename', 'unknown'),
-                                            document.get('size_bytes', 0),
-                                            document.get('mime_type', 'unknown'))
+                current_app.logger.exception(
+                    "Failed to create account request: errno=%s sqlstate=%s filename=%s size=%d mime=%s",
+                    getattr(exc, "errno", None),
+                    getattr(exc, "sqlstate", None),
+                    document.get("filename", "unknown"),
+                    document.get("size_bytes", 0),
+                    document.get("mime_type", "unknown"),
+                )
             except Exception:
-                # current_app may not be available in some contexts; ignore logging failures
                 pass
-            # Duplicate email
             if getattr(exc, "errno", None) == 1062:
                 return False, "Un compte existe déjà avec cet email.", {"error_source": "duplicate_email"}
-            # Charset/encoding issue (e.g., malformed identity document or invalid characters)
             if getattr(exc, "errno", None) == 1300:
                 return False, "Pièce d'identité invalide ou caractères non reconnus. Vérifiez le fichier.", {"error_source": "invalid_characters"}
-            # Return a safe, user-friendly message plus a minimal error source for diagnostics
-            return False, "Impossible de créer la demande pour le moment.", {"error_source": "database"}
+            if getattr(exc, "errno", None) == 1054:
+                return False, "La base de données n'a pas encore le schéma compte prescripteur attendu.", {"error_source": "database_schema"}
+            if getattr(exc, "errno", None) in {1045, 2002, 2003, 2005}:
+                return False, "Connexion à la base de données impossible pour le moment.", {"error_source": "database_connection"}
+            return False, "Impossible de créer la demande pour le moment.", {
+                "error_source": "database",
+                "details": f"MySQL errno {getattr(exc, 'errno', 'unknown')}",
+            }
 
     @staticmethod
     def create_prescriber_request(email: str, password: str, first_name: str, last_name: str) -> tuple[bool, str]:
@@ -588,7 +607,20 @@ class AuthService:
             (user_id,),
             dictionary=True,
         )
-        return rows[0] if rows else None
+        if not rows:
+            return None
+        document = rows[0]
+        content = document.get("content")
+        if isinstance(content, str):
+            document["content"] = base64.b64decode(content)
+        elif isinstance(content, bytearray):
+            document["content"] = bytes(content)
+        elif isinstance(content, bytes):
+            try:
+                document["content"] = base64.b64decode(content, validate=True)
+            except Exception:
+                pass
+        return document
 
     @staticmethod
     def change_password(user_id: int, current_password: str, new_password: str) -> tuple[bool, str]:

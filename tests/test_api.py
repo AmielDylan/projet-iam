@@ -235,6 +235,26 @@ class TestAuthAccountEndpoints:
             mock_create.call_args.args[-1],
         )
 
+    def test_register_prescriber_request_returns_error_source(self, client):
+        with patch('app.api.routes.AuthService.create_account_request') as mock_create:
+            mock_create.return_value = (
+                False,
+                "Tous les champs d'identité prescripteur sont requis.",
+                {'error_source': 'missing_required_fields', 'fields': ['phone']},
+            )
+
+            response = client.post('/api/v1/auth/register', data={
+                'email': 'prescripteur@example.test',
+                'first_name': 'Jean',
+                'last_name': 'ADJOVI',
+            }, content_type='multipart/form-data')
+
+        assert response.status_code == 400
+        data = response.get_json()
+        assert data['success'] is False
+        assert data['error_source'] == 'missing_required_fields'
+        assert data['fields'] == ['phone']
+
     def test_account_requests_for_admin_reviewer(self, client):
         with patch('app.api.routes.AuthService.current_user') as mock_user, \
              patch('app.api.routes.AuthService.list_account_requests') as mock_list:

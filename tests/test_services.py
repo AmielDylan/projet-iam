@@ -202,6 +202,7 @@ class TestAuthV32:
         assert error is None
         assert document['filename'] == 'piece.pdf'
         assert document['mime_type'] == 'application/pdf'
+        assert document['content'] != b'%PDF-1.4'
 
     def test_validate_identity_document_rejects_bad_mime(self, app):
         with app.app_context():
@@ -215,6 +216,34 @@ class TestAuthV32:
 
         assert document is None
         assert 'Format' in error
+
+    @patch('app.services.auth.DatabasePool.execute_query')
+    def test_get_identity_document_decodes_base64_content(self, mock_query):
+        import base64
+
+        mock_query.return_value = [{
+            'filename': 'piece.pdf',
+            'mime_type': 'application/pdf',
+            'size_bytes': 8,
+            'content': base64.b64encode(b'%PDF-1.4').decode('ascii'),
+            'status': 'pending',
+        }]
+
+        document = AuthService.get_identity_document(2)
+
+        assert document['content'] == b'%PDF-1.4'
+
+    def test_create_account_request_reports_missing_fields(self):
+        success, message, extra = AuthService.create_account_request(
+            email='doc@example.test',
+            first_name='Jean',
+            last_name='ADJOVI',
+        )
+
+        assert success is False
+        assert "champs" in message
+        assert extra['error_source'] == 'missing_required_fields'
+        assert 'phone' in extra['fields']
 
     @patch('app.services.auth.EmailService.send')
     @patch('app.services.auth.AuthService.get_user')

@@ -1197,7 +1197,8 @@
 }
 
 .account-field input,
-.account-field textarea {
+.account-field textarea,
+.account-field select {
     width: 100%;
     border: 1px solid var(--color-border);
     border-radius: var(--radius-md);
@@ -1212,7 +1213,8 @@
 }
 
 .account-field input:focus,
-.account-field textarea:focus {
+.account-field textarea:focus,
+.account-field select:focus {
     outline: none;
     border-color: var(--color-secondary);
     box-shadow: var(--focus-ring);
