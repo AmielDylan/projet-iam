@@ -39,7 +39,7 @@ def login_destination_for(user: dict, requested_next: str | None = None) -> str:
 
     path = parsed.path.rstrip('/') or '/'
     allowed_prefixes = {
-        'prescriber': ('/ordonnances', '/patients', '/prescripteur', '/etablissements', '/changer-mot-de-passe'),
+        'prescriber': ('/ordonnances', '/patients', '/securite', '/prescripteur', '/etablissements', '/changer-mot-de-passe'),
         'admin': ('/admin',),
     }.get(role, ())
     public_paths = ('/', '/changelog')
@@ -113,6 +113,15 @@ def prescriptions():
     return render_template('prescriber_app.html', title='Ordonnances', entry='list.js', initial={
         'prescriber': prescriber_identity(int(user['id'])),
     })
+
+
+@web_bp.route('/securite')
+@require_login
+def security_page():
+    """Two-factor authentication settings (ticket 22)."""
+    return render_template('prescriber_app.html', title='Sécurité', entry='security.js',
+                           extra_scripts=['vendor/qrcode-generator.js'],
+                           initial={'enrollment_required': bool(session.get('two_factor_enroll'))})
 
 
 @web_bp.route('/patients/<int:patient_id>')

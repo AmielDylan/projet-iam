@@ -3,7 +3,8 @@
  * The server holds every rule; this file keeps the screen in step with it.
  */
 import { html, render, useCallback, useEffect, useRef, useState } from '../../vendor/preact-htm-standalone.module.js';
-import { Api, onSessionLocked } from './api.js';
+import { Api } from './api.js';
+import { useSessionLock } from './shell.js';
 import { Sheet } from './sheet.js';
 import { CheckStep, PatientStep, TreatmentStep } from './steps.js';
 import { Icon, frDate, newLineId, useDebouncedEffect } from './ui.js';
@@ -57,7 +58,7 @@ function App({ initial }) {
   const [checkError, setCheckError] = useState('');
   const [focusLineId, setFocusLineId] = useState(null);
   const [dialog, setDialog] = useState(null);
-  const [locked, setLocked] = useState(null);
+  const lock = useSessionLock();
   const narrow = window.matchMedia('(max-width: 1180px)').matches;
   const [preview, setPreview] = useState(() => {
     try { const v = localStorage.getItem('rx-preview'); return v === null ? !narrow : v === '1' && !narrow; } catch { return !narrow; }
@@ -66,9 +67,6 @@ function App({ initial }) {
   const editable = ord.status === 'draft';
   const dirty = editable && JSON.stringify(content) !== savedJson.current;
   const establishment = initial.establishments.find((e) => e.id === content.establishment_id);
-
-  /* ---------- session lock ---------- */
-  useEffect(() => onSessionLocked(() => new Promise((resolve) => setLocked({ resolve }))), []);
 
   /* ---------- step in the address, so a reload comes back here ---------- */
   useEffect(() => {
@@ -294,7 +292,7 @@ function App({ initial }) {
     ${dialog && dialog.kind === 'issue' && html`<${IssueDialog} patientName=${patientName} pdf=${dialog.pdf}
       onCancel=${() => setDialog(null)} onConfirm=${(popup) => issue(popup)} />`}
     ${dialog && dialog.kind === 'cancel' && html`<${CancelDialog} onCancel=${() => setDialog(null)} onConfirm=${cancelAndCorrect} />`}
-    ${locked && html`<${LockScreen} onUnlocked=${() => { locked.resolve(); setLocked(null); }} />`}`;
+    ${lock}`;
 }
 
 function SaveStatus({ state, savedAt, ord }) {
@@ -373,23 +371,6 @@ function CancelDialog({ onCancel, onConfirm }) {
     <div class="row"><button class="btn" onClick=${onCancel}>Retour</button>
       <button class="btn btn-primary" aria-disabled=${!text} onClick=${() => text && onConfirm(text)}>Annuler et corriger</button></div>
   </dialog>`;
-}
-
-function LockScreen({ onUnlocked }) {
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
-  const submit = async (e) => {
-    e.preventDefault();
-    try { await Api.unlock(password); onUnlocked(); } catch (err) { setError(err.message); }
-  };
-  return html`<div class="lock" role="dialog" aria-modal="true" aria-labelledby="lock-title">
-    <form class="lock-card" onSubmit=${submit}>
-      <${Icon} name="lock" /><h2 id="lock-title">Session verrouillée</h2>
-      <p>Après 10 minutes d'inactivité, les données patient sont masquées. Votre brouillon est intact.</p>
-      <label class="field">Mot de passe<input type="password" value=${password} onInput=${(e) => setPassword(e.target.value)} autofocus /></label>
-      ${error && html`<p class="form-error">${error}</p>`}
-      <div class="row"><a class="btn btn-ghost" href="/deconnexion">Changer d'utilisateur</a><button class="btn btn-primary" type="submit">Déverrouiller</button></div>
-    </form></div>`;
 }
 
 const initial = JSON.parse(document.getElementById('initial-data').textContent);

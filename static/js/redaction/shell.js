@@ -10,6 +10,7 @@ export function AppBar({ current }) {
       <a href="/ordonnances" aria-current=${current === 'ordonnances' ? 'page' : undefined}>Ordonnances</a>
       <a href="/prescripteur">Profil</a>
       <a href="/etablissements">Établissements</a>
+      <a href="/securite" aria-current=${current === 'securite' ? 'page' : undefined}>Sécurité</a>
     </nav>
     <span class="spacer"></span>
     <a class="btn btn-primary btn-sm" href="/ordonnances/nouvelle">Nouvelle ordonnance</a>
@@ -76,9 +77,21 @@ export function Pager({ page, pages, onPage }) {
 }
 
 /** Password screen shown when the server locks an idle session; resolves once unlocked. */
-export function useSessionLock() {
+export function useSessionLock(idleMinutes = 10) {
   const [locked, setLocked] = useState(null);
+  // The server locks the session after 10 idle minutes; mask the screen at the same time (ticket 17).
   useEffect(() => onSessionLocked(() => new Promise((resolve) => setLocked({ resolve }))), []);
+  useEffect(() => {
+    let timer;
+    const reset = () => {
+      clearTimeout(timer);
+      timer = setTimeout(() => setLocked((current) => current || { resolve: () => {} }), idleMinutes * 60 * 1000);
+    };
+    const events = ['keydown', 'mousedown', 'touchstart', 'wheel'];
+    events.forEach((name) => window.addEventListener(name, reset, { passive: true }));
+    reset();
+    return () => { clearTimeout(timer); events.forEach((name) => window.removeEventListener(name, reset)); };
+  }, []);
   return locked && html`<${LockScreen} onUnlocked=${() => { locked.resolve(); setLocked(null); }} />`;
 }
 

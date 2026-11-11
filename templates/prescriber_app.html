@@ -14,6 +14,7 @@
   <div id="app"></div>
   <noscript><p style="padding:24px">Cette page nécessite JavaScript.</p></noscript>
   <script type="application/json" id="initial-data">{{ initial | tojson }}</script>
+  {% for script in extra_scripts or [] %}<script src="{{ url_for('static', filename=script) }}"></script>{% endfor %}
   <script type="module" src="{{ url_for('static', filename='js/redaction/' + entry) }}"></script>
 </body>
 </html>
