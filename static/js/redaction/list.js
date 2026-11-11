@@ -1,7 +1,7 @@
 /** Ordonnances page (ticket 06): drafts and issued ordonnances, filters, pagination. */
 import { html, render, useEffect, useState } from '../../vendor/preact-htm-standalone.module.js';
 import { Api } from './api.js';
-import { AppBar, OrdonnanceTable, Pager, patientName, useSessionLock } from './shell.js';
+import { AppBar, Footer, OrdonnanceTable, Pager, patientName, useSessionLock } from './shell.js';
 import { Icon, useDebouncedEffect } from './ui.js';
 
 const FILTERS = [['', 'Toutes'], ['draft', 'Brouillons'], ['issued', 'Émises'], ['cancelled', 'Annulées']];
@@ -34,6 +34,7 @@ function ListPage() {
     <main class="page">
       <div class="page-head">
         <div><h1>Ordonnances</h1><p class="lead">Brouillons et ordonnances émises, les plus récentes d'abord.</p></div>
+        <a class="btn btn-primary" href="/ordonnances/nouvelle">Nouvelle ordonnance</a>
       </div>
       <div class="toolbar">
         <div class="seg seg-inline" role="group" aria-label="Statut">${FILTERS.map(([value, label]) => html`
@@ -55,7 +56,7 @@ function ListPage() {
           </div>`)}
       ${!data && !error && html`<p class="muted">Chargement…</p>`}
     </main>
-    ${lock}`;
+    <${Footer} />${lock}`;
 }
 
 function PatientFilter({ patient, onChange }) {

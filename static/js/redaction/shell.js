@@ -13,9 +13,15 @@ export function AppBar({ current }) {
       <a href="/reglages" aria-current=${current === 'reglages' ? 'page' : undefined}>Réglages</a>
     </nav>
     <span class="spacer"></span>
-    <a class="btn btn-primary btn-sm" href="/ordonnances/nouvelle">Nouvelle ordonnance</a>
     <a class="btn btn-ghost btn-sm" href="/deconnexion">Déconnexion</a>
   </div></header>`;
+}
+
+export function Footer() {
+  return html`<footer class="site-foot"><div class="site-foot-inner">
+    <span><b>DigiRemed</b> · Aide à la prescription</span>
+    <span>Analyse fondée sur le thésaurus des interactions médicamenteuses de l'ANSM. Elle ne remplace pas le jugement du prescripteur.</span>
+  </div></footer>`;
 }
 
 const STATUS = {

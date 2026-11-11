@@ -1,9 +1,9 @@
 /** Settings: professional profile and security (two-factor authentication), in one page with two tabs. */
 import { html, render, useEffect, useState } from '../../vendor/preact-htm-standalone.module.js';
 import { api } from './api.js';
-import { AppBar, useSessionLock } from './shell.js';
+import { AppBar, Footer, useSessionLock } from './shell.js';
 
-const TABS = [['profil', 'Profil professionnel'], ['securite', 'Sécurité']];
+const TABS = [['profil', 'Profil professionnel'], ['signature', 'Signature et cachet'], ['securite', 'Sécurité']];
 
 function SettingsPage({ initial }) {
   const start = location.hash.slice(1) || initial.tab || 'profil';
@@ -16,8 +16,10 @@ function SettingsPage({ initial }) {
       <h1>Réglages</h1>
       <div class="tabs" role="tablist">${TABS.map(([key, label]) => html`
         <button role="tab" key=${key} aria-selected=${tab === key} onClick=${() => setTab(key)}>${label}</button>`)}</div>
-      ${tab === 'profil' ? html`<${ProfilePanel} />` : html`<${SecurityPanel} enrollmentRequired=${initial.enrollment_required} />`}
-    </main>${lock}`;
+      ${tab === 'profil' && html`<${ProfilePanel} />`}
+      ${tab === 'signature' && html`<${AssetsPanel} />`}
+      ${tab === 'securite' && html`<${SecurityPanel} enrollmentRequired=${initial.enrollment_required} />`}
+    </main><${Footer} />${lock}`;
 }
 
 /* ------------------------------- Profil ------------------------------- */
@@ -56,6 +58,120 @@ function ProfilePanel() {
         <span class="muted small" aria-live="polite">${state === 'saved' ? 'Profil enregistré' : ''}</span>
         <button class="btn btn-primary" type="submit" aria-disabled=${state === 'saving'}>Enregistrer</button></div>
     </form>`}`;
+}
+
+/* -------------------------- Signature et cachet -------------------------- */
+
+const ASSETS = [
+  ['signature', 'Signature', 'Signez au stylo noir ou bleu sur une feuille blanche, puis photographiez-la de près, bien à plat.'],
+  ['stamp', 'Cachet', 'Apposez votre cachet sur une feuille blanche, puis photographiez-le de près, bien à plat.'],
+];
+
+function AssetsPanel() {
+  return html`<p class="lead">Ajoutés automatiquement aux ordonnances exportées en PDF. Sur une ordonnance imprimée, vous signez et tamponnez à la main.</p>
+    ${ASSETS.map(([kind, label, help]) => html`<${AssetCard} key=${kind} kind=${kind} label=${label} help=${help} />`)}`;
+}
+
+/** Make the white paper transparent, keep the ink with soft edges, crop to the drawing. */
+function removeBackground(image, sensitivity) {
+  const scale = Math.min(1, 1000 / image.naturalWidth);
+  const width = Math.round(image.naturalWidth * scale);
+  const height = Math.round(image.naturalHeight * scale);
+  const canvas = document.createElement('canvas');
+  canvas.width = width; canvas.height = height;
+  const ctx = canvas.getContext('2d', { willReadFrequently: true });
+  ctx.drawImage(image, 0, 0, width, height);
+  const frame = ctx.getImageData(0, 0, width, height);
+  const px = frame.data;
+
+  // Paper and ink tones from the photo itself, so uneven light still works.
+  const histogram = new Uint32Array(256);
+  for (let i = 0; i < px.length; i += 4) histogram[Math.round(0.299 * px[i] + 0.587 * px[i + 1] + 0.114 * px[i + 2])] += 1;
+  const percentile = (p) => { let seen = 0; const goal = (px.length / 4) * p; for (let v = 0; v < 256; v += 1) { seen += histogram[v]; if (seen >= goal) return v; } return 255; };
+  const paper = percentile(0.6);
+  const ink = Math.min(percentile(0.02), paper - 40);
+  const threshold = paper - (paper - ink) * (0.15 + 0.6 * (1 - sensitivity / 100));
+
+  let [minX, minY, maxX, maxY] = [width, height, -1, -1];
+  for (let y = 0; y < height; y += 1) {
+    for (let x = 0; x < width; x += 1) {
+      const i = (y * width + x) * 4;
+      const lum = 0.299 * px[i] + 0.587 * px[i + 1] + 0.114 * px[i + 2];
+      const alpha = lum >= threshold ? 0 : Math.min(255, Math.round(((threshold - lum) / Math.max(1, threshold - ink)) * 255 * 1.4));
+      px[i + 3] = alpha;
+      if (alpha > 24) { minX = Math.min(minX, x); minY = Math.min(minY, y); maxX = Math.max(maxX, x); maxY = Math.max(maxY, y); }
+    }
+  }
+  if (maxX < 0) return null;
+  ctx.putImageData(frame, 0, 0);
+  const pad = 8;
+  const crop = document.createElement('canvas');
+  crop.width = Math.min(width, maxX - minX + 1 + pad * 2);
+  crop.height = Math.min(height, maxY - minY + 1 + pad * 2);
+  crop.getContext('2d').drawImage(canvas, Math.max(0, minX - pad), Math.max(0, minY - pad), crop.width, crop.height, 0, 0, crop.width, crop.height);
+  return crop;
+}
+
+function AssetCard({ kind, label, help }) {
+  const [present, setPresent] = useState(null);
+  const [version, setVersion] = useState(Date.now());
+  const [source, setSource] = useState(null);
+  const [sensitivity, setSensitivity] = useState(50);
+  const [preview, setPreview] = useState(null);
+  const [error, setError] = useState('');
+  const [busy, setBusy] = useState(false);
+  useEffect(() => { api('/prescriber/assets').then((d) => setPresent(d.assets[kind])).catch(() => setPresent(false)); }, []);
+  useEffect(() => {
+    if (!source) { setPreview(null); return; }
+    const result = removeBackground(source, sensitivity);
+    if (!result) { setPreview(null); setError("Aucun tracé trouvé : la photo est peut-être trop claire. Augmentez la sensibilité ou reprenez la photo."); return; }
+    setError(''); setPreview(result);
+  }, [source, sensitivity]);
+
+  const choose = (e) => {
+    const file = e.target.files[0];
+    e.target.value = '';
+    if (!file) return;
+    if (!file.type.startsWith('image/')) { setError('Choisissez une photo (JPG, PNG ou HEIC converti).'); return; }
+    const image = new Image();
+    image.onload = () => { setSource(image); URL.revokeObjectURL(image.src); };
+    image.onerror = () => setError("Cette image n'a pas pu être lue. Essayez une photo au format JPG ou PNG.");
+    image.src = URL.createObjectURL(file);
+  };
+  const save = () => {
+    setBusy(true);
+    preview.toBlob(async (blob) => {
+      try {
+        await api(`/prescriber/assets/${kind}`, { method: 'POST', raw: blob });
+        setPresent(true); setSource(null); setVersion(Date.now());
+      } catch (err) { setError(err.message); }
+      setBusy(false);
+    }, 'image/png');
+  };
+  const remove = async () => {
+    if (!window.confirm(`Supprimer votre ${label.toLowerCase()} ? Les ordonnances déjà émises la gardent.`)) return;
+    try { await api(`/prescriber/assets/${kind}`, { method: 'DELETE' }); setPresent(false); } catch (err) { setError(err.message); }
+  };
+
+  return html`<section class="card asset">
+    <h2>${label} ${present === true && !source && html`<span class="status status-issued">Enregistrée</span>`}</h2>
+    ${error && html`<p class="form-error" role="alert">${error}</p>`}
+    ${source ? html`
+      <div class="checker">${preview && html`<img src=${preview.toDataURL('image/png')} alt=${`Aperçu de la ${label.toLowerCase()} détourée`} />`}</div>
+      <label class="field">Sensibilité du détourage
+        <input type="range" min="0" max="100" value=${sensitivity} onInput=${(e) => setSensitivity(Number(e.target.value))} />
+        <span class="hint">Si des traces du papier restent, baissez la sensibilité. Si le tracé s'efface, augmentez-la.</span></label>
+      <div class="row-end"><button class="btn btn-ghost" onClick=${() => setSource(null)}>Annuler</button>
+        <button class="btn btn-primary" aria-disabled=${!preview || busy} onClick=${() => preview && !busy && save()}>Enregistrer</button></div>`
+    : html`
+      ${present && html`<div class="checker"><img src=${`/api/v1/prescriber/assets/${kind}?v=${version}`} alt=${label} /></div>`}
+      <p>${help}</p>
+      <div class="row">
+        <label class="btn ${present ? '' : 'btn-primary'}">${present ? 'Remplacer' : 'Importer une photo'}
+          <input class="sr" type="file" accept="image/*" capture="environment" onChange=${choose} /></label>
+        ${present && html`<button class="btn btn-ghost" onClick=${remove}>Supprimer</button>`}
+      </div>`}
+  </section>`;
 }
 
 /* ------------------------------ Sécurité ------------------------------ */

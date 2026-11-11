@@ -217,19 +217,19 @@ function App({ initial }) {
 
   /* ---------- issuing ---------- */
   const canIssue = editable && check && check.can_issue && !dirty && saveState === 'saved' && check.version === version.current;
-  const issue = async (popup) => {
+  const issue = async (popup, pdf) => {
     setDialog(null);
     try {
       const data = await Api.issue(ord.id, version.current);
       setOrd(data.ordonnance);
-      popup.location.href = `${data.print_url}?print=1`;
+      popup.location.href = `${data.print_url}?print=1${pdf ? '&pdf=1' : ''}`;
     } catch (error) {
       popup.close();
       setNotice(error.code === 'issue_refused' ? "L'ordonnance ne peut pas encore être émise : voir les points ci-dessous." : error.message);
       Api.check(ord.id).then((d) => setCheck(d.check)).catch(() => {});
     }
   };
-  const reprint = () => window.open(`/ordonnances/${ord.id}/impression?print=1`, '_blank');
+  const reprint = (pdf) => window.open(`/ordonnances/${ord.id}/impression?print=1${pdf ? '&pdf=1' : ''}`, '_blank');
   const cancelAndCorrect = async (reason) => {
     try {
       const data = await Api.cancelAndCorrect(ord.id, reason);
@@ -295,7 +295,7 @@ function App({ initial }) {
     </div>
 
     ${dialog && dialog.kind === 'issue' && html`<${IssueDialog} patientName=${patientName} pdf=${dialog.pdf}
-      onCancel=${() => setDialog(null)} onConfirm=${(popup) => issue(popup)} />`}
+      onCancel=${() => setDialog(null)} onConfirm=${(popup) => issue(popup, dialog.pdf)} />`}
     ${dialog && dialog.kind === 'cancel' && html`<${CancelDialog} onCancel=${() => setDialog(null)} onConfirm=${cancelAndCorrect} />`}
     ${lock}`;
 }
@@ -349,7 +349,7 @@ function IssueDialog({ patientName, pdf, onCancel, onConfirm }) {
   return html`<dialog ref=${ref} onCancel=${onCancel} aria-labelledby="issue-title">
     <h2 id="issue-title">Émettre l'ordonnance${patientName ? ` de ${patientName}` : ''} ?</h2>
     <p>Elle reçoit un numéro et ne peut plus être modifiée. En cas d'erreur, vous pourrez l'annuler et la corriger.</p>
-    ${pdf && html`<p class="small" style="margin-top:8px">Dans la fenêtre d'impression, choisissez « Enregistrer au format PDF ».</p>`}
+    ${pdf && html`<p class="small" style="margin-top:8px">Votre signature et votre cachet enregistrés dans les réglages y sont ajoutés. Dans la fenêtre qui s'ouvre, choisissez « Enregistrer au format PDF ».</p>`}
     <div class="row"><button class="btn" onClick=${onCancel}>Continuer la rédaction</button>
       <button class="btn btn-primary" onClick=${confirm}>${pdf ? 'Émettre et exporter' : 'Imprimer et émettre'}</button></div>
   </dialog>`;

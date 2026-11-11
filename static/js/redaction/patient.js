@@ -1,7 +1,7 @@
 /** Patient sheet (ticket 06): clinical data and history of ordonnances. */
 import { html, render, useEffect, useState } from '../../vendor/preact-htm-standalone.module.js';
 import { Api } from './api.js';
-import { AppBar, OrdonnanceTable, Pager, patientName, useSessionLock } from './shell.js';
+import { AppBar, Footer, OrdonnanceTable, Pager, patientName, useSessionLock } from './shell.js';
 import { ageLabel, ageYears, frDate } from './ui.js';
 
 const PREGNANCY = { pregnant: 'Enceinte', breastfeeding: 'Allaitement', none: 'Non concernée' };
@@ -44,7 +44,7 @@ function PatientPage({ initial }) {
         <${Pager} page=${data.page} pages=${data.pages} onPage=${setPage} />`}
       ${data && data.items.length === 0 && html`<div class="empty">Aucune ordonnance pour ce patient.</div>`}
     </main>
-    ${lock}`;
+    <${Footer} />${lock}`;
 }
 
 const initial = JSON.parse(document.getElementById('initial-data').textContent);

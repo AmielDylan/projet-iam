@@ -49,7 +49,7 @@ def login_destination_for(user: dict, requested_next: str | None = None) -> str:
         'prescriber': ('/ordonnances', '/patients', '/interactions', '/reglages', '/securite', '/prescripteur', '/etablissements', '/changer-mot-de-passe'),
         'admin': ('/admin',),
     }.get(role, ())
-    public_paths = ('/', '/changelog')
+    public_paths = ('/',)
     if path in public_paths or any(path == prefix or path.startswith(f'{prefix}/') for prefix in allowed_prefixes):
         return requested_next
     return default_destination
@@ -172,7 +172,8 @@ def print_ordonnance(ordonnance_id):
     if ordonnance is None or not ordonnance.get('snapshot'):
         abort(404)
     AccessLog.record(int(user['id']), 'ordonnance', ordonnance_id, 'print', request.remote_addr)
-    return render_template('print/ordonnance.html', ordonnance=ordonnance, s=ordonnance['snapshot'])
+    return render_template('print/ordonnance.html', ordonnance=ordonnance, s=ordonnance['snapshot'],
+                           pdf=request.args.get('pdf') == '1')
 
 
 @web_bp.route('/connexion', methods=['GET', 'POST'])
@@ -300,12 +301,6 @@ def admin():
         flash(message, 'success' if success else 'danger')
         return redirect(url_for('web.admin'))
     return render_template('prescriber_app.html', title='Administration', entry='admin.js', initial={})
-
-
-@web_bp.route('/changelog')
-def changelog():
-    """Render the changelog page."""
-    return render_template('changelog.html')
 
 
 # Legacy route compatibility

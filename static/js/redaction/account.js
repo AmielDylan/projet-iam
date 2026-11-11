@@ -22,7 +22,7 @@ function AuthShell({ children, wide }) {
   return html`<div class="auth">
     <a class="brand auth-brand" href="/">DigiRemed</a>
     <main class=${`auth-card ${wide ? 'is-wide' : ''}`}>${children}</main>
-    <p class="auth-foot muted small">Aide à la prescription · Analyse des interactions médicamenteuses</p>
+    <p class="auth-foot muted small">DigiRemed · Aide à la prescription</p>
   </div>`;
 }
 

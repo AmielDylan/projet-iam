@@ -142,7 +142,7 @@ h1 { font-size: 22px; line-height: 1.25; margin: 0 0 6px; letter-spacing: -.01em
   box-shadow: 0 12px 32px rgba(21, 25, 30, .12); overflow: hidden; }
 .suggest h3 { margin: 0; padding: 10px 16px 4px; font-size: 12px; font-weight: 600; color: var(--ink-3); }
 .opt { display: grid; grid-template-columns: 1fr auto; gap: 2px 16px; padding: 9px 16px; cursor: pointer; }
-.opt.is-hl { background: var(--field); box-shadow: inset 2px 0 0 var(--ink); }
+.opt.is-hl { background: var(--field); }
 .opt b { font-weight: 700; }
 .opt .dci { font-weight: 400; color: var(--ink-2); }
 .opt .meta { grid-column: 1; font-size: 13px; color: var(--ink-3); }
@@ -211,9 +211,6 @@ h1 { font-size: 22px; line-height: 1.25; margin: 0 0 6px; letter-spacing: -.01em
   font-size: 13px; font-weight: 600; color: var(--ink-3); }
 .sheet-frame { width: 100%; max-width: 480px; margin: 0 auto; position: relative; }
 .sheet-frame .rx-sheet { position: absolute; top: 0; left: 0; transform-origin: top left; box-shadow: var(--sheet-shadow); border-radius: var(--r-sheet); }
-.sheet-tools { display: flex; gap: 4px; padding: 4px; background: var(--panel); border: 1px solid var(--line); border-radius: 999px; box-shadow: var(--panel-shadow); }
-.sheet-tools .btn { height: 30px; border-radius: 999px; border-color: transparent; font-size: 13px; padding: 0 12px; }
-.sheet-tools .btn[aria-pressed="true"] { background: var(--field); }
 
 /* ---------- émise ---------- */
 .issued { border: 1px solid var(--line); border-radius: var(--r-panel); padding: 20px; margin-bottom: 28px; }
@@ -336,7 +333,6 @@ a.btn-primary { color: #fff; }
 @media (max-width: 720px) {
   .appnav { display: none; }
   .page { padding: 20px 16px 48px; }
-  .appbar .btn-ghost { display: none; }
 }
 
 .access-log { margin-top: 16px; border-top: 1px solid var(--line-soft); padding-top: 12px; font-size: 14px; }
@@ -403,7 +399,8 @@ a.btn-primary { color: #fff; }
 .request:first-child { border-top: 0; }
 .request .small { grid-column: 1; }
 .request .status { grid-row: 1 / span 2; grid-column: 2; align-self: center; }
-.request.is-selected { background: var(--field); box-shadow: inset 3px 0 0 var(--ink); }
+.request.is-selected { background: var(--field); }
+.request.is-selected b { text-decoration: underline; text-underline-offset: 3px; }
 .id-doc { display: block; width: 100%; max-height: 520px; min-height: 420px; object-fit: contain; border: 1px solid var(--line); border-radius: var(--r-ctl); background: var(--field); }
 .delivery { width: 100%; font: 13px/1.5 ui-monospace, monospace; border: 1px solid var(--line); border-radius: var(--r-ctl); padding: 10px; margin-bottom: 10px; }
 .chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 8px; }
@@ -424,3 +421,48 @@ a.btn-primary { color: #fff; }
 .result-title { font-size: 18px; margin: 8px 0 0; }
 .med-field .search { height: 52px; }
 .field .search input, .field .search input:focus { border: 0; box-shadow: none; height: auto; padding: 0; background: transparent; }
+
+/* ---------- pied de page commun ---------- */
+#app:has(.site-foot) { min-height: 100vh; display: flex; flex-direction: column; }
+#app:has(.site-foot) > .page { flex: 1; width: 100%; min-width: 0; }
+.site-foot { border-top: 1px solid var(--line); background: var(--panel); }
+.site-foot-inner { max-width: 1120px; margin: 0 auto; padding: 18px 32px; display: flex; justify-content: space-between; gap: 8px 24px;
+  flex-wrap: wrap; font-size: 13px; color: var(--ink-3); }
+.site-foot-inner b { color: var(--ink-2); }
+@media (max-width: 720px) { .site-foot-inner { padding: 16px; } }
+
+/* ---------- signature et cachet ---------- */
+.checker { display: grid; place-items: center; min-height: 140px; margin-bottom: 14px; border: 1px solid var(--line); border-radius: var(--r-ctl);
+  background-color: #fff; background-image: linear-gradient(45deg, #EEF0EE 25%, transparent 25%), linear-gradient(-45deg, #EEF0EE 25%, transparent 25%),
+  linear-gradient(45deg, transparent 75%, #EEF0EE 75%), linear-gradient(-45deg, transparent 75%, #EEF0EE 75%);
+  background-size: 16px 16px; background-position: 0 0, 0 8px, 8px -8px, -8px 0; }
+.checker img { max-width: 100%; max-height: 180px; object-fit: contain; padding: 10px; }
+.asset .row label.btn { cursor: pointer; }
+.asset input[type="range"] { height: auto; padding: 0; border: 0; box-shadow: none; }
+
+/* ---------- surfaces du navigateur, aux couleurs du projet ---------- */
+html { accent-color: var(--act); caret-color: var(--act); scrollbar-color: #B9C0BB transparent; }
+a { text-underline-offset: 3px; text-decoration-thickness: 1px; }
+a:hover { text-decoration-thickness: 2px; }
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-thumb { background: #C5CBC7; border-radius: 999px; border: 2px solid var(--canvas); }
+::-webkit-scrollbar-track { background: transparent; }
+
+/* ---------- téléphone : navigation sur une seconde ligne, ordonnances en cartes ---------- */
+@media (max-width: 720px) {
+  .appbar:has(.appbar-inner) { height: auto; }
+  .appbar-inner { flex-wrap: wrap; padding: 10px 16px 0; row-gap: 6px; }
+  .appbar-inner .appnav { display: flex; order: 3; width: 100%; margin: 0 -10px; overflow-x: auto; scrollbar-width: none; }
+  .appbar-inner .appnav a { white-space: nowrap; padding: 8px 10px 10px; border-radius: 0; background: none; border-bottom: 2px solid transparent; }
+  .appbar-inner .appnav a[aria-current="page"] { border-bottom-color: var(--ink); background: none; }
+  .appbar-inner .btn-ghost { display: inline-flex; }
+  .rx-table { min-width: 0; }
+  .rx-table thead { display: none; }
+  .rx-table tr { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 12px; padding: 12px 14px; border-bottom: 1px solid var(--line-soft); }
+  .rx-table tr:last-child { border-bottom: 0; }
+  .rx-table td { display: block; padding: 0; border: 0; grid-column: 1 / -1; }
+  .rx-table td:first-child { grid-column: 1; color: var(--ink-3); }
+  .rx-table td:nth-child(2) { grid-column: 2; grid-row: 1; text-align: right; }
+  .rx-table .actions { text-align: left; margin-top: 6px; }
+  .rx-table .actions > :first-child { margin-left: 0; }
+}

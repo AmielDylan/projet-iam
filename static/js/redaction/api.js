@@ -16,13 +16,13 @@ let unlockHandler = null;
 /** The app registers how to ask for the password when the session locks. */
 export function onSessionLocked(handler) { unlockHandler = handler; }
 
-export async function api(path, { method = 'GET', body } = {}) {
+export async function api(path, { method = 'GET', body, raw } = {}) {
   let response;
   try {
     response = await fetch(`/api/v1${path}`, {
       method,
-      headers: body ? { 'Content-Type': 'application/json' } : {},
-      body: body ? JSON.stringify(body) : undefined,
+      headers: raw ? { 'Content-Type': raw.type || 'application/octet-stream' } : body ? { 'Content-Type': 'application/json' } : {},
+      body: raw || (body ? JSON.stringify(body) : undefined),
       credentials: 'same-origin',
     });
   } catch {
@@ -33,7 +33,7 @@ export async function api(path, { method = 'GET', body } = {}) {
 
   if (response.status === 423 && unlockHandler) {
     await unlockHandler();
-    return api(path, { method, body });
+    return api(path, { method, body, raw });
   }
   // A refused login or code is an answer, not an expired session.
   if (response.status === 401 && !path.startsWith('/auth/')) {

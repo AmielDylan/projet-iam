@@ -1,7 +1,7 @@
 /** Establishments: header, logo and paper format of the ordonnances. */
 import { html, render, useEffect, useState } from '../../vendor/preact-htm-standalone.module.js';
 import { ApiError, api } from './api.js';
-import { AppBar, useSessionLock } from './shell.js';
+import { AppBar, Footer, useSessionLock } from './shell.js';
 import { Icon } from './ui.js';
 
 const EMPTY = { name: '', type: '', address: '', phone: '', email: '', identifier_label: '', identifier_value: '',
@@ -44,7 +44,7 @@ function EstablishmentsPage() {
             ${item.is_active && html`<button class="btn btn-sm btn-ghost" onClick=${() => deactivate(item)}>Désactiver</button>`}
           </div>
         </article>`)}</div>`}
-    </main>${lock}`;
+    </main><${Footer} />${lock}`;
 }
 
 function EstablishmentForm({ initial, onDone, onCancel }) {

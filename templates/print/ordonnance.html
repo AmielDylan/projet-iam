@@ -76,7 +76,15 @@
   {% if cancelled %}<div class="rx-cancel">Ordonnance annulée le {{ fr_date((ordonnance.cancelled_at or '')[:10]) }}. Ne pas délivrer.</div>{% endif %}
 
   <div class="rx-sign">
+    {%- set assets = s.assets or {} -%}
+    {%- if pdf and (assets.signature or assets.stamp) %}
+    <div class="rx-stamp has-images">
+      {% if assets.stamp %}<img class="rx-stamp-image" src="{{ assets.stamp }}" alt="Cachet">{% endif %}
+      {% if assets.signature %}<img class="rx-signature" src="{{ assets.signature }}" alt="Signature">{% endif %}
+    </div>
+    {%- else %}
     <div class="rx-stamp">Signature et cachet</div>
+    {%- endif %}
     <div class="rx-signer">{{ [p.title, p.first_name, p.last_name] | select | join(' ') }}{% if p.profession %}<small>{{ p.profession }}</small>{% endif %}</div>
   </div>
   <footer class="rx-foot"><span>N° {{ s.number }}</span><span>Émise le {{ fr_date((s.issued_at or '')[:10]) }}</span></footer>

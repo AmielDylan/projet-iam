@@ -254,7 +254,8 @@ export function CheckStep({ content, check, checkError, ordonnance, onDerogation
     ${issued && html`<div class="issued">
       <h2><${Icon} name="check-circle" />Ordonnance n° ${ordonnance.number} ${ordonnance.status === 'cancelled' ? 'annulée' : 'émise'}</h2>
       <p>${ordonnance.status === 'cancelled' ? `Annulée : ${ordonnance.cancel_reason}.` : 'Figée avec son analyse, ses motifs et les versions des référentiels.'}</p>
-      <div class="row"><button class="btn" onClick=${onReprint}><${Icon} name="printer" />Réimprimer</button>
+      <div class="row"><button class="btn" onClick=${() => onReprint(false)}><${Icon} name="printer" />Réimprimer</button>
+        <button class="btn" onClick=${() => onReprint(true)}><${Icon} name="file" />Exporter en PDF</button>
         ${ordonnance.status === 'issued' && html`<button class="btn btn-ghost" onClick=${onCancelCorrect}><${Icon} name="undo" />Annuler et corriger</button>`}</div>
       <${AccessLogPanel} id=${ordonnance.id} />
     </div>`}

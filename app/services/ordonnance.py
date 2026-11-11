@@ -23,6 +23,7 @@ from app.services.catalog import MedicationCatalogService
 from app.services.catalog_gaps import CatalogGaps
 from app.services.database import DatabasePool
 from app.services.patient import PatientError, PatientService, parse_date
+from app.services.prescriber_assets import PrescriberAssets
 from app.services.prescriber_code import PrescriberCodes
 from app.services.referential import ReferentialService
 from app.services.vault import vault
@@ -614,6 +615,8 @@ def _snapshot(owner_id: int, content: dict[str, Any], evaluation: dict[str, Any]
         "derogations": derogations,
         "warnings": evaluation["warnings"],
         "referentials": ReferentialService.current(),
+        # Frozen here, shown on the PDF only (scanned signature and stamp).
+        "assets": PrescriberAssets.data_uris(owner_id),
     }
 
 

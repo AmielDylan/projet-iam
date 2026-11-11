@@ -16,6 +16,7 @@ from app.services.access_log import AccessLog
 from app.services import session_lock, two_factor
 from app.services.two_factor import TwoFactor
 from app.services.catalog_gaps import CatalogEntryError, CatalogGaps
+from app.services.prescriber_assets import AssetError, PrescriberAssets
 from app.api.validators import (
     sanitize_medication_name,
     validate_autocomplete_query,
@@ -930,3 +931,34 @@ def establishment_logo(establishment_id):
         return jsonify({'success': False, 'error': 'Logo introuvable'}), 404
     mime_type, content = logo
     return send_file(BytesIO(content), mimetype=mime_type, max_age=300)
+
+
+@api_bp.route('/prescriber/assets', methods=['GET'])
+def prescriber_assets_status():
+    """Which of the signature and the stamp the prescriber has uploaded."""
+    user, error = current_api_user(required_role='prescriber')
+    if error:
+        return error
+    return jsonify({'success': True, 'assets': PrescriberAssets.status(int(user['id']))})
+
+
+@api_bp.route('/prescriber/assets/<kind>', methods=['GET', 'POST', 'DELETE'])
+def prescriber_asset(kind):
+    """Read, replace (raw PNG body or `image` file) or delete the signature or the stamp."""
+    user, error = current_api_user(required_role='prescriber')
+    if error:
+        return error
+    try:
+        if request.method == 'GET':
+            content = PrescriberAssets.get(int(user['id']), kind)
+            if content is None:
+                return jsonify({'success': False, 'error': 'Image introuvable'}), 404
+            return send_file(BytesIO(content), mimetype='image/png', max_age=0)
+        if request.method == 'DELETE':
+            PrescriberAssets.delete(int(user['id']), kind)
+            return jsonify({'success': True})
+        upload = request.files.get('image')
+        PrescriberAssets.save(int(user['id']), kind, upload.read() if upload else request.get_data())
+    except AssetError as exc:
+        return jsonify({'success': False, 'error': str(exc)}), 400
+    return jsonify({'success': True})

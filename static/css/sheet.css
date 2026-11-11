@@ -59,6 +59,9 @@
 /* Signature, puis pied de page. */
 .rx-sign { margin-top: auto; padding-top: 7mm; display: flex; flex-direction: column; align-items: flex-end; break-inside: avoid; }
 .rx-stamp { width: 62mm; height: 26mm; border: 0.35mm dotted #8a9096; border-radius: 1mm; display: flex; align-items: flex-start; justify-content: center; padding-top: 1.5mm; color: var(--rx-muted); font-size: 0.82em; }
+.rx-stamp.has-images { position: relative; padding: 0; border-color: transparent; }
+.rx-stamp-image { position: absolute; left: 2mm; top: 1mm; max-width: 34mm; max-height: 24mm; object-fit: contain; }
+.rx-signature { position: absolute; right: 2mm; bottom: 1mm; max-width: 40mm; max-height: 18mm; object-fit: contain; }
 .rx-signer { width: 62mm; margin-top: 1.5mm; text-align: center; font-weight: 700; }
 .rx-signer small { display: block; font-weight: 400; color: var(--rx-muted); font-size: 0.85em; }
 .rx-foot { display: flex; justify-content: space-between; gap: 6mm; margin-top: 3mm; font-size: 0.78em; color: var(--rx-muted); }

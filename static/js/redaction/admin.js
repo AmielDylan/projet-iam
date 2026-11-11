@@ -1,7 +1,7 @@
 /** Administration: account requests, pharmacist waitlist (ticket 14), catalog gaps (ticket 15), establishments. */
 import { html, render, useEffect, useState } from '../../vendor/preact-htm-standalone.module.js';
 import { api } from './api.js';
-import { useSessionLock } from './shell.js';
+import { Footer, useSessionLock } from './shell.js';
 import { Icon, useDebouncedEffect } from './ui.js';
 
 /** Dates arrive as ISO strings or HTTP dates ("Sun, 14 Feb 1988 00:00:00 GMT"). */
@@ -33,7 +33,7 @@ function AdminPage() {
       ${tab === 'attente' && html`<${Waitlist} />`}
       ${tab === 'catalogue' && html`<${Catalog} />`}
       ${tab === 'etablissements' && html`<${Establishments} />`}
-    </main>${lock}`;
+    </main><${Footer} />${lock}`;
 }
 
 function Requests() {

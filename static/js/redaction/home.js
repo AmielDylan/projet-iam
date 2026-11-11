@@ -1,7 +1,7 @@
 /** Public page: interactions between two medications (ANSM thesaurus). */
 import { html, render, useRef, useState } from '../../vendor/preact-htm-standalone.module.js';
 import { api } from './api.js';
-import { AppBar } from './shell.js';
+import { AppBar, Footer } from './shell.js';
 import { Icon, useDebouncedEffect } from './ui.js';
 
 const LEVEL = (niveau) => {
@@ -74,7 +74,7 @@ function Home({ initial }) {
       ${initial.user ? html`<a class="btn btn-primary btn-sm" href=${initial.user.role === 'admin' ? '/admin' : '/ordonnances'}>${initial.user.role === 'admin' ? 'Administration' : 'Mes ordonnances'}</a>`
         : html`<a class="btn btn-ghost btn-sm" href="/inscription">Demander un accès</a><a class="btn btn-primary btn-sm" href="/connexion">Connexion</a>`}
     </div></header>`}
-    <main class="page page-narrow">
+    <main class="page">
       <h1>Interactions entre deux médicaments</h1>
       <p class="lead">Vérifiez si deux médicaments interagissent, selon le thésaurus des interactions médicamenteuses de l'ANSM.</p>
       <form class="card" onSubmit=${submit}>
@@ -99,8 +99,7 @@ function Home({ initial }) {
         })}
         <p class="muted small">Aide à la décision. Elle ne remplace pas le jugement du professionnel de santé.</p>
       </section>`}
-      <p class="muted small" style="margin-top:32px"><a href="/changelog">Nouveautés</a></p>
-    </main>`;
+    </main><${Footer} />`;
 }
 
 const initial = JSON.parse(document.getElementById('initial-data').textContent);
