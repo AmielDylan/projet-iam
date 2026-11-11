@@ -13,7 +13,8 @@ from app.services.ordonnance import (
 )
 from app.services.analysis import analyze, normalize_dci
 from app.services.access_log import AccessLog
-from app.services import session_lock
+from app.services import session_lock, two_factor
+from app.services.two_factor import TwoFactor
 from app.services.catalog_gaps import CatalogEntryError, CatalogGaps
 from app.api.validators import (
     sanitize_medication_name,
@@ -70,9 +71,57 @@ def auth_login():
     """Authenticate using JSON credentials."""
     data = request.get_json(silent=True) or {}
     success, message = AuthService.authenticate(data.get('email', ''), data.get('password', ''))
-    status = 200 if success else 401
-    user = AuthService.current_session_user() if success else None
-    return jsonify({'success': success, 'message': message, 'user': user}), status
+    if not success:
+        return jsonify({'success': False, 'message': message, 'user': None}), 401
+    user = AuthService.current_session_user()
+    next_step = two_factor.after_password(user['id'], user['role'])
+    return jsonify({'success': True, 'message': message, 'user': None if next_step.get('two_factor_required') else user,
+                    **next_step})
+
+
+@api_bp.route('/auth/2fa', methods=['GET'])
+def two_factor_status():
+    """Whether 2FA is enabled for the current account, and whether it is required."""
+    user_id = session.get('user_id')
+    if not user_id:
+        return jsonify({'success': False, 'error': 'Connexion requise'}), 401
+    return jsonify({'success': True, 'enabled': TwoFactor.is_enabled(int(user_id)),
+                    'required': two_factor.required()})
+
+
+@api_bp.route('/auth/2fa/setup', methods=['POST'])
+def two_factor_setup():
+    """Draw a secret; the client shows it as a QR code from otpauth_uri."""
+    user_id = session.get('user_id')
+    if not user_id or session.get('two_factor_pending'):
+        return jsonify({'success': False, 'error': 'Connexion requise'}), 401
+    return jsonify({'success': True, **TwoFactor.setup(int(user_id), session.get('email') or '')})
+
+
+@api_bp.route('/auth/2fa/confirm', methods=['POST'])
+def two_factor_confirm():
+    """Enable 2FA with a first code; the recovery codes are returned once."""
+    user_id = session.get('user_id')
+    if not user_id or session.get('two_factor_pending'):
+        return jsonify({'success': False, 'error': 'Connexion requise'}), 401
+    codes = TwoFactor.confirm(int(user_id), (request.get_json(silent=True) or {}).get('code') or '')
+    if codes is None:
+        return jsonify({'success': False, 'error': 'Code incorrect', 'code': 'wrong_code'}), 400
+    two_factor.complete()
+    return jsonify({'success': True, 'recovery_codes': codes})
+
+
+@api_bp.route('/auth/2fa/verify', methods=['POST'])
+def two_factor_verify():
+    """Finish a login with an authenticator code or a recovery code."""
+    user_id = session.get('user_id')
+    if not user_id or not session.get('two_factor_pending'):
+        return jsonify({'success': False, 'error': 'Aucune connexion en attente'}), 400
+    data = request.get_json(silent=True) or {}
+    if not TwoFactor.verify(int(user_id), data.get('code') or '', data.get('recovery_code') or ''):
+        return jsonify({'success': False, 'error': 'Code incorrect', 'code': 'wrong_code'}), 401
+    two_factor.complete()
+    return jsonify({'success': True, 'user': AuthService.current_session_user()})
 
 
 @api_bp.route('/auth/register', methods=['POST'])
@@ -851,3 +900,16 @@ def admin_waitlist_csv():
     return current_app.response_class(
         '\ufeff' + buffer.getvalue(), mimetype='text/csv',
         headers={'Content-Disposition': 'attachment; filename="liste-attente-officine.csv"'})
+
+
+@api_bp.route('/admin/accounts/<int:user_id>/2fa/reset', methods=['POST'])
+def admin_reset_two_factor(user_id):
+    """Reset a user's 2FA (lost phone); recorded in the access log."""
+    user, error = current_api_user(required_role='admin')
+    if error:
+        return error
+    if AuthService.get_user(user_id) is None:
+        return jsonify({'success': False, 'error': 'Compte introuvable'}), 404
+    TwoFactor.reset(user_id)
+    AccessLog.record(int(user['id']), 'account', user_id, 'reset_2fa', request.remote_addr)
+    return jsonify({'success': True})

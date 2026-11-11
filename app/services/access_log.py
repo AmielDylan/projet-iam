@@ -11,9 +11,9 @@ from typing import Any
 from app.services.database import DatabasePool
 
 
-OBJECT_TYPES = {"ordonnance", "patient"}
+OBJECT_TYPES = {"ordonnance", "patient", "account"}
 ACTIONS = {"read", "search", "list", "create", "update", "check", "issue", "print",
-           "cancel", "renew", "discard"}
+           "cancel", "renew", "discard", "reset_2fa"}
 
 
 class AccessLog:

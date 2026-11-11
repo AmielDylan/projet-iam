@@ -185,7 +185,8 @@ class TestAuthAccountEndpoints:
 
     def test_login_returns_session_user(self, client):
         with patch('app.api.routes.AuthService.authenticate') as mock_auth, \
-             patch('app.api.routes.AuthService.current_session_user') as mock_session_user:
+             patch('app.api.routes.AuthService.current_session_user') as mock_session_user, \
+             patch('app.api.routes.two_factor.after_password', return_value={}):
             mock_auth.return_value = (True, 'Connexion réussie.')
             mock_session_user.return_value = {
                 'id': 3,

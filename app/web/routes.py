@@ -1,7 +1,7 @@
 """Web page routes."""
 from urllib.parse import urlparse
 
-from flask import Blueprint, abort, flash, redirect, render_template, request, url_for
+from flask import Blueprint, abort, flash, redirect, render_template, request, session, url_for
 
 from app.services.auth import (
     AuthService,
@@ -14,6 +14,8 @@ from app.services.auth import (
 from app.services.interaction import InteractionService
 from app.services.ordonnance import OrdonnanceService
 from app.services.access_log import AccessLog
+from app.services import two_factor
+from app.services.two_factor import TwoFactor
 from app.api.validators import sanitize_medication_name, ValidationError
 
 web_bp = Blueprint('web', __name__)
@@ -136,11 +138,32 @@ def login():
         )
         flash(message, 'success' if success else 'danger')
         if success:
+            session_user = AuthService.current_session_user()
+            if session_user and two_factor.after_password(
+                    session_user['id'], session_user['role']).get('two_factor_required'):
+                return redirect(url_for('web.two_factor_page', next=request.args.get('next') or ''))
             user = AuthService.current_user() or {}
             if user.get('must_change_password'):
                 return redirect(url_for('web.change_password', next=request.args.get('next') or ''))
             return redirect(login_destination_for(user, request.args.get('next')))
     return render_template('account_app.html', account_page='login')
+
+
+@web_bp.route('/connexion/verification', methods=['GET', 'POST'])
+def two_factor_page():
+    """Second step of the login for accounts with 2FA."""
+    if not session.get('user_id') or not session.get('two_factor_pending'):
+        return redirect(url_for('web.login'))
+    error = None
+    if request.method == 'POST':
+        if TwoFactor.verify(int(session['user_id']), request.form.get('code', ''), request.form.get('recovery_code', '')):
+            two_factor.complete()
+            user = AuthService.current_user() or {}
+            if user.get('must_change_password'):
+                return redirect(url_for('web.change_password'))
+            return redirect(login_destination_for(user, request.args.get('next')))
+        error = 'Code incorrect.'
+    return render_template('two_factor.html', error=error)
 
 
 @web_bp.route('/inscription', methods=['GET', 'POST'])

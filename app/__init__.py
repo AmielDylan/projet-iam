@@ -11,6 +11,7 @@ from app.services.patient import PatientService
 from app.services.schema import SchemaMigrator
 from app.services.prescriber_code import PrescriberCodes
 from app.services.session_lock import enforce_session_lock
+from app.services.two_factor import enforce_two_factor
 from app.services import vault as vault_module
 from app.api import api_bp
 from app.web import web_bp
@@ -75,6 +76,7 @@ def create_app(config: Optional[Config] = None) -> Flask:
 
     # Lock idle sessions before any route runs (ticket 17)
     app.before_request(enforce_session_lock)
+    app.before_request(enforce_two_factor)
 
     # Register blueprints
     app.register_blueprint(api_bp)
