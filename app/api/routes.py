@@ -1,14 +1,15 @@
 """API routes for the application."""
 from io import BytesIO
 
-from flask import Blueprint, request, jsonify, send_file
+from flask import Blueprint, current_app, request, jsonify, send_file
 
 from app.services.interaction import InteractionService
 from app.services.autocomplete import AutocompleteService
 from app.services.auth import AuthService, ProfileService, EstablishmentService, PROFESSIONS
 from app.services.catalog import MedicationCatalogService
 from app.services.patient import PatientError, PatientService
-from app.services.ordonnance import OrdonnanceError, OrdonnanceService, VersionConflict
+from app.services.ordonnance import OrdonnanceError, OrdonnanceService, VersionConflict, normalize_content
+from app.services.analysis import analyze, normalize_dci
 from app.api.validators import (
     sanitize_medication_name,
     validate_autocomplete_query,
@@ -379,6 +380,15 @@ def search_medications():
         limit = 12
 
     results = MedicationCatalogService.search(query, limit=limit)
+
+    # Flag a declared allergy as soon as the suggestion appears (prescribers only).
+    patient_id = request.args.get('patient_id', type=int)
+    user = AuthService.current_user() if patient_id else None
+    patient = PatientService.get(int(user['id']), patient_id) if user and user.get('role') == 'prescriber' else None
+    allergies = [normalize_dci(a) for a in (patient or {}).get('allergies', [])]
+    for result in results:
+        substances = [normalize_dci(s) for s in result.get('substances', [])]
+        result['allergy_warning'] = [a for a in allergies if any(a == s or s.startswith(a + ' ') for s in substances)]
     return jsonify({'success': True, 'results': results})
 
 
@@ -393,25 +403,32 @@ def get_medication(medication_id):
 
 @api_bp.route('/prescriptions/analyze', methods=['POST'])
 def analyze_prescription():
-    """Analyze a prescription draft with IAM interactions and duplicate checks."""
+    """Analyze draft lines live: interactions, same substance, allergies, derogations."""
     user, error = current_api_user(required_role='prescriber')
     if error:
         return error
 
     data = request.get_json(silent=True) or {}
-    items = data.get('items') or data.get('medications') or []
-    if not isinstance(items, list):
+    lines = data.get('lines', data.get('items', []))
+    if not isinstance(lines, list):
         return jsonify({'success': False, 'error': 'La liste des médicaments est invalide'}), 400
-    if not items:
-        return jsonify({'success': True, 'items': [], 'alerts': [], 'interactions': [], 'summary': {
-            'items_count': 0,
-            'alerts_count': 0,
-            'interactions_count': 0,
-            'can_print': True,
-        }})
+    try:
+        content = normalize_content({'lines': lines, 'derogations': data.get('derogations') or {}})
+    except OrdonnanceError as exc:
+        return ordonnance_error(exc)
 
-    result = MedicationCatalogService.analyze_prescription(items)
-    return jsonify(result)
+    patient = None
+    if data.get('patient_id'):
+        patient = PatientService.get(int(user['id']), int(data['patient_id']))
+        if patient is None:
+            return jsonify({'success': False, 'error': 'Patient introuvable', 'code': 'not_found'}), 404
+    try:
+        result = analyze(content['lines'], patient=patient, derogations=content['derogations'])
+    except Exception:
+        current_app.logger.exception('IAM analysis failed')
+        return jsonify({'success': False, 'error': "L'analyse IAM est indisponible. Réessayez dans un instant.",
+                        'code': 'analysis_unavailable'}), 503
+    return jsonify({'success': True, **result})
 
 
 @api_bp.route('/prescriber/profile', methods=['GET', 'POST'])

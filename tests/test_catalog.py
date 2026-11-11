@@ -13,45 +13,6 @@ class TestMedicationCatalogService:
     def test_split_substances(self):
         assert MedicationCatalogService.split_substances('aspirine | warfarine | ') == ['aspirine', 'warfarine']
 
-    def test_analyze_free_text_unknown(self):
-        result = MedicationCatalogService.analyze_prescription([
-            {'client_id': 'm1', 'name': 'Préparation locale', 'is_free_text': True}
-        ])
-
-        assert result['success'] is True
-        assert result['summary']['items_count'] == 1
-        assert result['alerts'][0]['type'] == 'unknown_medication'
-
-    @patch('app.services.catalog.InteractionService.get_classes_from_substance')
-    @patch('app.services.catalog.InteractionService.get_interactions')
-    @patch('app.services.catalog.MedicationCatalogService.get')
-    def test_analyze_catalog_pair(self, mock_get, mock_interactions, mock_classes):
-        mock_get.side_effect = [
-            {'id': 1, 'name': 'ASPIRINE', 'dosage': '', 'form': '', 'box_count': None, 'substances': ['ACIDE ACETYLSALICYLIQUE'], 'is_known': True},
-            {'id': 2, 'name': 'WARFARINE', 'dosage': '', 'form': '', 'box_count': None, 'substances': ['WARFARINE'], 'is_known': True},
-        ]
-        mock_interactions.return_value = [{
-            'class_1': 'ANTIAGREGANTS',
-            'class_2': 'ANTICOAGULANTS',
-            'details': 'Risque hémorragique',
-            'risques': 'Hémorragie',
-            'niveau': 'Association déconseillée',
-            'niveau_id': 2,
-            'actions': 'Surveillance'
-        }]
-        mock_classes.return_value = []
-
-        result = MedicationCatalogService.analyze_prescription([
-            {'client_id': 'm1', 'medication_id': 1},
-            {'client_id': 'm2', 'medication_id': 2},
-        ])
-
-        assert result['summary']['interactions_count'] == 1
-        assert result['summary']['can_print'] is False
-        assert result['summary']['blocking_alerts_count'] == 1
-        assert result['alerts'][0]['type'] == 'interaction'
-        assert result['alerts'][0]['severity'] == 'major'
-
 
 class TestMedicationCatalogApi:
     """API tests for the V3 medication catalog endpoints."""
@@ -77,20 +38,23 @@ class TestMedicationCatalogApi:
 
     def test_analyze_prescription_endpoint(self, client):
         with patch('app.api.routes.AuthService.current_user') as mock_user, \
-             patch('app.api.routes.MedicationCatalogService.analyze_prescription') as mock_analyze:
+             patch('app.api.routes.analyze') as mock_analyze:
             mock_user.return_value = {'id': 1, 'role': 'prescriber', 'status': 'approved'}
-            mock_analyze.return_value = {
-                'success': True,
-                'items': [],
-                'alerts': [],
-                'interactions': [],
-                'summary': {'items_count': 0, 'alerts_count': 0, 'interactions_count': 0, 'can_print': True}
-            }
+            mock_analyze.return_value = {'alerts': [], 'summary': {'can_issue': True}, 'scope': {}}
 
-            response = client.post('/api/v1/prescriptions/analyze', json={'items': [{'name': 'ASPIRINE'}]})
+            response = client.post('/api/v1/prescriptions/analyze', json={'lines': [{'name': 'ASPIRINE'}]})
 
         assert response.status_code == 200
-        assert response.get_json()['success'] is True
+        assert response.get_json()['summary']['can_issue'] is True
+
+    def test_analysis_failure_is_reported_not_hidden(self, client):
+        with patch('app.api.routes.AuthService.current_user') as mock_user, \
+             patch('app.api.routes.analyze', side_effect=RuntimeError('db down')):
+            mock_user.return_value = {'id': 1, 'role': 'prescriber', 'status': 'approved'}
+            response = client.post('/api/v1/prescriptions/analyze', json={'lines': [{'name': 'ASPIRINE'}]})
+
+        assert response.status_code == 503
+        assert response.get_json()['code'] == 'analysis_unavailable'
 
     def test_analyze_prescription_rejects_invalid_items(self, client):
         with patch('app.api.routes.AuthService.current_user') as mock_user:
@@ -133,3 +97,20 @@ class TestMedicationCatalogImport:
         assert rows[0]['Nom_Medicament'] == 'METHOTREXATE'
         assert rows[0]['Quantite_Unites'] == 30.0
         assert rows[0]['source_hash']
+
+
+class TestAllergyInSearch:
+    def test_search_flags_a_declared_allergy_on_the_suggestion(self, client):
+        prescriber = {'id': 3, 'role': 'prescriber', 'status': 'approved'}
+        with patch('app.api.routes.MedicationCatalogService.search') as search, \
+             patch('app.api.routes.AuthService.current_user', return_value=prescriber), \
+             patch('app.api.routes.PatientService.get', return_value={'allergies': ['AMOXICILLINE']}) as get_patient:
+            search.return_value = [
+                {'id': 1, 'name': 'CLAMOXYL', 'substances': ['AMOXICILLINE TRIHYDRATÉE']},
+                {'id': 2, 'name': 'DOLIPRANE', 'substances': ['PARACÉTAMOL']},
+            ]
+            results = client.get('/api/v1/medications/search?q=cla&patient_id=9').get_json()['results']
+
+        get_patient.assert_called_once_with(3, 9)
+        assert results[0]['allergy_warning'] == ['AMOXICILLINE']
+        assert results[1]['allergy_warning'] == []
