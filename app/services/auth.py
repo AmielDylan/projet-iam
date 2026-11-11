@@ -444,7 +444,14 @@ class AuthService:
         session["role"] = user["role"]
         session["status"] = user["status"]
         session["must_change_password"] = bool(user.get("must_change_password"))
+        session["last_activity"] = int(datetime.now().timestamp())
         return True, "Connexion réussie."
+
+    @staticmethod
+    def verify_password(user_id: int, password: str) -> bool:
+        """Check the password of a logged-in user (session unlock)."""
+        rows = DatabasePool.execute_query("SELECT password_hash FROM iam_users WHERE id = %s", (user_id,))
+        return bool(rows and rows[0][0] and check_password_hash(rows[0][0], password or ""))
 
     @staticmethod
     def logout() -> None:

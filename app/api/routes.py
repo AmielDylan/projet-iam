@@ -1,7 +1,7 @@
 """API routes for the application."""
 from io import BytesIO
 
-from flask import Blueprint, current_app, request, jsonify, send_file
+from flask import Blueprint, current_app, request, jsonify, send_file, session
 
 from app.services.interaction import InteractionService
 from app.services.autocomplete import AutocompleteService
@@ -13,6 +13,7 @@ from app.services.ordonnance import (
 )
 from app.services.analysis import analyze, normalize_dci
 from app.services.access_log import AccessLog
+from app.services import session_lock
 from app.services.catalog_gaps import CatalogEntryError, CatalogGaps
 from app.api.validators import (
     sanitize_medication_name,
@@ -44,9 +45,24 @@ def current_api_user(required_role=None):
 
 @api_bp.route('/auth/session', methods=['GET'])
 def auth_session():
-    """Return the current authenticated user, if any."""
+    """Return the current user, or only the lock state when the session is locked."""
+    if session_lock.is_locked():
+        return jsonify({'success': True, 'locked': True, 'user': None})
     user = AuthService.current_user()
-    return jsonify({'success': True, 'user': user})
+    return jsonify({'success': True, 'locked': False, 'user': user})
+
+
+@api_bp.route('/auth/unlock', methods=['POST'])
+def auth_unlock():
+    """Unlock an idle-locked session with the same user's password."""
+    user_id = session.get('user_id')
+    if not user_id:
+        return jsonify({'success': False, 'error': 'Connexion requise'}), 401
+    password = (request.get_json(silent=True) or {}).get('password') or ''
+    if not AuthService.verify_password(int(user_id), password):
+        return jsonify({'success': False, 'error': 'Mot de passe incorrect', 'code': 'wrong_password'}), 401
+    session_lock.unlock()
+    return jsonify({'success': True})
 
 
 @api_bp.route('/auth/login', methods=['POST'])
