@@ -7,7 +7,7 @@ from app.services.interaction import InteractionService
 from app.services.autocomplete import AutocompleteService
 from app.services.auth import AuthService, ProfileService, EstablishmentService, PROFESSIONS
 from app.services.catalog import MedicationCatalogService
-from app.services.patient import PatientService
+from app.services.patient import PatientError, PatientService
 from app.api.validators import (
     sanitize_medication_name,
     validate_autocomplete_query,
@@ -476,36 +476,54 @@ def admin_establishments():
     return jsonify({'success': True, 'results': EstablishmentService.list_all_for_admin()})
 
 
-@api_bp.route('/patients/search', methods=['GET'])
+@api_bp.route('/patients', methods=['GET'])
 def search_patients():
-    """Search patient history for the current prescriber."""
+    """Find the current prescriber's patients by name prefix or birthdate."""
     user, error = current_api_user(required_role='prescriber')
     if error:
         return error
 
-    query = request.args.get('q') or request.args.get('query') or ''
+    query = request.args.get('q') or ''
     if len(query.strip()) < 2:
         return jsonify({'success': True, 'results': []})
-    results = PatientService.search(int(user['id']), query)
-    for item in results:
-        birthdate = item.get('patient_birthdate')
-        if birthdate is not None:
-            item['patient_birthdate'] = birthdate.isoformat()
-        last_seen = item.get('last_seen_at')
-        if last_seen is not None:
-            item['last_seen_at'] = last_seen.isoformat()
-        if item.get('patient_weight') is not None:
-            item['patient_weight'] = float(item['patient_weight'])
-    return jsonify({'success': True, 'results': results})
+    return jsonify({'success': True, 'results': PatientService.search(int(user['id']), query)})
 
 
 @api_bp.route('/patients', methods=['POST'])
-def save_patient():
-    """Upsert a patient into the current prescriber's history."""
+def create_patient():
+    """Create a patient for the current prescriber."""
     user, error = current_api_user(required_role='prescriber')
     if error:
         return error
+    try:
+        patient = PatientService.create(int(user['id']), request.get_json(silent=True) or {})
+    except PatientError as exc:
+        return jsonify({'success': False, 'error': str(exc)}), 400
+    return jsonify({'success': True, 'patient': patient}), 201
 
-    data = request.get_json(silent=True) or {}
-    patient = PatientService.save(int(user['id']), data)
+
+@api_bp.route('/patients/<int:patient_id>', methods=['GET'])
+def get_patient(patient_id):
+    """Read one of the current prescriber's patients."""
+    user, error = current_api_user(required_role='prescriber')
+    if error:
+        return error
+    patient = PatientService.get(int(user['id']), patient_id)
+    if patient is None:
+        return jsonify({'success': False, 'error': 'Patient introuvable'}), 404
+    return jsonify({'success': True, 'patient': patient})
+
+
+@api_bp.route('/patients/<int:patient_id>', methods=['PUT'])
+def update_patient(patient_id):
+    """Correct a patient in place; the id and the ordonnances stay attached."""
+    user, error = current_api_user(required_role='prescriber')
+    if error:
+        return error
+    try:
+        patient = PatientService.update(int(user['id']), patient_id, request.get_json(silent=True) or {})
+    except PatientError as exc:
+        return jsonify({'success': False, 'error': str(exc)}), 400
+    if patient is None:
+        return jsonify({'success': False, 'error': 'Patient introuvable'}), 404
     return jsonify({'success': True, 'patient': patient})

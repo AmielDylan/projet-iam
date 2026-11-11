@@ -100,3 +100,14 @@ def sample_autocomplete_results():
         {'resultat': 'ASPIRIN UPSA', 'type': 'specialite'},
         {'resultat': 'ASPEGIC', 'type': 'specialite'}
     ]
+
+
+@pytest.fixture(autouse=True, scope='session')
+def installed_vault():
+    """Services read the process-wide vault; tests use the development keys."""
+    from app.config import TestingConfig
+    from app.services import vault as vault_module
+
+    config = TestingConfig()
+    vault_module.install(vault_module.Vault(config.DATA_ENCRYPTION_KEYS, config.DATA_INDEX_KEY))
+    yield

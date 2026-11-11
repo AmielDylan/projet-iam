@@ -1,153 +1,82 @@
-"""Patient module: search and save a prescriber's patients."""
-from datetime import date, datetime
-from decimal import Decimal
-from unittest.mock import MagicMock, patch
+"""Patient module: data rules and wiring. Storage is covered in tests/integration."""
+from unittest.mock import patch
+
+import pytest
 
 from app import create_app
 from app.config import DevelopmentConfig
-from app.services.patient import PatientService
+from app.services.patient import PatientError, normalize_patient
 
 
-PRESCRIBER = {
-    'id': 7,
-    'role': 'prescriber',
-    'status': 'approved',
-    'must_change_password': 0,
-}
+PRESCRIBER = {'id': 7, 'role': 'prescriber', 'status': 'approved', 'must_change_password': 0}
 
 
-def mock_cursor(db):
-    """Return the cursor yielded by DatabasePool.get_cursor()."""
-    cursor = MagicMock()
-    db.get_cursor.return_value.__enter__.return_value = cursor
-    return cursor
+class TestNormalizePatient:
+    def test_accepts_french_dates_and_decimal_commas(self):
+        record = normalize_patient({'birthdate': '02/04/2019', 'weight_kg': '18,5', 'weighed_on': '2026-10-01'})
+        assert record['birthdate'] == '2019-04-02'
+        assert record['weighed_on'] == '2026-10-01'
+        assert record['weight_kg'] == 18.5
+
+    def test_allergies_are_uppercased_and_deduplicated(self):
+        record = normalize_patient({'allergies': 'amoxicilline; Amoxicilline, ibuprofène'})
+        assert record['allergies'] == ['AMOXICILLINE', 'IBUPROFÈNE']
+
+    @pytest.mark.parametrize('payload', [
+        {'birthdate': '31/02/2019'},
+        {'weight_kg': 'lourd'},
+        {'weight_kg': '0'},
+        {'sex': 'X'},
+        {'pregnancy': 'peut-être'},
+    ])
+    def test_unreadable_data_is_refused_with_a_message(self, payload):
+        with pytest.raises(PatientError):
+            normalize_patient(payload)
+
+    def test_partial_patient_is_accepted(self):
+        record = normalize_patient({'last_name': 'Koffi'})
+        assert record['last_name'] == 'Koffi'
+        assert record['sex'] is None and record['birthdate'] is None
 
 
-def executed_sql(cursor):
-    return ' '.join(str(call.args[0]) for call in cursor.execute.call_args_list)
-
-
-class TestPatientSearch:
-    def test_blank_query_returns_nothing_without_querying(self):
-        with patch('app.services.patient.DatabasePool') as db:
-            assert PatientService.search(7, '   ') == []
-            db.execute_query.assert_not_called()
-
-    def test_search_is_scoped_to_the_prescriber(self):
-        with patch('app.services.patient.DatabasePool') as db:
-            db.execute_query.return_value = [{'id': 1, 'patient_last_name': 'KOFFI'}]
-
-            results = PatientService.search(7, 'kof')
-
-            assert results == [{'id': 1, 'patient_last_name': 'KOFFI'}]
-            sql, params = db.execute_query.call_args.args[:2]
-            assert 'FROM patient_history' in sql
-            assert params[0] == 7
-            assert '%kof%' in params
-
-    def test_api_search_serializes_dates_and_weight(self, client):
+class TestPatientApiAccess:
+    def test_one_letter_search_returns_nothing(self, client):
         with patch('app.api.routes.AuthService.current_user', return_value=PRESCRIBER), \
-             patch('app.services.patient.DatabasePool') as db:
-            db.execute_query.return_value = [{
-                'id': 1,
-                'patient_last_name': 'KOFFI',
-                'patient_birthdate': date(2019, 4, 2),
-                'patient_weight': Decimal('18.50'),
-                'last_seen_at': datetime(2026, 11, 10, 9, 30),
-            }]
-
-            response = client.get('/api/v1/patients/search?q=kof')
-
-        assert response.status_code == 200
-        result = response.get_json()['results'][0]
-        assert result['patient_birthdate'] == '2019-04-02'
-        assert result['patient_weight'] == 18.5
-        assert result['last_seen_at'] == '2026-11-10T09:30:00'
-
-    def test_api_search_ignores_one_letter_queries(self, client):
-        with patch('app.api.routes.AuthService.current_user', return_value=PRESCRIBER), \
-             patch('app.services.patient.DatabasePool') as db:
-            response = client.get('/api/v1/patients/search?q=k')
-
+             patch('app.api.routes.PatientService.search') as search:
+            response = client.get('/api/v1/patients?q=k')
         assert response.get_json() == {'success': True, 'results': []}
-        db.execute_query.assert_not_called()
+        search.assert_not_called()
 
-
-class TestPatientSave:
-    def test_same_identity_gives_same_key_whatever_the_case(self):
-        with patch('app.services.patient.DatabasePool') as db:
-            mock_cursor(db)
-            first = PatientService.save(7, {
-                'patient_first_name': 'Awa', 'patient_last_name': 'Koffi',
-                'patient_birthdate': '2019-04-02',
-            })
-            second = PatientService.save(7, {
-                'patient_first_name': ' AWA ', 'patient_last_name': 'koffi',
-                'patient_birthdate': '2019-04-02',
-            })
-
-        assert first['patient_key'] == second['patient_key']
-        assert len(first['patient_key']) == 64
-
-    def test_save_upserts_into_the_prescriber_history(self):
-        with patch('app.services.patient.DatabasePool') as db:
-            cursor = mock_cursor(db)
-            PatientService.save(7, {
-                'patient_last_name': 'Koffi', 'patient_weight': '18,5',
-            })
-
-        sql, params = cursor.execute.call_args.args
-        assert 'INSERT INTO patient_history' in sql
-        assert 'ON DUPLICATE KEY UPDATE' in sql
-        assert params[0] == 7
-        assert params[6] is None  # unreadable weight is dropped, not stored
-
-    def test_api_save_returns_the_saved_patient(self, client):
-        with patch('app.api.routes.AuthService.current_user', return_value=PRESCRIBER), \
-             patch('app.services.patient.DatabasePool') as db:
-            mock_cursor(db)
-            response = client.post('/api/v1/patients', json={
-                'patient_first_name': 'Awa', 'patient_last_name': 'Koffi',
-            })
-
-        body = response.get_json()
-        assert body['success'] is True
-        assert body['patient']['patient_last_name'] == 'Koffi'
-        assert 'patient_key' in body['patient']
-
-    def test_api_save_requires_a_prescriber(self, client):
+    def test_only_prescribers_reach_patients(self, client):
         admin = {**PRESCRIBER, 'role': 'admin'}
         with patch('app.api.routes.AuthService.current_user', return_value=admin), \
-             patch('app.services.patient.DatabasePool') as db:
-            response = client.post('/api/v1/patients', json={'patient_last_name': 'Koffi'})
-
+             patch('app.api.routes.PatientService.create') as create:
+            response = client.post('/api/v1/patients', json={'last_name': 'Koffi'})
         assert response.status_code == 403
-        db.get_cursor.assert_not_called()
+        create.assert_not_called()
 
 
-class TestPatientSchema:
-    def test_patient_module_creates_the_history_table(self):
-        with patch('app.services.patient.DatabasePool') as db:
-            cursor = mock_cursor(db)
-            PatientService.ensure_schema()
-
-        assert 'CREATE TABLE IF NOT EXISTS `patient_history`' in executed_sql(cursor)
-
-    def test_auth_schema_no_longer_touches_patients(self):
-        from app.services.auth import AuthService
-
-        with patch('app.services.auth.DatabasePool') as db:
-            cursor = mock_cursor(db)
-            AuthService.ensure_schema()
-
-        assert 'patient' not in executed_sql(cursor).lower()
-
-    def test_app_startup_prepares_the_patient_schema(self):
+class TestStartup:
+    def test_startup_prepares_schema_then_copies_patient_history(self):
         with patch('app.services.database.DatabasePool.initialize'), \
              patch('app.AuthService.ensure_schema'), \
-             patch('app.PatientService.ensure_schema') as patient_schema, \
-             patch('app.SchemaMigrator.apply_pending'), \
+             patch('app.PatientService.ensure_schema'), \
+             patch('app.SchemaMigrator.apply_pending') as migrate, \
+             patch('app.PatientService.migrate_legacy_history') as copy_history, \
              patch.dict('os.environ', {'ADMIN_EMAIL': '', 'ADMIN_PASSWORD': ''}):
             create_app(DevelopmentConfig())
 
-        patient_schema.assert_called_once()
+        migrate.assert_called_once()
+        copy_history.assert_called_once()
+
+    def test_auth_schema_no_longer_touches_patients(self):
+        from unittest.mock import MagicMock
+
+        from app.services.auth import AuthService
+
+        cursor = MagicMock()
+        with patch('app.services.auth.DatabasePool') as db:
+            db.get_cursor.return_value.__enter__.return_value = cursor
+            AuthService.ensure_schema()
+        executed = ' '.join(str(call.args[0]) for call in cursor.execute.call_args_list)
+        assert 'patient' not in executed.lower()

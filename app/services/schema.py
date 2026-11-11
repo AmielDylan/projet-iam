@@ -10,10 +10,16 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
+from mysql.connector import Error
+
 from app.services.database import DatabasePool
 
 
 FIRST_AUTOMATIC = 10
+
+# The pool raises on warnings. These ones only mean "already done", which an
+# idempotent migration expects: table/column/key/routine/trigger exists or is absent.
+ALREADY_DONE = {1050, 1051, 1060, 1061, 1091, 1304, 1305, 1359, 1360}
 MIGRATIONS_DIR = Path(__file__).resolve().parents[2] / "migrations"
 
 
@@ -27,13 +33,14 @@ class SchemaMigrator:
         )
         applied: list[str] = []
         with DatabasePool.get_cursor() as cursor:
-            cursor.execute(
+            execute_tolerant(
+                cursor,
                 """
                 CREATE TABLE IF NOT EXISTS `schema_migrations` (
                     `name` VARCHAR(190) PRIMARY KEY,
                     `applied_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
                 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-                """
+                """,
             )
             cursor.execute("SELECT name FROM schema_migrations")
             done = {row[0] for row in cursor.fetchall()}
@@ -41,10 +48,19 @@ class SchemaMigrator:
                 if path.name in done:
                     continue
                 for statement in split_statements(path.read_text(encoding="utf-8")):
-                    cursor.execute(statement)
+                    execute_tolerant(cursor, statement)
                 cursor.execute("INSERT INTO schema_migrations (name) VALUES (%s)", (path.name,))
                 applied.append(path.name)
         return applied
+
+
+def execute_tolerant(cursor, statement: str) -> None:
+    """Run a statement, ignoring the warnings that mean it was already applied."""
+    try:
+        cursor.execute(statement)
+    except Error as exc:
+        if getattr(exc, "errno", None) not in ALREADY_DONE:
+            raise
 
 
 def split_statements(sql: str) -> list[str]:

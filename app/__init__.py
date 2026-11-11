@@ -61,6 +61,7 @@ def create_app(config: Optional[Config] = None) -> Flask:
         AuthService.ensure_schema()
         PatientService.ensure_schema()
         SchemaMigrator.apply_pending()
+        PatientService.migrate_legacy_history()
         if os.environ.get("ADMIN_EMAIL") and os.environ.get("ADMIN_PASSWORD"):
             AuthService.create_admin(
                 os.environ.get("ADMIN_EMAIL", ""),
