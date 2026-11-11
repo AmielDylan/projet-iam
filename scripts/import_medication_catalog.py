@@ -170,96 +170,131 @@ def audit(cursor, batch_id: str, action_type: str, status: str, reason: str, pay
     )
 
 
-def insert_staging(cursor, batch_id: str, source_file: str, row: dict[str, Any]) -> None:
-    cursor.execute(
-        """
-        INSERT INTO medication_catalog_staging
-            (import_batch_id, source_file, `row_number`, nom_medicament, dosage, concentration,
-             forme_galenique, presentation, volume, quantite_unites, quantite_boites,
-             substances, specialite, source_hash, normalized_key)
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-        ON DUPLICATE KEY UPDATE
-            nom_medicament = VALUES(nom_medicament),
-            dosage = VALUES(dosage),
-            concentration = VALUES(concentration),
-            forme_galenique = VALUES(forme_galenique),
-            presentation = VALUES(presentation),
-            volume = VALUES(volume),
-            quantite_unites = VALUES(quantite_unites),
-            quantite_boites = VALUES(quantite_boites),
-            substances = VALUES(substances),
-            specialite = VALUES(specialite),
-            source_hash = VALUES(source_hash),
-            normalized_key = VALUES(normalized_key)
-        """,
-        (
-            batch_id,
-            source_file,
-            row["row_number"],
-            row["Nom_Medicament"],
-            row["Dosage"],
-            row["Concentration"],
-            row["Forme_Galenique"],
-            row["Presentation"],
-            row["Volume"],
-            row["Quantite_Unites"],
-            row["Quantite_Boites"],
-            row["Substances"],
-            row["Specialite"],
-            row["source_hash"],
-            row["normalized_key"],
-        ),
+STAGING_COLUMNS = (
+    "import_batch_id", "source_file", "`row_number`", "nom_medicament", "dosage", "concentration",
+    "forme_galenique", "presentation", "volume", "quantite_unites", "quantite_boites",
+    "substances", "specialite", "source_hash", "normalized_key",
+)
+STAGING_UPDATE = """
+    nom_medicament = VALUES(nom_medicament),
+    dosage = VALUES(dosage),
+    concentration = VALUES(concentration),
+    forme_galenique = VALUES(forme_galenique),
+    presentation = VALUES(presentation),
+    volume = VALUES(volume),
+    quantite_unites = VALUES(quantite_unites),
+    quantite_boites = VALUES(quantite_boites),
+    substances = VALUES(substances),
+    specialite = VALUES(specialite),
+    source_hash = VALUES(source_hash),
+    normalized_key = VALUES(normalized_key)
+"""
+CATALOG_COLUMNS = (
+    "nom_medicament", "dosage", "concentration", "forme_galenique", "presentation", "volume",
+    "quantite_unites", "quantite_boites", "substances", "specialite", "searchable_text",
+    "source_hash", "normalized_key", "iam_specialite_id", "match_status", "last_import_batch_id",
+)
+# Upsert on the unique source_hash: re-importing the same file never duplicates a row.
+CATALOG_UPDATE = """
+    nom_medicament = VALUES(nom_medicament),
+    dosage = VALUES(dosage),
+    concentration = VALUES(concentration),
+    forme_galenique = VALUES(forme_galenique),
+    presentation = VALUES(presentation),
+    volume = VALUES(volume),
+    quantite_unites = VALUES(quantite_unites),
+    quantite_boites = VALUES(quantite_boites),
+    substances = VALUES(substances),
+    specialite = VALUES(specialite),
+    searchable_text = VALUES(searchable_text),
+    normalized_key = VALUES(normalized_key),
+    iam_specialite_id = COALESCE(medication_catalog.iam_specialite_id, VALUES(iam_specialite_id)),
+    match_status = IF(medication_catalog.iam_specialite_id IS NULL, VALUES(match_status), medication_catalog.match_status),
+    last_import_batch_id = VALUES(last_import_batch_id)
+"""
+
+
+def upsert_sql(table: str, columns: tuple[str, ...], update: str, rows: int = 1) -> str:
+    """INSERT ... ON DUPLICATE KEY UPDATE for one or several rows (same semantics, row after row)."""
+    placeholders = "(" + ", ".join(["%s"] * len(columns)) + ")"
+    return (
+        f"INSERT INTO {table} ({', '.join(columns)}) VALUES "
+        + ", ".join([placeholders] * rows)
+        + f" ON DUPLICATE KEY UPDATE {update}"
     )
+
+
+def staging_values(batch_id: str, source_file: str, row: dict[str, Any]) -> tuple:
+    return (
+        batch_id,
+        source_file,
+        row["row_number"],
+        row["Nom_Medicament"],
+        row["Dosage"],
+        row["Concentration"],
+        row["Forme_Galenique"],
+        row["Presentation"],
+        row["Volume"],
+        row["Quantite_Unites"],
+        row["Quantite_Boites"],
+        row["Substances"],
+        row["Specialite"],
+        row["source_hash"],
+        row["normalized_key"],
+    )
+
+
+def catalog_values(batch_id: str, row: dict[str, Any], existing_specialites: dict[str, int]) -> tuple:
+    iam_specialite_id = existing_specialites.get(normalize(row["Nom_Medicament"])) or existing_specialites.get(normalize(row["Specialite"]))
+    return (
+        row["Nom_Medicament"],
+        row["Dosage"],
+        row["Concentration"],
+        row["Forme_Galenique"],
+        row["Presentation"],
+        row["Volume"],
+        row["Quantite_Unites"],
+        row["Quantite_Boites"],
+        row["Substances"],
+        row["Specialite"],
+        searchable_text(row),
+        row["source_hash"],
+        row["normalized_key"],
+        iam_specialite_id,
+        "specialite_exact" if iam_specialite_id else "unmatched",
+        batch_id,
+    )
+
+
+def insert_staging(cursor, batch_id: str, source_file: str, row: dict[str, Any]) -> None:
+    cursor.execute(upsert_sql("medication_catalog_staging", STAGING_COLUMNS, STAGING_UPDATE),
+                   staging_values(batch_id, source_file, row))
 
 
 def upsert_catalog(cursor, batch_id: str, row: dict[str, Any], existing_specialites: dict[str, int]) -> int:
-    iam_specialite_id = existing_specialites.get(normalize(row["Nom_Medicament"])) or existing_specialites.get(normalize(row["Specialite"]))
-    match_status = "specialite_exact" if iam_specialite_id else "unmatched"
-    cursor.execute(
-        """
-        INSERT INTO medication_catalog
-            (nom_medicament, dosage, concentration, forme_galenique, presentation, volume,
-             quantite_unites, quantite_boites, substances, specialite, searchable_text,
-             source_hash, normalized_key, iam_specialite_id, match_status, last_import_batch_id)
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-        ON DUPLICATE KEY UPDATE
-            nom_medicament = VALUES(nom_medicament),
-            dosage = VALUES(dosage),
-            concentration = VALUES(concentration),
-            forme_galenique = VALUES(forme_galenique),
-            presentation = VALUES(presentation),
-            volume = VALUES(volume),
-            quantite_unites = VALUES(quantite_unites),
-            quantite_boites = VALUES(quantite_boites),
-            substances = VALUES(substances),
-            specialite = VALUES(specialite),
-            searchable_text = VALUES(searchable_text),
-            normalized_key = VALUES(normalized_key),
-            iam_specialite_id = COALESCE(medication_catalog.iam_specialite_id, VALUES(iam_specialite_id)),
-            match_status = IF(medication_catalog.iam_specialite_id IS NULL, VALUES(match_status), medication_catalog.match_status),
-            last_import_batch_id = VALUES(last_import_batch_id)
-        """,
-        (
-            row["Nom_Medicament"],
-            row["Dosage"],
-            row["Concentration"],
-            row["Forme_Galenique"],
-            row["Presentation"],
-            row["Volume"],
-            row["Quantite_Unites"],
-            row["Quantite_Boites"],
-            row["Substances"],
-            row["Specialite"],
-            searchable_text(row),
-            row["source_hash"],
-            row["normalized_key"],
-            iam_specialite_id,
-            match_status,
-            batch_id,
-        ),
-    )
+    cursor.execute(upsert_sql("medication_catalog", CATALOG_COLUMNS, CATALOG_UPDATE),
+                   catalog_values(batch_id, row, existing_specialites))
     cursor.execute("SELECT id FROM medication_catalog WHERE source_hash = %s", (row["source_hash"],))
     return cursor.fetchone()[0]
+
+
+def bulk_import_catalog(cursor, batch_id: str, source_file: str, rows: list[dict[str, Any]],
+                        existing_specialites: dict[str, int], batch_size: int = 500) -> int:
+    """Catalog-only import, a few hundred rows per statement: a handful of round trips
+    instead of three per row, which matters over a remote connection."""
+    total = len(rows)
+    for start in range(0, total, batch_size):
+        chunk = rows[start:start + batch_size]
+        cursor.execute(
+            upsert_sql("medication_catalog_staging", STAGING_COLUMNS, STAGING_UPDATE, len(chunk)),
+            [value for row in chunk for value in staging_values(batch_id, source_file, row)],
+        )
+        cursor.execute(
+            upsert_sql("medication_catalog", CATALOG_COLUMNS, CATALOG_UPDATE, len(chunk)),
+            [value for row in chunk for value in catalog_values(batch_id, row, existing_specialites)],
+        )
+        print(f"   {min(start + batch_size, total)}/{total} lignes", flush=True)
+    return total
 
 
 def enrich_iam(cursor, batch_id: str, row: dict[str, Any], catalog_id: int, specialites: dict[str, int], substances: dict[str, int]) -> dict[str, int]:
@@ -345,6 +380,7 @@ def main() -> int:
     parser.add_argument("--dry-run", action="store_true", help="Read and report without writing")
     parser.add_argument("--apply-catalog", action="store_true", help="Write staging and medication_catalog rows")
     parser.add_argument("--apply-iam-enrichment", action="store_true", help="Safely add missing specialites/substances/liaisons_ss")
+    parser.add_argument("--batch-size", type=int, default=500, help="Rows per statement for a catalog-only import")
     parser.add_argument("--report-duplicates", action="store_true", help="Print duplicate summary")
     args = parser.parse_args()
 
@@ -369,7 +405,9 @@ def main() -> int:
     stats = Counter()
 
     try:
-        for row in rows:
+        if args.apply_catalog and not args.apply_iam_enrichment:
+            stats["catalog_upserted"] = bulk_import_catalog(cursor, batch_id, path.name, rows, specialites, args.batch_size)
+        for row in (rows if args.apply_iam_enrichment else []):
             if args.apply_catalog:
                 insert_staging(cursor, batch_id, path.name, row)
                 catalog_id = upsert_catalog(cursor, batch_id, row, specialites)
