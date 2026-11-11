@@ -13,6 +13,7 @@ from app.services.ordonnance import (
 )
 from app.services.analysis import analyze, normalize_dci
 from app.services.access_log import AccessLog
+from app.services.catalog_gaps import CatalogEntryError, CatalogGaps
 from app.api.validators import (
     sanitize_medication_name,
     validate_autocomplete_query,
@@ -772,3 +773,34 @@ def ordonnance_access_log(ordonnance_id):
     if OrdonnanceService.get(int(user['id']), ordonnance_id) is None:
         return jsonify({'success': False, 'error': 'Ordonnance introuvable', 'code': 'not_found'}), 404
     return jsonify({'success': True, 'entries': AccessLog.for_object('ordonnance', ordonnance_id)})
+
+
+@api_bp.route('/admin/catalog/gaps', methods=['GET'])
+def admin_catalog_gaps():
+    """Medications typed freely or searched in vain, most frequent first. No patient data."""
+    user, error = current_api_user(required_role='admin')
+    if error:
+        return error
+    return jsonify({'success': True, 'gaps': CatalogGaps.list()})
+
+
+@api_bp.route('/admin/catalog/substances', methods=['GET'])
+def admin_catalog_substances():
+    """Thesaurus substances to attach to a new catalog entry."""
+    user, error = current_api_user(required_role='admin')
+    if error:
+        return error
+    return jsonify({'success': True, 'results': CatalogGaps.substances(request.args.get('q') or '')})
+
+
+@api_bp.route('/admin/catalog/entries', methods=['POST'])
+def admin_create_catalog_entry():
+    """Create a catalog entry from thesaurus substances; prescribers find it at once."""
+    user, error = current_api_user(required_role='admin')
+    if error:
+        return error
+    try:
+        entry = CatalogGaps.create_entry(int(user['id']), request.get_json(silent=True) or {})
+    except CatalogEntryError as exc:
+        return jsonify({'success': False, 'error': str(exc)}), 400
+    return jsonify({'success': True, 'entry': entry}), 201

@@ -20,6 +20,7 @@ from typing import Any
 
 from app.services.analysis import analyze
 from app.services.catalog import MedicationCatalogService
+from app.services.catalog_gaps import CatalogGaps
 from app.services.database import DatabasePool
 from app.services.patient import PatientError, PatientService, parse_date
 from app.services.prescriber_code import PrescriberCodes
@@ -255,6 +256,8 @@ class OrdonnanceService:
                 """,
                 (number, vault().seal_json(snapshot), snapshot["issued_at"], ordonnance_id),
             )
+        # Anonymous count of free-text medications, for catalog enrichment (ticket 15).
+        CatalogGaps.record_free_entries([line["name"] for line in snapshot["lines"] if line["is_free_text"]])
         return OrdonnanceService.get(owner_id, ordonnance_id)
 
     @staticmethod

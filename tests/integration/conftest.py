@@ -39,7 +39,10 @@ def database():
     cursor.execute(f'DROP DATABASE IF EXISTS {DATABASE}')
     cursor.execute(f'CREATE DATABASE {DATABASE} CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci')
     cursor.execute(f'USE {DATABASE}')
-    for name in ('007_auth_prescriber_patients.sql', '008_prescriber_requests_establishments.sql'):
+    # Minimal ANSM thesaurus table (the real one comes from an external dump).
+    cursor.execute('CREATE TABLE substances (id INT PRIMARY KEY AUTO_INCREMENT, substances VARCHAR(255) NOT NULL)')
+    for name in ('006_medication_catalog.sql', '007_auth_prescriber_patients.sql',
+                 '008_prescriber_requests_establishments.sql'):
         for statement in split_statements((ROOT / 'migrations' / name).read_text(encoding='utf-8')):
             cursor.execute(statement)
     admin.commit()
