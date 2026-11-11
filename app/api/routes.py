@@ -8,7 +8,9 @@ from app.services.autocomplete import AutocompleteService
 from app.services.auth import AuthService, ProfileService, EstablishmentService, PROFESSIONS
 from app.services.catalog import MedicationCatalogService
 from app.services.patient import PatientError, PatientService
-from app.services.ordonnance import OrdonnanceError, OrdonnanceService, VersionConflict, normalize_content
+from app.services.ordonnance import (
+    CANCEL_REASONS, OrdonnanceError, OrdonnanceService, VersionConflict, normalize_content,
+)
 from app.services.analysis import analyze, normalize_dci
 from app.api.validators import (
     sanitize_medication_name,
@@ -683,3 +685,55 @@ def patient_ordonnances(patient_id):
     result = OrdonnanceService.list(int(user['id']), patient_id=patient_id,
                                     page=request.args.get('page', 1, type=int))
     return jsonify({'success': True, 'patient': patient, **result})
+
+
+@api_bp.route('/ordonnances/cancel-reasons', methods=['GET'])
+def cancel_reasons():
+    """Common cancellation reasons offered by "Annuler et corriger"."""
+    user, error = current_api_user(required_role='prescriber')
+    if error:
+        return error
+    return jsonify({'success': True, 'reasons': CANCEL_REASONS})
+
+
+@api_bp.route('/ordonnances/<int:ordonnance_id>/renew', methods=['POST'])
+def renew_ordonnance(ordonnance_id):
+    """Prefilled draft from an issued ordonnance; a cancelled one needs confirm_cancelled."""
+    user, error = current_api_user(required_role='prescriber')
+    if error:
+        return error
+    data = request.get_json(silent=True) or {}
+    try:
+        result = OrdonnanceService.renew(int(user['id']), ordonnance_id,
+                                         confirm_cancelled=data.get('confirm_cancelled') is True)
+    except OrdonnanceError as exc:
+        return ordonnance_error(exc)
+    return jsonify({'success': True, **result}), 201
+
+
+@api_bp.route('/ordonnances/<int:ordonnance_id>/cancel', methods=['POST'])
+def cancel_ordonnance(ordonnance_id):
+    """Cancel an issued ordonnance with a written reason."""
+    user, error = current_api_user(required_role='prescriber')
+    if error:
+        return error
+    data = request.get_json(silent=True) or {}
+    try:
+        ordonnance = OrdonnanceService.cancel(int(user['id']), ordonnance_id, data.get('reason') or '')
+    except OrdonnanceError as exc:
+        return ordonnance_error(exc)
+    return jsonify({'success': True, 'ordonnance': ordonnance})
+
+
+@api_bp.route('/ordonnances/<int:ordonnance_id>/cancel-and-correct', methods=['POST'])
+def cancel_and_correct_ordonnance(ordonnance_id):
+    """Cancel, then return the prefilled correction draft."""
+    user, error = current_api_user(required_role='prescriber')
+    if error:
+        return error
+    data = request.get_json(silent=True) or {}
+    try:
+        result = OrdonnanceService.cancel_and_correct(int(user['id']), ordonnance_id, data.get('reason') or '')
+    except OrdonnanceError as exc:
+        return ordonnance_error(exc)
+    return jsonify({'success': True, **result}), 201

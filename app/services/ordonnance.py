@@ -30,6 +30,13 @@ from app.services.vault import vault
 MAX_LINES = 60
 PAGE_SIZE = 50
 LISTED_STATUSES = ("draft", "issued", "cancelled")
+CANCEL_REASONS = [
+    "Impression ratée",
+    "Erreur de posologie",
+    "Erreur de médicament",
+    "Erreur de patient",
+    "Traitement modifié",
+]
 PEDIATRIC_AGE = 15
 # Prescribers' local date (Benin: UTC+1, no daylight saving). The server runs in UTC.
 LOCAL_TIMEZONE = timezone(timedelta(hours=float(os.environ.get("APP_UTC_OFFSET_HOURS", "1"))))
@@ -76,6 +83,14 @@ class VersionConflict(OrdonnanceError):
         self.current = current
 
 
+class NeedsConfirmation(OrdonnanceError):
+    status = 409
+    code = "confirm_cancelled"
+
+    def __init__(self, message: str = "Cette ordonnance a été annulée. Confirmez pour la reconduire quand même."):
+        super().__init__(message)
+
+
 class IssueRefused(OrdonnanceError):
     status = 422
     code = "issue_refused"
@@ -91,14 +106,18 @@ class OrdonnanceService:
     """Create, save, issue, cancel, renew and list a prescriber's ordonnances."""
 
     @staticmethod
-    def create_draft(owner_id: int, origin_id: int | None = None) -> dict[str, Any]:
-        """Start an empty draft (renewal from an issued ordonnance comes with ticket 08)."""
-        content = normalize_content({})
-        sealed = vault().seal_json(content)
+    def create_draft(owner_id: int, content: dict[str, Any] | None = None, origin_id: int | None = None) -> dict[str, Any]:
+        """Start a draft, empty or prefilled (renewal)."""
+        normalized = normalize_content(content or {})
+        _check_references(owner_id, normalized)
+        sealed = vault().seal_json(normalized)
         with DatabasePool.get_cursor() as cursor:
             cursor.execute(
-                "INSERT INTO ordonnances (owner_id, status, version, content, origin_id) VALUES (%s, 'draft', 1, %s, %s)",
-                (owner_id, sealed, origin_id),
+                """
+                INSERT INTO ordonnances (owner_id, status, version, content, patient_id, establishment_id, origin_id)
+                VALUES (%s, 'draft', 1, %s, %s, %s, %s)
+                """,
+                (owner_id, sealed, normalized["patient_id"], normalized["establishment_id"], origin_id),
             )
             ordonnance_id = cursor.lastrowid
             cursor.execute(
@@ -241,12 +260,70 @@ class OrdonnanceService:
     @staticmethod
     def cancel(owner_id: int, ordonnance_id: int, reason: str) -> dict[str, Any]:
         """Cancel an issued ordonnance, keeping the document, the reason and the date."""
-        raise NotImplementedError("Ticket 07")
+        reason = _text(reason)
+        if not reason:
+            raise InvalidContent("Indiquez le motif de l'annulation")
+        ordonnance = OrdonnanceService.get(owner_id, ordonnance_id)
+        if ordonnance is None:
+            raise NotFound()
+        if ordonnance["status"] != "issued":
+            raise NotEditable("Seule une ordonnance émise peut être annulée")
+        with DatabasePool.get_cursor() as cursor:
+            cursor.execute(
+                """
+                UPDATE ordonnances SET status = 'cancelled', cancelled_at = NOW(), cancel_reason = %s
+                WHERE id = %s AND owner_id = %s AND status = 'issued'
+                """,
+                (vault().seal_json(reason[:500]), ordonnance_id, owner_id),
+            )
+        return OrdonnanceService.get(owner_id, ordonnance_id)
 
     @staticmethod
-    def renew(owner_id: int, ordonnance_id: int) -> dict[str, Any]:
-        """Create a new draft linked to, and prefilled from, an issued ordonnance."""
-        raise NotImplementedError("Ticket 08")
+    def renew(owner_id: int, ordonnance_id: int, confirm_cancelled: bool = False) -> dict[str, Any]:
+        """New draft for the same patient, prefilled from an issued ordonnance and linked to it.
+
+        Derogations are never carried over: the analysis runs again on today's catalog.
+        A line whose catalog entry disappeared becomes free text, with a notice.
+        """
+        source = OrdonnanceService.get(owner_id, ordonnance_id)
+        if source is None:
+            raise NotFound()
+        if source["status"] == "draft":
+            raise NotEditable("Un brouillon se modifie directement ; seule une ordonnance émise se reconduit")
+        if source["status"] == "cancelled" and not confirm_cancelled:
+            raise NeedsConfirmation()
+
+        frozen = source["snapshot"]
+        notices = []
+        lines = []
+        for line in frozen["lines"]:
+            copy = {key: line.get(key) for key in ("line_id", "medication_id", *LINE_TEXT_FIELDS)}
+            if copy["medication_id"] and MedicationCatalogService.get(int(copy["medication_id"])) is None:
+                copy["medication_id"] = None
+                notices.append({"line_id": line["line_id"], "code": "catalog_missing",
+                                "message": f"{line['name']} n'est plus au catalogue : la ligne passe en saisie libre."})
+            lines.append(copy)
+
+        content = {
+            "patient_id": source["patient_id"] if PatientService.exists(owner_id, source["patient_id"]) else None,
+            "establishment_id": source["establishment_id"],
+            "general_note": frozen.get("general_note", ""),
+            "duration": frozen.get("duration", ""),
+            "renewal": frozen.get("renewal", ""),
+            "lines": lines,
+        }
+        try:
+            draft = OrdonnanceService.create_draft(owner_id, content, origin_id=ordonnance_id)
+        except InvalidContent:  # establishment removed since: the prescriber picks another one
+            draft = OrdonnanceService.create_draft(owner_id, {**content, "establishment_id": None}, origin_id=ordonnance_id)
+        return {"ordonnance": draft, "notices": notices}
+
+    @staticmethod
+    def cancel_and_correct(owner_id: int, ordonnance_id: int, reason: str) -> dict[str, Any]:
+        """Cancel, then open a prefilled renewal: for a failed print or an error seen just after."""
+        cancelled = OrdonnanceService.cancel(owner_id, ordonnance_id, reason)
+        renewal = OrdonnanceService.renew(owner_id, ordonnance_id, confirm_cancelled=True)
+        return {"cancelled": cancelled, **renewal}
 
     @staticmethod
     def list(owner_id: int, status: str | None = None, patient_id: int | None = None,
@@ -405,6 +482,7 @@ def _serialize(row: dict[str, Any]) -> dict[str, Any]:
         "updated_at": _iso(row["updated_at"]),
         "issued_at": _iso(row["issued_at"]),
         "cancelled_at": _iso(row["cancelled_at"]),
+        "cancel_reason": vault().open_json(row["cancel_reason"]) if row.get("cancel_reason") else None,
     }
 
 
