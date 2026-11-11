@@ -41,6 +41,7 @@ class TestRenew:
         assert [(l['name'], l['posology'], l['quantity']) for l in draft['content']['lines']] == \
             [('Advil', '1/j', '1 boîte'), ('Coumadine', '1/j', '')]
         assert draft['content']['derogations'] == {}
+        assert draft['content']['lines'][0]['substances'] == ['IBUPROFENE']
         assert draft['content']['lab_results'] == ''
         assert renewal['notices'] == []
 

@@ -1,6 +1,7 @@
 """Medication catalog services (analysis lives in app/services/analysis.py)."""
 from __future__ import annotations
 
+import re
 from typing import Any
 
 from mysql.connector import Error
@@ -18,9 +19,24 @@ class MedicationCatalogService:
         if not query:
             return []
 
-        pattern = f"%{query}%"
-        starts_pattern = f"{query}%"
-        sql = """
+        # Every word must appear in the name, the dosage, the DCI or the specialty:
+        # "doliprane 1000" finds DOLIPRANE 1000MG, "paracetamol 1000" finds every 1 g paracetamol.
+        words = [word for word in query.split() if word][:6]
+        haystack = "CONCAT_WS(' ', nom_medicament, dosage, substances, specialite)"
+        conditions = []
+        word_params: list[str] = []
+        for word in words:
+            variants = dosage_variants(word)
+            if variants == [word]:
+                conditions.append(f"{haystack} LIKE %s")
+                word_params.append(f"%{word}%")
+            else:
+                # A dosage must start a number: "1G" matches "1G" or "1G | 5,4G", never "81G".
+                conditions.append("(" + " OR ".join([f"{haystack} REGEXP %s"] * len(variants)) + ")")
+                word_params += [f"(^|[^0-9.,]){re.escape(variant)}" for variant in variants]
+        conditions = " AND ".join(conditions)
+        starts_pattern = f"{words[0]}%"
+        sql = f"""
             SELECT
                 id,
                 nom_medicament,
@@ -36,22 +52,21 @@ class MedicationCatalogService:
                 iam_specialite_id,
                 match_status
             FROM medication_catalog
-            WHERE nom_medicament LIKE %s
-               OR substances LIKE %s
-               OR specialite LIKE %s
+            WHERE {conditions}
             ORDER BY
                 CASE
                     WHEN nom_medicament LIKE %s THEN 0
                     WHEN specialite LIKE %s THEN 1
                     ELSE 2
                 END,
-                nom_medicament ASC
+                nom_medicament ASC,
+                dosage ASC
             LIMIT %s
         """
         try:
             rows = DatabasePool.execute_query(
                 sql,
-                (pattern, pattern, pattern, starts_pattern, starts_pattern, limit),
+                (*word_params, starts_pattern, starts_pattern, limit),
                 dictionary=True,
             )
         except Error:
@@ -134,3 +149,18 @@ class MedicationCatalogService:
         if not value:
             return []
         return [part.strip() for part in value.split("|") if part and part.strip()]
+
+
+def dosage_variants(word: str) -> list[str]:
+    """The catalog writes 1 g as "1G": "1000", "1000mg" and "1g" must find each other."""
+    match = re.fullmatch(r"(\d+(?:[.,]\d+)?)\s*(mg|g)?", word.strip().lower())
+    if not match:
+        return [word]
+    value = float(match.group(1).replace(",", "."))
+    milligrams = value * 1000 if match.group(2) == "g" else value
+    variants = {word}
+    if milligrams >= 1000 and milligrams % 1000 == 0:
+        variants.add(f"{int(milligrams // 1000)}G")
+    if milligrams.is_integer():
+        variants.add(f"{int(milligrams)}MG")
+    return sorted(variants)

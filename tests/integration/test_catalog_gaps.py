@@ -77,3 +77,19 @@ def test_admin_api(client, prescriber, thesaurus):
     assert substances == ['ARTEMETHER']
     assert created.status_code == 201
     assert refused.status_code == 403
+
+
+def test_search_matches_every_word_across_name_dosage_and_dci(db):
+    with DatabasePool.get_cursor() as cursor:
+        for name, dosage, subs in (('DOLIPRANE', '1G', 'PARACETAMOL'), ('DOLIPRANE', '500MG', 'PARACETAMOL'),
+                                   ('DOLIPRANE', '150MG | 81G', 'PARACETAMOL'),
+                                   ('EFFERALGAN', '1000MG', 'PARACETAMOL')):
+            cursor.execute(
+                "INSERT INTO medication_catalog (nom_medicament, dosage, substances, specialite, source_hash, normalized_key) "
+                "VALUES (%s, %s, %s, %s, SHA2(CONCAT(%s, %s), 256), SHA2(%s, 256))",
+                (name, dosage, subs, name, name, dosage, name))
+
+    assert [(r['name'], r['dosage']) for r in MedicationCatalogService.search('doliprane 1000')] == [('DOLIPRANE', '1G')]
+    assert [(r['name'], r['dosage']) for r in MedicationCatalogService.search('doliprane 1g')] == [('DOLIPRANE', '1G')]
+    assert {r['name'] for r in MedicationCatalogService.search('paracetamol 1000')} == {'DOLIPRANE', 'EFFERALGAN'}
+    assert MedicationCatalogService.search('doliprane')[0]['name'] == 'DOLIPRANE'
