@@ -13,6 +13,7 @@ from app.services.auth import (
 )
 from app.services.interaction import InteractionService
 from app.services.ordonnance import OrdonnanceService
+from app.services.access_log import AccessLog
 from app.api.validators import sanitize_medication_name, ValidationError
 
 web_bp = Blueprint('web', __name__)
@@ -121,6 +122,7 @@ def print_ordonnance(ordonnance_id):
     ordonnance = OrdonnanceService.get(int(user['id']), ordonnance_id)
     if ordonnance is None or not ordonnance.get('snapshot'):
         abort(404)
+    AccessLog.record(int(user['id']), 'ordonnance', ordonnance_id, 'print', request.remote_addr)
     return render_template('print/ordonnance.html', ordonnance=ordonnance, s=ordonnance['snapshot'])
 
 

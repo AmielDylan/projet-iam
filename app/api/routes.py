@@ -12,6 +12,7 @@ from app.services.ordonnance import (
     CANCEL_REASONS, OrdonnanceError, OrdonnanceService, VersionConflict, normalize_content,
 )
 from app.services.analysis import analyze, normalize_dci
+from app.services.access_log import AccessLog
 from app.api.validators import (
     sanitize_medication_name,
     validate_autocomplete_query,
@@ -506,7 +507,9 @@ def search_patients():
     query = request.args.get('q') or ''
     if len(query.strip()) < 2:
         return jsonify({'success': True, 'results': []})
-    return jsonify({'success': True, 'results': PatientService.search(int(user['id']), query)})
+    results = PatientService.search(int(user['id']), query)
+    trace(user, 'patient', None, 'search')
+    return jsonify({'success': True, 'results': results})
 
 
 @api_bp.route('/patients', methods=['POST'])
@@ -519,6 +522,7 @@ def create_patient():
         patient = PatientService.create(int(user['id']), request.get_json(silent=True) or {})
     except PatientError as exc:
         return jsonify({'success': False, 'error': str(exc)}), 400
+    trace(user, 'patient', patient['id'], 'create')
     return jsonify({'success': True, 'patient': patient}), 201
 
 
@@ -531,6 +535,7 @@ def get_patient(patient_id):
     patient = PatientService.get(int(user['id']), patient_id)
     if patient is None:
         return jsonify({'success': False, 'error': 'Patient introuvable'}), 404
+    trace(user, 'patient', patient_id, 'read')
     return jsonify({'success': True, 'patient': patient})
 
 
@@ -546,7 +551,13 @@ def update_patient(patient_id):
         return jsonify({'success': False, 'error': str(exc)}), 400
     if patient is None:
         return jsonify({'success': False, 'error': 'Patient introuvable'}), 404
+    trace(user, 'patient', patient_id, 'update')
     return jsonify({'success': True, 'patient': patient})
+
+
+def trace(user, object_type, object_id, action):
+    """Record a successful access in the access log (identifiers only)."""
+    AccessLog.record(int(user['id']), object_type, object_id, action, request.remote_addr)
 
 
 def ordonnance_error(exc: OrdonnanceError):
@@ -569,6 +580,7 @@ def create_ordonnance():
         draft = OrdonnanceService.create_draft(int(user['id']))
     except OrdonnanceError as exc:
         return ordonnance_error(exc)
+    trace(user, 'ordonnance', draft['id'], 'create')
     return jsonify({'success': True, 'ordonnance': draft}), 201
 
 
@@ -581,6 +593,7 @@ def get_ordonnance(ordonnance_id):
     ordonnance = OrdonnanceService.get(int(user['id']), ordonnance_id)
     if ordonnance is None:
         return jsonify({'success': False, 'error': 'Ordonnance introuvable', 'code': 'not_found'}), 404
+    trace(user, 'ordonnance', ordonnance_id, 'read')
     return jsonify({'success': True, 'ordonnance': ordonnance})
 
 
@@ -599,6 +612,7 @@ def save_ordonnance(ordonnance_id):
         draft = OrdonnanceService.save_draft(int(user['id']), ordonnance_id, data.get('content') or {}, version)
     except OrdonnanceError as exc:
         return ordonnance_error(exc)
+    trace(user, 'ordonnance', ordonnance_id, 'update')
     return jsonify({'success': True, 'ordonnance': draft})
 
 
@@ -616,6 +630,7 @@ def check_ordonnance(ordonnance_id):
         current_app.logger.exception('Ordonnance check failed')
         return jsonify({'success': False, 'error': "L'analyse IAM est indisponible. Réessayez dans un instant.",
                         'code': 'analysis_unavailable'}), 503
+    trace(user, 'ordonnance', ordonnance_id, 'check')
     return jsonify({'success': True, 'check': check})
 
 
@@ -638,6 +653,7 @@ def issue_ordonnance(ordonnance_id):
         current_app.logger.exception('Ordonnance issue failed')
         return jsonify({'success': False, 'error': "L'analyse IAM est indisponible. Réessayez dans un instant.",
                         'code': 'analysis_unavailable'}), 503
+    trace(user, 'ordonnance', ordonnance_id, 'issue')
     return jsonify({'success': True, 'ordonnance': ordonnance,
                     'print_url': f'/ordonnances/{ordonnance_id}/impression'})
 
@@ -657,6 +673,7 @@ def list_ordonnances():
         )
     except ValueError as exc:
         return jsonify({'success': False, 'error': str(exc), 'code': 'invalid'}), 400
+    trace(user, 'ordonnance', None, 'list')
     return jsonify({'success': True, **result})
 
 
@@ -670,6 +687,7 @@ def discard_ordonnance(ordonnance_id):
         OrdonnanceService.discard_draft(int(user['id']), ordonnance_id)
     except OrdonnanceError as exc:
         return ordonnance_error(exc)
+    trace(user, 'ordonnance', ordonnance_id, 'discard')
     return jsonify({'success': True})
 
 
@@ -684,6 +702,7 @@ def patient_ordonnances(patient_id):
         return jsonify({'success': False, 'error': 'Patient introuvable', 'code': 'not_found'}), 404
     result = OrdonnanceService.list(int(user['id']), patient_id=patient_id,
                                     page=request.args.get('page', 1, type=int))
+    trace(user, 'patient', patient_id, 'read')
     return jsonify({'success': True, 'patient': patient, **result})
 
 
@@ -708,6 +727,8 @@ def renew_ordonnance(ordonnance_id):
                                          confirm_cancelled=data.get('confirm_cancelled') is True)
     except OrdonnanceError as exc:
         return ordonnance_error(exc)
+    trace(user, 'ordonnance', ordonnance_id, 'renew')
+    trace(user, 'ordonnance', result['ordonnance']['id'], 'create')
     return jsonify({'success': True, **result}), 201
 
 
@@ -722,6 +743,7 @@ def cancel_ordonnance(ordonnance_id):
         ordonnance = OrdonnanceService.cancel(int(user['id']), ordonnance_id, data.get('reason') or '')
     except OrdonnanceError as exc:
         return ordonnance_error(exc)
+    trace(user, 'ordonnance', ordonnance_id, 'cancel')
     return jsonify({'success': True, 'ordonnance': ordonnance})
 
 
@@ -736,4 +758,17 @@ def cancel_and_correct_ordonnance(ordonnance_id):
         result = OrdonnanceService.cancel_and_correct(int(user['id']), ordonnance_id, data.get('reason') or '')
     except OrdonnanceError as exc:
         return ordonnance_error(exc)
+    trace(user, 'ordonnance', ordonnance_id, 'cancel')
+    trace(user, 'ordonnance', result['ordonnance']['id'], 'create')
     return jsonify({'success': True, **result}), 201
+
+
+@api_bp.route('/ordonnances/<int:ordonnance_id>/access-log', methods=['GET'])
+def ordonnance_access_log(ordonnance_id):
+    """Who consulted or changed this ordonnance, for its prescriber only."""
+    user, error = current_api_user(required_role='prescriber')
+    if error:
+        return error
+    if OrdonnanceService.get(int(user['id']), ordonnance_id) is None:
+        return jsonify({'success': False, 'error': 'Ordonnance introuvable', 'code': 'not_found'}), 404
+    return jsonify({'success': True, 'entries': AccessLog.for_object('ordonnance', ordonnance_id)})
