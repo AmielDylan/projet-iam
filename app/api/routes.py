@@ -5,7 +5,7 @@ from flask import Blueprint, current_app, request, jsonify, send_file
 
 from app.services.interaction import InteractionService
 from app.services.autocomplete import AutocompleteService
-from app.services.auth import AuthService, ProfileService, EstablishmentService, PROFESSIONS
+from app.services.auth import AuthService, ProfileService, EstablishmentService, PROFESSIONS, can_prescribe
 from app.services.catalog import MedicationCatalogService
 from app.services.patient import PatientError, PatientService
 from app.services.ordonnance import (
@@ -36,6 +36,9 @@ def current_api_user(required_role=None):
         allowed_roles = {required_role} if isinstance(required_role, str) else set(required_role)
         if user['role'] not in allowed_roles:
             return None, (jsonify({'success': False, 'error': 'Droits insuffisants'}), 403)
+        if user['role'] == 'prescriber' and not can_prescribe(user):
+            return None, (jsonify({'success': False, 'code': 'profession_not_allowed',
+                                   'error': "La rédaction d'ordonnances n'est pas ouverte à votre profession."}), 403)
     return user, None
 
 
@@ -804,3 +807,31 @@ def admin_create_catalog_entry():
     except CatalogEntryError as exc:
         return jsonify({'success': False, 'error': str(exc)}), 400
     return jsonify({'success': True, 'entry': entry}), 201
+
+
+@api_bp.route('/admin/waitlist', methods=['GET'])
+def admin_waitlist():
+    """Pharmacists waiting for the pharmacy offer."""
+    user, error = current_api_user(required_role='admin')
+    if error:
+        return error
+    return jsonify({'success': True, 'results': AuthService.list_waitlist()})
+
+
+@api_bp.route('/admin/waitlist.csv', methods=['GET'])
+def admin_waitlist_csv():
+    """Waitlist export, semicolon-separated for spreadsheet software in French locales."""
+    user, error = current_api_user(required_role='admin')
+    if error:
+        return error
+    import csv
+    import io
+
+    columns = ['email', 'first_name', 'last_name', 'profession', 'order_number', 'phone', 'requested_at']
+    buffer = io.StringIO()
+    writer = csv.DictWriter(buffer, fieldnames=columns, delimiter=';', extrasaction='ignore')
+    writer.writeheader()
+    writer.writerows(AuthService.list_waitlist())
+    return current_app.response_class(
+        '\ufeff' + buffer.getvalue(), mimetype='text/csv',
+        headers={'Content-Disposition': 'attachment; filename="liste-attente-officine.csv"'})

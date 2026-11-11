@@ -42,6 +42,25 @@ PROFESSIONS = (
     "Autre professionnel autorisé",
 )
 
+# Pharmacists join a waitlist for the pharmacy offer and never reach prescribing.
+NON_PRESCRIBING_PROFESSIONS = {"Pharmacien"}
+WAITLIST_MESSAGE = (
+    "Votre demande est enregistrée sur la liste d'attente de l'offre officine. "
+    "La rédaction d'ordonnances n'est pas ouverte aux pharmaciens ; "
+    "nous vous écrirons à l'ouverture de l'offre."
+)
+
+
+def can_prescribe(user: dict[str, Any] | None) -> bool:
+    """An approved prescriber whose profession may prescribe."""
+    return bool(
+        user
+        and user.get("role") == "prescriber"
+        and user.get("status") == "approved"
+        and (user.get("profession") or "") not in NON_PRESCRIBING_PROFESSIONS
+    )
+
+
 IDENTITY_DOCUMENT_MIME_TYPES = {
     "application/pdf",
     "image/jpeg",
@@ -252,6 +271,8 @@ class AuthService:
             }
         if profession not in PROFESSIONS:
             return False, "Profession invalide.", {"error_source": "profession", "fields": ["profession"]}
+        if profession in NON_PRESCRIBING_PROFESSIONS:
+            return AuthService._join_waitlist(email, first_name, last_name, birthdate, profession, order_number, phone)
         document, error = AuthService.validate_identity_document(identity_document)
         if error:
             return False, error, {"error_source": "identity_document", "fields": ["identity_document"]}
@@ -310,6 +331,42 @@ class AuthService:
                 "error_source": "database",
                 "details": f"MySQL errno {getattr(exc, 'errno', 'unknown')}",
             }
+
+    @staticmethod
+    def _join_waitlist(email, first_name, last_name, birthdate, profession, order_number, phone):
+        """Record a pharmacist on the pharmacy-offer waitlist; no identity document is kept."""
+        try:
+            with DatabasePool.get_cursor() as cursor:
+                cursor.execute("SELECT id FROM iam_users WHERE email = %s", (email,))
+                if cursor.fetchone():
+                    return False, "Un compte existe déjà avec cet email.", {"error_source": "duplicate_email"}
+                cursor.execute(
+                    """
+                    INSERT INTO iam_users
+                        (email, password_hash, role, status, first_name, last_name,
+                         birthdate, profession, order_number, phone, must_change_password)
+                    VALUES (%s, '', 'pharmacist', 'waitlist', %s, %s, NULLIF(%s, ''), %s, %s, %s, 0)
+                    """,
+                    (email, first_name, last_name, birthdate, profession, order_number, phone),
+                )
+        except Error as exc:
+            if getattr(exc, "errno", None) == 1062:
+                return False, "Un compte existe déjà avec cet email.", {"error_source": "duplicate_email"}
+            raise
+        return True, WAITLIST_MESSAGE, {"code": "waitlist"}
+
+    @staticmethod
+    def list_waitlist() -> list[dict[str, Any]]:
+        rows = DatabasePool.execute_query(
+            """
+            SELECT email, first_name, last_name, profession, order_number, phone, requested_at
+            FROM iam_users WHERE status = 'waitlist' ORDER BY requested_at ASC
+            """,
+            dictionary=True,
+        )
+        for row in rows:
+            row["requested_at"] = row["requested_at"].isoformat() if row["requested_at"] else None
+        return rows
 
     @staticmethod
     def create_prescriber_request(email: str, password: str, first_name: str, last_name: str) -> tuple[bool, str]:
@@ -902,7 +959,7 @@ def require_approved_prescriber(view: Callable) -> Callable:
             return redirect(url_for("web.login", next=request.path))
         if user.get("must_change_password"):
             return redirect(url_for("web.change_password"))
-        if user["role"] != "prescriber" or user["status"] != "approved":
+        if not can_prescribe(user):
             flash("Compte prescripteur validé requis.", "warning")
             return redirect(url_for("web.home"))
         return view(*args, **kwargs)
