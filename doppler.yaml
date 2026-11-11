@@ -1,0 +1,5 @@
+# Doppler is the source of truth for configuration (project projet-iam).
+# `doppler setup` in this folder picks the dev config; production lives in prd.
+setup:
+  - project: projet-iam
+    config: dev

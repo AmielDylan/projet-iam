@@ -16,7 +16,6 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from dotenv import load_dotenv  # noqa: E402
 
 from app.config import get_config  # noqa: E402
 from app.services.database import DatabasePool  # noqa: E402
@@ -27,7 +26,6 @@ def main() -> int:
     parser.add_argument("--apply", action="store_true", help="Delete for real")
     args = parser.parse_args()
 
-    load_dotenv()
     config = get_config()
     DatabasePool.initialize(host=config.DB_HOST, port=config.DB_PORT, user=config.DB_USER,
                             password=config.DB_PASSWORD, database=config.DB_NAME, pool_size=1,

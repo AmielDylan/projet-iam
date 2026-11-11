@@ -12,14 +12,14 @@ IAM (Interactions A Medicaments) is a Flask web application for visualizing drug
 # Install dependencies
 pip install -r requirements.txt
 
-# Create .env file from example
-cp .env.example .env
-# Edit .env with your database credentials
+# Configuration lives in Doppler (project projet-iam: dev locally, prd for Railway).
+# No .env file: link the folder once, then prefix commands with `doppler run --`.
+doppler setup --no-interactive
 
 # Run development server
-python application.py
+doppler run -- python application.py
 # or
-flask run
+doppler run -- flask run
 
 # Run tests
 pytest
@@ -88,7 +88,7 @@ projet-iam/
 ### Backend (Flask + MySQL)
 
 - **Application Factory**: `app/__init__.py` contains `create_app()` for creating Flask instances
-- **Configuration**: Environment-based config via `app/config.py` and `.env` file
+- **Configuration**: Environment-based config via `app/config.py`; values injected by Doppler (locally) or Railway (production), never from a `.env` file
 - **Database**: Connection pooling via `app/services/database.py` using mysql-connector-python
 - **Services Layer**: Business logic separated from routes
   - `InteractionService`: Medication validation and interaction lookup
@@ -138,7 +138,7 @@ AWS Elastic Beanstalk configuration in `.ebextensions/python.config` sets WSGI p
 
 ## Environment Variables
 
-See `.env.example` for all available options:
+Values live in Doppler (project `projet-iam`, configs `dev` and `prd`). `.env.example` lists the names only:
 
 - `FLASK_ENV` - development/production
 - `SECRET_KEY` - Flask secret key

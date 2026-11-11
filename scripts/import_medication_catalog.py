@@ -30,17 +30,6 @@ EXPECTED_COLUMNS = [
 ]
 
 
-def load_env(path: Path = Path(".env")) -> None:
-    if not path.exists():
-        return
-    for line in path.read_text(encoding="utf-8", errors="ignore").splitlines():
-        line = line.strip()
-        if not line or line.startswith("#") or "=" not in line:
-            continue
-        key, value = line.split("=", 1)
-        os.environ.setdefault(key.strip(), value.strip().strip('"').strip("'"))
-
-
 def db_config() -> dict[str, Any]:
     if os.environ.get("MYSQL_URL"):
         from urllib.parse import urlparse
@@ -389,7 +378,6 @@ def main() -> int:
         print(f"File not found: {path}", file=sys.stderr)
         return 2
 
-    load_env()
     rows = read_rows(path, args.limit)
     if args.dry_run or args.report_duplicates or not (args.apply_catalog or args.apply_iam_enrichment):
         report(rows)
