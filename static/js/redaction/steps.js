@@ -256,6 +256,7 @@ export function CheckStep({ content, check, checkError, ordonnance, onDerogation
       <p>${ordonnance.status === 'cancelled' ? `Annulée : ${ordonnance.cancel_reason}.` : 'Figée avec son analyse, ses motifs et les versions des référentiels.'}</p>
       <div class="row"><button class="btn" onClick=${onReprint}><${Icon} name="printer" />Réimprimer</button>
         ${ordonnance.status === 'issued' && html`<button class="btn btn-ghost" onClick=${onCancelCorrect}><${Icon} name="undo" />Annuler et corriger</button>`}</div>
+      <${AccessLogPanel} id=${ordonnance.id} />
     </div>`}
     ${checkError && html`<p class="form-error" role="alert">${checkError}</p>`}
     <div class="review">
@@ -290,4 +291,24 @@ export function CheckStep({ content, check, checkError, ordonnance, onDerogation
       ${analysis.scope.free_text_lines.length > 0 && html`<p class="small">Lignes en saisie libre, non vérifiées : ${analysis.scope.free_text_lines.join(', ')}.</p>`}
       <small>${analysis.scope.disclaimer}${refs && refs.thesaurus ? ` Thésaurus : ${refs.thesaurus.label}.` : ''}${refs && refs.catalog ? ` Catalogue : ${refs.catalog.label}.` : ''}</small>
     </div>`;
+}
+
+const ACTION_LABELS = {
+  read: 'Consultée', update: 'Modifiée', create: 'Créée', check: 'Vérifiée', issue: 'Émise', print: 'Imprimée',
+  cancel: 'Annulée', renew: 'Reconduite', discard: 'Supprimée',
+};
+
+/** Who consulted or changed this ordonnance (ticket 20); loaded when opened. */
+function AccessLogPanel({ id }) {
+  const [entries, setEntries] = useState(null);
+  const onToggle = (e) => {
+    if (e.target.open && entries === null) Api.accessLog(id).then((d) => setEntries(d.entries)).catch(() => setEntries([]));
+  };
+  return html`<details class="access-log" onToggle=${onToggle}>
+    <summary>Qui a consulté cette ordonnance</summary>
+    ${entries === null ? html`<p class="muted small">Chargement…</p>` : html`<ul>${entries.map((entry, i) => html`
+      <li key=${i}><span>${ACTION_LABELS[entry.action] || entry.action}</span>
+        <span>${[entry.user.first_name, entry.user.last_name].filter(Boolean).join(' ') || entry.user.email}</span>
+        <span class="muted">${new Date(entry.at.endsWith('Z') ? entry.at : `${entry.at}Z`).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' })}</span></li>`)}</ul>`}
+  </details>`;
 }

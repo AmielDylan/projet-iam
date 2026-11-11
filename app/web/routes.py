@@ -39,7 +39,7 @@ def login_destination_for(user: dict, requested_next: str | None = None) -> str:
 
     path = parsed.path.rstrip('/') or '/'
     allowed_prefixes = {
-        'prescriber': ('/ordonnances', '/prescripteur', '/etablissements', '/changer-mot-de-passe'),
+        'prescriber': ('/ordonnances', '/patients', '/prescripteur', '/etablissements', '/changer-mot-de-passe'),
         'admin': ('/admin',),
     }.get(role, ())
     public_paths = ('/', '/changelog')
@@ -108,12 +108,26 @@ def home():
 @web_bp.route('/ordonnances')
 @require_approved_prescriber
 def prescriptions():
-    """Open the latest draft, or start one (until the ordonnance list page exists)."""
+    """List of drafts and issued ordonnances (Preact)."""
     user = AuthService.current_user()
-    drafts = OrdonnanceService.list(int(user['id']), status='draft', per_page=1)['items']
-    if drafts:
-        return redirect(url_for('web.write_ordonnance', ordonnance_id=drafts[0]['id']))
-    return redirect(url_for('web.new_ordonnance'))
+    return render_template('prescriber_app.html', title='Ordonnances', entry='list.js', initial={
+        'prescriber': prescriber_identity(int(user['id'])),
+    })
+
+
+@web_bp.route('/patients/<int:patient_id>')
+@require_approved_prescriber
+def patient_sheet(patient_id):
+    """Patient sheet: clinical data and ordonnance history (Preact)."""
+    user = AuthService.current_user()
+    patient = PatientService.get(int(user['id']), patient_id)
+    if patient is None:
+        abort(404)
+    AccessLog.record(int(user['id']), 'patient', patient_id, 'read', request.remote_addr)
+    return render_template('prescriber_app.html', title='Patient', entry='patient.js', initial={
+        'prescriber': prescriber_identity(int(user['id'])),
+        'patient': patient,
+    })
 
 
 @web_bp.route('/ordonnances/nouvelle')
@@ -121,11 +135,21 @@ def prescriptions():
 def new_ordonnance():
     """Start a draft and open it at the patient step."""
     user = AuthService.current_user()
-    establishments = EstablishmentService.list_for_prescriber(int(user['id']))
-    content = {'establishment_id': establishments[0]['id']} if establishments else None
-    draft = OrdonnanceService.create_draft(int(user['id']), content)
+    owner_id = int(user['id'])
+    establishments = EstablishmentService.list_for_prescriber(owner_id)
+    content = {'establishment_id': establishments[0]['id'] if establishments else None}
+    patient_id = request.args.get('patient', type=int)
+    if patient_id and PatientService.exists(owner_id, patient_id):
+        content['patient_id'] = patient_id
+    else:
+        # Reuse an untouched empty draft rather than piling up empty ones.
+        drafts = OrdonnanceService.list(owner_id, status='draft', per_page=20)['items']
+        untouched = next((d for d in drafts if d['version'] == 1 and not d['patient_id'] and not d['medications']), None)
+        if untouched:
+            return redirect(url_for('web.write_ordonnance', ordonnance_id=untouched['id'], etape=1))
+    draft = OrdonnanceService.create_draft(owner_id, content)
     AccessLog.record(int(user['id']), 'ordonnance', draft['id'], 'create', request.remote_addr)
-    return redirect(url_for('web.write_ordonnance', ordonnance_id=draft['id'], etape=1))
+    return redirect(url_for('web.write_ordonnance', ordonnance_id=draft['id'], etape=2 if draft['patient_id'] else 1))
 
 
 @web_bp.route('/ordonnances/<int:ordonnance_id>/rediger')

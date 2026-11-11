@@ -81,3 +81,20 @@ class TestListApi:
         assert bad.status_code == 400
         assert deleted.status_code == 200
         assert after['items'] == [] and after['total'] == 0
+
+
+class TestNewOrdonnancePage:
+    def test_new_reuses_an_untouched_empty_draft_and_prefills_a_patient(self, client, prescriber):
+        from app.services.patient import PatientService
+
+        user = {'id': prescriber, 'role': 'prescriber', 'status': 'approved', 'must_change_password': 0, 'profession': 'Médecin'}
+        patient = PatientService.create(prescriber, {'last_name': 'Koffi'})
+        with patch('app.services.auth.AuthService.current_user', return_value=user):
+            first = client.get('/ordonnances/nouvelle').headers['Location']
+            second = client.get('/ordonnances/nouvelle').headers['Location']
+            for_patient = client.get(f"/ordonnances/nouvelle?patient={patient['id']}").headers['Location']
+            page = client.get(first)
+
+        assert first == second
+        assert for_patient != first and 'etape=2' in for_patient
+        assert page.status_code == 200 and 'initial-data' in page.get_data(as_text=True)

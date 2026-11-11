@@ -56,5 +56,10 @@ export const Api = {
   recentPatients: () => api('/patients?recent=1'),
   createPatient: (data) => api('/patients', { method: 'POST', body: data }),
   updatePatient: (id, data) => api(`/patients/${id}`, { method: 'PUT', body: data }),
+  list: (params) => api(`/ordonnances?${new URLSearchParams(params)}`),
+  discard: (id) => api(`/ordonnances/${id}`, { method: 'DELETE' }),
+  renew: (id, confirmCancelled) => api(`/ordonnances/${id}/renew`, { method: 'POST', body: { confirm_cancelled: !!confirmCancelled } }),
+  patientHistory: (id, page) => api(`/patients/${id}/ordonnances?page=${page || 1}`),
+  accessLog: (id) => api(`/ordonnances/${id}/access-log`),
   unlock: (password) => api('/auth/unlock', { method: 'POST', body: { password } }),
 };
