@@ -9,6 +9,10 @@ from mysql.connector import Error
 from app.services.database import DatabasePool
 
 
+# Forms that do not identify the product: none, or GEL (written for gels and for gélules alike).
+UNRELIABLE_FORMS = {"", "GEL"}
+
+
 class MedicationCatalogService:
     """Search and analyze the V3 enriched medication catalog."""
 
@@ -75,7 +79,39 @@ class MedicationCatalogService:
         results = [MedicationCatalogService._serialize_catalog_row(row) for row in rows]
         if not results:
             MedicationCatalogService.log_search_miss(query)
+        MedicationCatalogService._add_labels(results)
         return results
+
+    @staticmethod
+    def _add_labels(results: list[dict[str, Any]]) -> None:
+        """Give `label` (the full product name) to results that name, dosage and form cannot tell apart.
+
+        The catalog files DOLIPRANE 1G CPR 8 and DOLIPRANE 1G CPR EFF 8 both as DOLIPRANE, 1G, COMPRIMÉ,
+        and writes no form or the ambiguous GEL (gel or gélule) for many products: those carry their
+        full name, on screen and on the printed ordonnance, so that the pharmacist delivers the right one.
+        """
+        for item in results:
+            item["label"] = item["specialite"] if item["form"].upper() in UNRELIABLE_FORMS else ""
+        names = sorted({item["name"] for item in results if item["name"] and not item["label"]})
+        if not names:
+            return
+        try:
+            rows = DatabasePool.execute_query(
+                f"""
+                SELECT nom_medicament, IFNULL(dosage, ''), IFNULL(forme_galenique, '')
+                FROM medication_catalog
+                WHERE nom_medicament IN ({', '.join(['%s'] * len(names))})
+                GROUP BY nom_medicament, IFNULL(dosage, ''), IFNULL(forme_galenique, '')
+                HAVING COUNT(DISTINCT specialite) > 1
+                """,
+                tuple(names),
+            )
+        except Error:
+            return
+        shared = {tuple(row) for row in rows}
+        for item in results:
+            if not item["label"] and (item["name"], item["dosage"], item["form"]) in shared:
+                item["label"] = item["specialite"]
 
     @staticmethod
     def get(medication_id: int) -> dict[str, Any] | None:
