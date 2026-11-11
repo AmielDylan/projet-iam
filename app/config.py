@@ -1,4 +1,6 @@
 """Application configuration module."""
+import base64
+import hashlib
 import os
 from urllib.parse import urlparse
 from typing import Optional
@@ -14,6 +16,12 @@ def parse_mysql_url(url: str) -> dict:
         'password': parsed.password or '',
         'database': parsed.path.lstrip('/') or 'projet_ipa'
     }
+
+
+def development_key(purpose: str) -> str:
+    """Fixed key for development and tests only; production must set real keys."""
+    digest = hashlib.sha256(f'digiremed-development-{purpose}'.encode()).digest()
+    return base64.urlsafe_b64encode(digest).decode()
 
 
 class Config:
@@ -66,6 +74,15 @@ class Config:
     SMTP_FROM: str = os.environ.get('SMTP_FROM', '')
     SMTP_TLS: bool = os.environ.get('SMTP_TLS', 'true').lower() not in {'0', 'false', 'no'}
 
+    # Health data encryption at rest (see app/services/vault.py)
+    @property
+    def DATA_ENCRYPTION_KEYS(self) -> str:
+        return os.environ.get('DATA_ENCRYPTION_KEYS') or f"dev:{development_key('encryption')}"
+
+    @property
+    def DATA_INDEX_KEY(self) -> str:
+        return os.environ.get('DATA_INDEX_KEY') or development_key('index')
+
 
 class DevelopmentConfig(Config):
     """Development configuration."""
@@ -85,6 +102,20 @@ class ProductionConfig(Config):
         key = os.environ.get('SECRET_KEY')
         if not key:
             raise ValueError('SECRET_KEY must be set in production')
+        return key
+
+    @property
+    def DATA_ENCRYPTION_KEYS(self) -> str:
+        keys = os.environ.get('DATA_ENCRYPTION_KEYS')
+        if not keys:
+            raise ValueError('DATA_ENCRYPTION_KEYS must be set in production')
+        return keys
+
+    @property
+    def DATA_INDEX_KEY(self) -> str:
+        key = os.environ.get('DATA_INDEX_KEY')
+        if not key:
+            raise ValueError('DATA_INDEX_KEY must be set in production')
         return key
 
 

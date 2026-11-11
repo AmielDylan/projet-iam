@@ -146,6 +146,7 @@ class TestPatientSchema:
         with patch('app.services.database.DatabasePool.initialize'), \
              patch('app.AuthService.ensure_schema'), \
              patch('app.PatientService.ensure_schema') as patient_schema, \
+             patch('app.SchemaMigrator.apply_pending'), \
              patch.dict('os.environ', {'ADMIN_EMAIL': '', 'ADMIN_PASSWORD': ''}):
             create_app(DevelopmentConfig())
 

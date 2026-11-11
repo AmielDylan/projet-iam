@@ -8,6 +8,8 @@ from app.config import get_config, Config
 from app.services.database import DatabasePool
 from app.services.auth import AuthService
 from app.services.patient import PatientService
+from app.services.schema import SchemaMigrator
+from app.services import vault as vault_module
 from app.api import api_bp
 from app.web import web_bp
 from app.errors import register_error_handlers
@@ -42,6 +44,9 @@ def create_app(config: Optional[Config] = None) -> Flask:
     # Store config for later use
     app.config['APP_CONFIG'] = config
 
+    # Health data keys: refuse to start without them in production
+    vault_module.install(vault_module.Vault(config.DATA_ENCRYPTION_KEYS, config.DATA_INDEX_KEY))
+
     # Initialize database pool
     DatabasePool.initialize(
         host=config.DB_HOST,
@@ -55,6 +60,7 @@ def create_app(config: Optional[Config] = None) -> Flask:
     if not app.config['TESTING']:
         AuthService.ensure_schema()
         PatientService.ensure_schema()
+        SchemaMigrator.apply_pending()
         if os.environ.get("ADMIN_EMAIL") and os.environ.get("ADMIN_PASSWORD"):
             AuthService.create_admin(
                 os.environ.get("ADMIN_EMAIL", ""),
