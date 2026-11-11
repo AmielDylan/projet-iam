@@ -8,6 +8,7 @@ from app.services.autocomplete import AutocompleteService
 from app.services.auth import AuthService, ProfileService, EstablishmentService, PROFESSIONS
 from app.services.catalog import MedicationCatalogService
 from app.services.patient import PatientError, PatientService
+from app.services.ordonnance import OrdonnanceError, OrdonnanceService, VersionConflict
 from app.api.validators import (
     sanitize_medication_name,
     validate_autocomplete_query,
@@ -527,3 +528,56 @@ def update_patient(patient_id):
     if patient is None:
         return jsonify({'success': False, 'error': 'Patient introuvable'}), 404
     return jsonify({'success': True, 'patient': patient})
+
+
+def ordonnance_error(exc: OrdonnanceError):
+    """Translate a rule refusal from the Ordonnance module into JSON."""
+    body = {'success': False, 'error': str(exc), 'code': exc.code}
+    if isinstance(exc, VersionConflict):
+        body['current'] = exc.current
+    if getattr(exc, 'reasons', None):
+        body['reasons'] = exc.reasons
+    return jsonify(body), exc.status
+
+
+@api_bp.route('/ordonnances', methods=['POST'])
+def create_ordonnance():
+    """Start a draft."""
+    user, error = current_api_user(required_role='prescriber')
+    if error:
+        return error
+    try:
+        draft = OrdonnanceService.create_draft(int(user['id']))
+    except OrdonnanceError as exc:
+        return ordonnance_error(exc)
+    return jsonify({'success': True, 'ordonnance': draft}), 201
+
+
+@api_bp.route('/ordonnances/<int:ordonnance_id>', methods=['GET'])
+def get_ordonnance(ordonnance_id):
+    """Read one of the current prescriber's ordonnances."""
+    user, error = current_api_user(required_role='prescriber')
+    if error:
+        return error
+    ordonnance = OrdonnanceService.get(int(user['id']), ordonnance_id)
+    if ordonnance is None:
+        return jsonify({'success': False, 'error': 'Ordonnance introuvable', 'code': 'not_found'}), 404
+    return jsonify({'success': True, 'ordonnance': ordonnance})
+
+
+@api_bp.route('/ordonnances/<int:ordonnance_id>', methods=['PUT'])
+def save_ordonnance(ordonnance_id):
+    """Autosave a draft: full content plus the version it was based on."""
+    user, error = current_api_user(required_role='prescriber')
+    if error:
+        return error
+    data = request.get_json(silent=True) or {}
+    try:
+        version = int(data.get('version'))
+    except (TypeError, ValueError):
+        return jsonify({'success': False, 'error': 'Version manquante', 'code': 'invalid'}), 400
+    try:
+        draft = OrdonnanceService.save_draft(int(user['id']), ordonnance_id, data.get('content') or {}, version)
+    except OrdonnanceError as exc:
+        return ordonnance_error(exc)
+    return jsonify({'success': True, 'ordonnance': draft})
