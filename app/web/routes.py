@@ -12,7 +12,8 @@ from app.services.auth import (
     require_approved_prescriber,
 )
 from app.services.interaction import InteractionService
-from app.services.ordonnance import OrdonnanceService
+from app.services.ordonnance import OrdonnanceService, prescriber_identity
+from app.services.patient import PatientService
 from app.services.access_log import AccessLog
 from app.services import two_factor
 from app.services.two_factor import TwoFactor
@@ -107,13 +108,48 @@ def home():
 @web_bp.route('/ordonnances')
 @require_approved_prescriber
 def prescriptions():
-    """Render the protected prescription workspace."""
+    """Open the latest draft, or start one (until the ordonnance list page exists)."""
     user = AuthService.current_user()
-    return render_template(
-        'prescription.html',
-        prescriber_profile=ProfileService.get_profile(int(user['id'])),
-        establishments=EstablishmentService.list_for_prescriber(int(user['id'])),
-    )
+    drafts = OrdonnanceService.list(int(user['id']), status='draft', per_page=1)['items']
+    if drafts:
+        return redirect(url_for('web.write_ordonnance', ordonnance_id=drafts[0]['id']))
+    return redirect(url_for('web.new_ordonnance'))
+
+
+@web_bp.route('/ordonnances/nouvelle')
+@require_approved_prescriber
+def new_ordonnance():
+    """Start a draft and open it at the patient step."""
+    user = AuthService.current_user()
+    draft = OrdonnanceService.create_draft(int(user['id']))
+    AccessLog.record(int(user['id']), 'ordonnance', draft['id'], 'create', request.remote_addr)
+    return redirect(url_for('web.write_ordonnance', ordonnance_id=draft['id'], etape=1))
+
+
+@web_bp.route('/ordonnances/<int:ordonnance_id>/rediger')
+@require_approved_prescriber
+def write_ordonnance(ordonnance_id):
+    """Prescribing screen: three steps, autosave, live analysis (Preact)."""
+    user = AuthService.current_user()
+    owner_id = int(user['id'])
+    ordonnance = OrdonnanceService.get(owner_id, ordonnance_id)
+    if ordonnance is None:
+        abort(404)
+    patient = PatientService.get(owner_id, ordonnance['patient_id']) if ordonnance['patient_id'] else None
+    step = request.args.get('etape', type=int)
+    if ordonnance['status'] != 'draft':
+        step = 3
+    elif step not in (1, 2, 3):
+        step = 2 if patient else 1
+    AccessLog.record(owner_id, 'ordonnance', ordonnance_id, 'read', request.remote_addr)
+    initial = {
+        'ordonnance': ordonnance,
+        'patient': patient,
+        'establishments': EstablishmentService.list_for_prescriber(owner_id),
+        'prescriber': prescriber_identity(owner_id),
+        'step': step,
+    }
+    return render_template('redaction.html', initial=initial)
 
 
 @web_bp.route('/ordonnances/<int:ordonnance_id>/impression')

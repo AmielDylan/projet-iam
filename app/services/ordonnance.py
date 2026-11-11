@@ -301,6 +301,7 @@ class OrdonnanceService:
         lines = []
         for line in frozen["lines"]:
             copy = {key: line.get(key) for key in ("line_id", "medication_id", *LINE_TEXT_FIELDS)}
+            copy["substances"] = line.get("dci") or line.get("substances") or []
             if copy["medication_id"] and MedicationCatalogService.get(int(copy["medication_id"])) is None:
                 copy["medication_id"] = None
                 notices.append({"line_id": line["line_id"], "code": "catalog_missing",
@@ -581,13 +582,7 @@ def age_label(birthdate: str | None, on_date: date) -> str:
 
 def _snapshot(owner_id: int, content: dict[str, Any], evaluation: dict[str, Any]) -> dict[str, Any]:
     """Everything the reprint needs, frozen: later edits elsewhere never change it."""
-    from app.services.auth import AuthService, ProfileService
-
-    user = AuthService.get_user(owner_id) or {}
-    profile = ProfileService.get_profile(owner_id)
-    prescriber = {key: value for key, value in profile.items() if value}
-    for key in ("first_name", "last_name", "profession", "order_number", "phone", "email"):
-        prescriber.setdefault(key, user.get(key) or "")
+    prescriber = prescriber_identity(owner_id)
     prescriber["prescriber_code"] = PrescriberCodes.of(owner_id)
 
     patient = dict(evaluation["patient"])
@@ -620,6 +615,18 @@ def _snapshot(owner_id: int, content: dict[str, Any], evaluation: dict[str, Any]
         "warnings": evaluation["warnings"],
         "referentials": ReferentialService.current(),
     }
+
+
+def prescriber_identity(owner_id: int) -> dict[str, Any]:
+    """Name, profession and identifiers printed in the header: profile first, account as fallback."""
+    from app.services.auth import AuthService, ProfileService
+
+    user = AuthService.get_user(owner_id) or {}
+    profile = ProfileService.get_profile(owner_id)
+    prescriber = {key: value for key, value in profile.items() if value}
+    for key in ("first_name", "last_name", "profession", "order_number", "phone", "email"):
+        prescriber.setdefault(key, user.get(key) or "")
+    return prescriber
 
 
 def _establishment_for_print(owner_id: int, establishment_id: int) -> dict[str, Any]:
