@@ -315,6 +315,9 @@ class InteractionService:
         if not text:
             return ''
         text = text.strip().strip('()').strip()
+        # The thesaurus import left the literal text "NULL" in empty fields.
+        if text.upper() == 'NULL':
+            return ''
         # Capitalize first letter (some entries start mid-sentence)
         if text:
             text = text[0].upper() + text[1:]

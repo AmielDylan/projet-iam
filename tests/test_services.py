@@ -335,3 +335,11 @@ class TestEstablishmentService:
         assert results[0]['name'] == 'Clinique IAM'
         assert results[0]['is_active'] is True
         assert results[0]['has_logo'] is False
+
+
+def test_thesaurus_null_text_is_treated_as_empty():
+    from app.services.interaction import InteractionService
+
+    assert InteractionService._clean_text('NULL') == ''
+    assert InteractionService._clean_text(' (null) ') == ''
+    assert InteractionService._clean_text('surveillance clinique') == 'Surveillance clinique'

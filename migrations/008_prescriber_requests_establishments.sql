@@ -1,13 +1,38 @@
 -- V3.2 prescriber-only account requests, temporary identity documents,
 -- temporary passwords, and prescriber establishments.
+-- Idempotent: each column is added only when missing, so the file can be replayed.
 
-ALTER TABLE `iam_users`
-    ADD COLUMN `birthdate` DATE NULL AFTER `last_name`,
-    ADD COLUMN `profession` VARCHAR(120) NULL AFTER `birthdate`,
-    ADD COLUMN `order_number` VARCHAR(160) NULL AFTER `profession`,
-    ADD COLUMN `phone` VARCHAR(80) NULL AFTER `order_number`,
-    ADD COLUMN `temporary_password_expires_at` DATETIME NULL AFTER `review_note`,
-    ADD COLUMN `must_change_password` TINYINT NOT NULL DEFAULT 0 AFTER `temporary_password_expires_at`;
+DROP PROCEDURE IF EXISTS `iam_add_column_if_missing`;
+
+DELIMITER ;;
+CREATE PROCEDURE `iam_add_column_if_missing`(
+    IN p_table VARCHAR(64),
+    IN p_column VARCHAR(64),
+    IN p_definition VARCHAR(255)
+)
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.COLUMNS
+        WHERE TABLE_SCHEMA = DATABASE()
+          AND TABLE_NAME = p_table
+          AND COLUMN_NAME = p_column
+    ) THEN
+        SET @iam_ddl = CONCAT('ALTER TABLE `', p_table, '` ADD COLUMN `', p_column, '` ', p_definition);
+        PREPARE iam_stmt FROM @iam_ddl;
+        EXECUTE iam_stmt;
+        DEALLOCATE PREPARE iam_stmt;
+    END IF;
+END;;
+DELIMITER ;
+
+CALL `iam_add_column_if_missing`('iam_users', 'birthdate', 'DATE NULL AFTER `last_name`');
+CALL `iam_add_column_if_missing`('iam_users', 'profession', 'VARCHAR(120) NULL AFTER `birthdate`');
+CALL `iam_add_column_if_missing`('iam_users', 'order_number', 'VARCHAR(160) NULL AFTER `profession`');
+CALL `iam_add_column_if_missing`('iam_users', 'phone', 'VARCHAR(80) NULL AFTER `order_number`');
+CALL `iam_add_column_if_missing`('iam_users', 'temporary_password_expires_at', 'DATETIME NULL AFTER `review_note`');
+CALL `iam_add_column_if_missing`('iam_users', 'must_change_password', 'TINYINT NOT NULL DEFAULT 0 AFTER `temporary_password_expires_at`');
+
+DROP PROCEDURE IF EXISTS `iam_add_column_if_missing`;
 
 CREATE TABLE IF NOT EXISTS `identity_documents` (
     `id` BIGINT PRIMARY KEY AUTO_INCREMENT,

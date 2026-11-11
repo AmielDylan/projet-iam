@@ -1,0 +1,20 @@
+<!doctype html>
+{#- Shell of the prescriber pages written in Preact (list, patient sheet). `entry` is the module to load. -#}
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ title }} · DigiRemed</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible+Next:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/prescriber.css') }}">
+</head>
+<body>
+  <div id="app"></div>
+  <noscript><p style="padding:24px">Cette page nécessite JavaScript.</p></noscript>
+  <script type="application/json" id="initial-data">{{ initial | tojson }}</script>
+  {% for script in extra_scripts or [] %}<script src="{{ url_for('static', filename=script) }}"></script>{% endfor %}
+  <script type="module" src="{{ url_for('static', filename='js/redaction/' + entry) }}"></script>
+</body>
+</html>

@@ -1,8 +1,7 @@
-"""Authentication, prescriber profile, and patient history services."""
+"""Authentication, prescriber profile, and establishment services."""
 from __future__ import annotations
 
 import base64
-import hashlib
 import secrets
 from datetime import datetime
 from functools import wraps
@@ -34,16 +33,6 @@ PROFILE_FIELDS = (
     "extra_details",
 )
 
-PATIENT_FIELDS = (
-    "patient_title",
-    "patient_first_name",
-    "patient_last_name",
-    "patient_birthdate",
-    "patient_weight",
-    "patient_address",
-    "clinical_notes",
-)
-
 PROFESSIONS = (
     "Médecin",
     "Pharmacien",
@@ -52,6 +41,25 @@ PROFESSIONS = (
     "Infirmier",
     "Autre professionnel autorisé",
 )
+
+# Pharmacists join a waitlist for the pharmacy offer and never reach prescribing.
+NON_PRESCRIBING_PROFESSIONS = {"Pharmacien"}
+WAITLIST_MESSAGE = (
+    "Votre demande est enregistrée sur la liste d'attente de l'offre officine. "
+    "La rédaction d'ordonnances n'est pas ouverte aux pharmaciens ; "
+    "nous vous écrirons à l'ouverture de l'offre."
+)
+
+
+def can_prescribe(user: dict[str, Any] | None) -> bool:
+    """An approved prescriber whose profession may prescribe."""
+    return bool(
+        user
+        and user.get("role") == "prescriber"
+        and user.get("status") == "approved"
+        and (user.get("profession") or "") not in NON_PRESCRIBING_PROFESSIONS
+    )
+
 
 IDENTITY_DOCUMENT_MIME_TYPES = {
     "application/pdf",
@@ -187,28 +195,6 @@ class AuthService:
                 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
                 """
             )
-            create_table(
-                """
-                CREATE TABLE IF NOT EXISTS `patient_history` (
-                    `id` BIGINT PRIMARY KEY AUTO_INCREMENT,
-                    `user_id` BIGINT NOT NULL,
-                    `patient_key` CHAR(64) NOT NULL,
-                    `patient_title` VARCHAR(32) NULL,
-                    `patient_first_name` VARCHAR(120) NULL,
-                    `patient_last_name` VARCHAR(120) NULL,
-                    `patient_birthdate` DATE NULL,
-                    `patient_weight` DECIMAL(6,2) NULL,
-                    `patient_address` TEXT NULL,
-                    `clinical_notes` TEXT NULL,
-                    `last_seen_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                    `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                    `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-                    UNIQUE KEY `uq_patient_history_user_key` (`user_id`, `patient_key`),
-                    KEY `idx_patient_history_search` (`user_id`, `patient_last_name`, `patient_first_name`),
-                    KEY `idx_patient_history_last_seen` (`user_id`, `last_seen_at`)
-                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-                """
-            )
 
     @staticmethod
     def current_session_user() -> dict[str, Any] | None:
@@ -285,6 +271,8 @@ class AuthService:
             }
         if profession not in PROFESSIONS:
             return False, "Profession invalide.", {"error_source": "profession", "fields": ["profession"]}
+        if profession in NON_PRESCRIBING_PROFESSIONS:
+            return AuthService._join_waitlist(email, first_name, last_name, birthdate, profession, order_number, phone)
         document, error = AuthService.validate_identity_document(identity_document)
         if error:
             return False, error, {"error_source": "identity_document", "fields": ["identity_document"]}
@@ -343,6 +331,42 @@ class AuthService:
                 "error_source": "database",
                 "details": f"MySQL errno {getattr(exc, 'errno', 'unknown')}",
             }
+
+    @staticmethod
+    def _join_waitlist(email, first_name, last_name, birthdate, profession, order_number, phone):
+        """Record a pharmacist on the pharmacy-offer waitlist; no identity document is kept."""
+        try:
+            with DatabasePool.get_cursor() as cursor:
+                cursor.execute("SELECT id FROM iam_users WHERE email = %s", (email,))
+                if cursor.fetchone():
+                    return False, "Un compte existe déjà avec cet email.", {"error_source": "duplicate_email"}
+                cursor.execute(
+                    """
+                    INSERT INTO iam_users
+                        (email, password_hash, role, status, first_name, last_name,
+                         birthdate, profession, order_number, phone, must_change_password)
+                    VALUES (%s, '', 'pharmacist', 'waitlist', %s, %s, NULLIF(%s, ''), %s, %s, %s, 0)
+                    """,
+                    (email, first_name, last_name, birthdate, profession, order_number, phone),
+                )
+        except Error as exc:
+            if getattr(exc, "errno", None) == 1062:
+                return False, "Un compte existe déjà avec cet email.", {"error_source": "duplicate_email"}
+            raise
+        return True, WAITLIST_MESSAGE, {"code": "waitlist"}
+
+    @staticmethod
+    def list_waitlist() -> list[dict[str, Any]]:
+        rows = DatabasePool.execute_query(
+            """
+            SELECT email, first_name, last_name, profession, order_number, phone, requested_at
+            FROM iam_users WHERE status = 'waitlist' ORDER BY requested_at ASC
+            """,
+            dictionary=True,
+        )
+        for row in rows:
+            row["requested_at"] = row["requested_at"].isoformat() if row["requested_at"] else None
+        return rows
 
     @staticmethod
     def create_prescriber_request(email: str, password: str, first_name: str, last_name: str) -> tuple[bool, str]:
@@ -420,7 +444,14 @@ class AuthService:
         session["role"] = user["role"]
         session["status"] = user["status"]
         session["must_change_password"] = bool(user.get("must_change_password"))
+        session["last_activity"] = int(datetime.now().timestamp())
         return True, "Connexion réussie."
+
+    @staticmethod
+    def verify_password(user_id: int, password: str) -> bool:
+        """Check the password of a logged-in user (session unlock)."""
+        rows = DatabasePool.execute_query("SELECT password_hash FROM iam_users WHERE id = %s", (user_id,))
+        return bool(rows and rows[0][0] and check_password_hash(rows[0][0], password or ""))
 
     @staticmethod
     def logout() -> None:
@@ -547,6 +578,10 @@ class AuthService:
             cursor.execute("DELETE FROM identity_documents WHERE user_id = %s", (user_id,))
         if not approve:
             return True, "Demande refusée.", None
+        if target.get("role") == "prescriber":
+            from app.services.prescriber_code import PrescriberCodes
+
+            PrescriberCodes.ensure(user_id)
         if email_sent:
             return True, "Demande acceptée et mot de passe envoyé.", None
         return True, "Demande acceptée. SMTP indisponible: copiez le message de transmission.", {"manual_delivery": manual_delivery}
@@ -679,7 +714,7 @@ class EstablishmentService:
             SELECT id, name, type, address, phone, email, identifier_label, identifier_value,
                    secondary_identifier_label, secondary_identifier_value, free_text,
                    logo_filename, logo_mime_type, logo_size_bytes, logo_content IS NOT NULL AS has_logo,
-                   is_active, created_at, updated_at
+                   is_active, paper_format, created_at, updated_at
             FROM prescriber_establishments
             WHERE user_id = %s {where_active}
             ORDER BY is_active DESC, name ASC
@@ -711,6 +746,9 @@ class EstablishmentService:
     def upsert(user_id: int, payload: dict[str, Any], logo: Any = None, establishment_id: int | None = None) -> tuple[bool, str, dict[str, Any] | None]:
         data = {field: str(payload.get(field) or "").strip() for field in ESTABLISHMENT_FIELDS}
         data["is_active"] = str(payload.get("is_active", "1")).lower() not in {"0", "false", "no"}
+        paper_format = str(payload.get("paper_format") or "").strip().upper()
+        if paper_format and paper_format not in {"A5", "A4"}:
+            return False, "Format de papier invalide : A5 ou A4.", None
         if not data["name"]:
             return False, "Nom d'établissement requis.", None
         logo_data, error = EstablishmentService.validate_logo(logo)
@@ -737,7 +775,7 @@ class EstablishmentService:
                         logo_filename = %s,
                         logo_mime_type = %s,
                         logo_size_bytes = %s,
-                        logo_content = %s"""
+                        logo_content = _binary %s"""
                     params.extend([
                         logo_data["filename"],
                         logo_data["mime_type"],
@@ -772,8 +810,8 @@ class EstablishmentService:
                         (user_id, name, type, address, phone, email, identifier_label, identifier_value,
                          secondary_identifier_label, secondary_identifier_value, free_text,
                          logo_filename, logo_mime_type, logo_size_bytes, logo_content, is_active)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-                    """,
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, {logo}, %s)
+                    """.format(logo="_binary %s" if logo_data else "%s"),
                     (
                         user_id,
                         data["name"],
@@ -794,6 +832,11 @@ class EstablishmentService:
                     ),
                 )
                 target_id = int(cursor.lastrowid)
+            if paper_format:
+                cursor.execute(
+                    "UPDATE prescriber_establishments SET paper_format = %s WHERE id = %s AND user_id = %s",
+                    (paper_format, target_id, user_id),
+                )
         establishment = EstablishmentService.get(user_id, target_id)
         return True, "Établissement enregistré.", establishment
 
@@ -804,7 +847,7 @@ class EstablishmentService:
             SELECT id, name, type, address, phone, email, identifier_label, identifier_value,
                    secondary_identifier_label, secondary_identifier_value, free_text,
                    logo_filename, logo_mime_type, logo_size_bytes, logo_content IS NOT NULL AS has_logo,
-                   is_active, created_at, updated_at
+                   is_active, paper_format, created_at, updated_at
             FROM prescriber_establishments
             WHERE id = %s AND user_id = %s
             LIMIT 1
@@ -813,6 +856,17 @@ class EstablishmentService:
             dictionary=True,
         )
         return EstablishmentService.serialize(rows[0]) if rows else None
+
+    @staticmethod
+    def logo(user_id: int, establishment_id: int) -> tuple[str, bytes] | None:
+        """The establishment's logo for its owner: (mime type, bytes), or None."""
+        rows = DatabasePool.execute_query(
+            "SELECT logo_mime_type, logo_content FROM prescriber_establishments WHERE id = %s AND user_id = %s",
+            (establishment_id, user_id),
+        )
+        if not rows or not rows[0][1]:
+            return None
+        return rows[0][0], bytes(rows[0][1])
 
     @staticmethod
     def delete(user_id: int, establishment_id: int) -> bool:
@@ -845,8 +899,9 @@ class EstablishmentService:
         item = {key: row.get(key) for key in (
             "id", "name", "type", "address", "phone", "email", "identifier_label", "identifier_value",
             "secondary_identifier_label", "secondary_identifier_value", "free_text", "logo_filename",
-            "logo_mime_type", "logo_size_bytes", "has_logo", "is_active"
+            "logo_mime_type", "logo_size_bytes", "has_logo", "is_active", "paper_format"
         )}
+        item["paper_format"] = item.get("paper_format") or "A5"
         item["has_logo"] = bool(item.get("has_logo"))
         item["is_active"] = bool(item.get("is_active"))
         if include_prescriber:
@@ -860,7 +915,7 @@ class EstablishmentService:
 
 
 class ProfileService:
-    """Prescriber profile and scoped patient history."""
+    """Prescriber profile."""
 
     @staticmethod
     def get_profile(user_id: int) -> dict[str, Any]:
@@ -900,78 +955,6 @@ class ProfileService:
             )
         return data
 
-    @staticmethod
-    def search_patients(user_id: int, query: str, limit: int = 8) -> list[dict[str, Any]]:
-        query = (query or "").strip()
-        if not query:
-            return []
-        pattern = f"%{query}%"
-        return DatabasePool.execute_query(
-            """
-            SELECT id, patient_title, patient_first_name, patient_last_name, patient_birthdate,
-                   patient_weight, patient_address, clinical_notes, last_seen_at
-            FROM patient_history
-            WHERE user_id = %s
-              AND (patient_first_name LIKE %s OR patient_last_name LIKE %s OR CONCAT(patient_first_name, ' ', patient_last_name) LIKE %s)
-            ORDER BY last_seen_at DESC
-            LIMIT %s
-            """,
-            (user_id, pattern, pattern, pattern, limit),
-            dictionary=True,
-        )
-
-    @staticmethod
-    def upsert_patient(user_id: int, payload: dict[str, Any]) -> dict[str, Any]:
-        data = {field: str(payload.get(field) or "").strip() for field in PATIENT_FIELDS}
-        data["patient_key"] = patient_key(data)
-        weight = data["patient_weight"] or None
-        if weight is not None:
-            try:
-                weight = float(weight)
-            except ValueError:
-                weight = None
-
-        with DatabasePool.get_cursor() as cursor:
-            cursor.execute(
-                """
-                INSERT INTO patient_history
-                    (user_id, patient_key, patient_title, patient_first_name, patient_last_name,
-                     patient_birthdate, patient_weight, patient_address, clinical_notes, last_seen_at)
-                VALUES (%s, %s, %s, %s, %s, NULLIF(%s, ''), %s, %s, %s, CURRENT_TIMESTAMP)
-                ON DUPLICATE KEY UPDATE
-                    patient_title = VALUES(patient_title),
-                    patient_first_name = VALUES(patient_first_name),
-                    patient_last_name = VALUES(patient_last_name),
-                    patient_birthdate = VALUES(patient_birthdate),
-                    patient_weight = VALUES(patient_weight),
-                    patient_address = VALUES(patient_address),
-                    clinical_notes = VALUES(clinical_notes),
-                    last_seen_at = CURRENT_TIMESTAMP
-                """,
-                (
-                    user_id,
-                    data["patient_key"],
-                    data["patient_title"] or None,
-                    data["patient_first_name"] or None,
-                    data["patient_last_name"] or None,
-                    data["patient_birthdate"],
-                    weight,
-                    data["patient_address"] or None,
-                    data["clinical_notes"] or None,
-                ),
-            )
-        return data
-
-
-def patient_key(data: dict[str, Any]) -> str:
-    identity = "|".join(
-        str(data.get(field) or "").strip().upper()
-        for field in ("patient_first_name", "patient_last_name", "patient_birthdate")
-    )
-    if identity == "||":
-        identity = str(data)
-    return hashlib.sha256(identity.encode("utf-8")).hexdigest()
-
 
 def require_login(view: Callable) -> Callable:
     @wraps(view)
@@ -994,7 +977,7 @@ def require_approved_prescriber(view: Callable) -> Callable:
             return redirect(url_for("web.login", next=request.path))
         if user.get("must_change_password"):
             return redirect(url_for("web.change_password"))
-        if user["role"] != "prescriber" or user["status"] != "approved":
+        if not can_prescribe(user):
             flash("Compte prescripteur validé requis.", "warning")
             return redirect(url_for("web.home"))
         return view(*args, **kwargs)

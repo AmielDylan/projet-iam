@@ -1,12 +1,22 @@
 """API routes for the application."""
 from io import BytesIO
 
-from flask import Blueprint, request, jsonify, send_file
+from flask import Blueprint, current_app, request, jsonify, send_file, session
 
 from app.services.interaction import InteractionService
 from app.services.autocomplete import AutocompleteService
-from app.services.auth import AuthService, ProfileService, EstablishmentService, PROFESSIONS
+from app.services.auth import AuthService, ProfileService, EstablishmentService, PROFESSIONS, can_prescribe
 from app.services.catalog import MedicationCatalogService
+from app.services.patient import PatientError, PatientService
+from app.services.ordonnance import (
+    CANCEL_REASONS, OrdonnanceError, OrdonnanceService, VersionConflict, normalize_content,
+)
+from app.services.analysis import analyze, normalize_dci
+from app.services.access_log import AccessLog
+from app.services import session_lock, two_factor
+from app.services.two_factor import TwoFactor
+from app.services.catalog_gaps import CatalogEntryError, CatalogGaps
+from app.services.prescriber_assets import AssetError, PrescriberAssets
 from app.api.validators import (
     sanitize_medication_name,
     validate_autocomplete_query,
@@ -29,14 +39,32 @@ def current_api_user(required_role=None):
         allowed_roles = {required_role} if isinstance(required_role, str) else set(required_role)
         if user['role'] not in allowed_roles:
             return None, (jsonify({'success': False, 'error': 'Droits insuffisants'}), 403)
+        if user['role'] == 'prescriber' and not can_prescribe(user):
+            return None, (jsonify({'success': False, 'code': 'profession_not_allowed',
+                                   'error': "La rédaction d'ordonnances n'est pas ouverte à votre profession."}), 403)
     return user, None
 
 
 @api_bp.route('/auth/session', methods=['GET'])
 def auth_session():
-    """Return the current authenticated user, if any."""
+    """Return the current user, or only the lock state when the session is locked."""
+    if session_lock.is_locked():
+        return jsonify({'success': True, 'locked': True, 'user': None})
     user = AuthService.current_user()
-    return jsonify({'success': True, 'user': user})
+    return jsonify({'success': True, 'locked': False, 'user': user})
+
+
+@api_bp.route('/auth/unlock', methods=['POST'])
+def auth_unlock():
+    """Unlock an idle-locked session with the same user's password."""
+    user_id = session.get('user_id')
+    if not user_id:
+        return jsonify({'success': False, 'error': 'Connexion requise'}), 401
+    password = (request.get_json(silent=True) or {}).get('password') or ''
+    if not AuthService.verify_password(int(user_id), password):
+        return jsonify({'success': False, 'error': 'Mot de passe incorrect', 'code': 'wrong_password'}), 401
+    session_lock.unlock()
+    return jsonify({'success': True})
 
 
 @api_bp.route('/auth/login', methods=['POST'])
@@ -44,9 +72,57 @@ def auth_login():
     """Authenticate using JSON credentials."""
     data = request.get_json(silent=True) or {}
     success, message = AuthService.authenticate(data.get('email', ''), data.get('password', ''))
-    status = 200 if success else 401
-    user = AuthService.current_session_user() if success else None
-    return jsonify({'success': success, 'message': message, 'user': user}), status
+    if not success:
+        return jsonify({'success': False, 'message': message, 'user': None}), 401
+    user = AuthService.current_session_user()
+    next_step = two_factor.after_password(user['id'], user['role'])
+    return jsonify({'success': True, 'message': message, 'user': None if next_step.get('two_factor_required') else user,
+                    **next_step})
+
+
+@api_bp.route('/auth/2fa', methods=['GET'])
+def two_factor_status():
+    """Whether 2FA is enabled for the current account, and whether it is required."""
+    user_id = session.get('user_id')
+    if not user_id:
+        return jsonify({'success': False, 'error': 'Connexion requise'}), 401
+    return jsonify({'success': True, 'enabled': TwoFactor.is_enabled(int(user_id)),
+                    'required': two_factor.required()})
+
+
+@api_bp.route('/auth/2fa/setup', methods=['POST'])
+def two_factor_setup():
+    """Draw a secret; the client shows it as a QR code from otpauth_uri."""
+    user_id = session.get('user_id')
+    if not user_id or session.get('two_factor_pending'):
+        return jsonify({'success': False, 'error': 'Connexion requise'}), 401
+    return jsonify({'success': True, **TwoFactor.setup(int(user_id), session.get('email') or '')})
+
+
+@api_bp.route('/auth/2fa/confirm', methods=['POST'])
+def two_factor_confirm():
+    """Enable 2FA with a first code; the recovery codes are returned once."""
+    user_id = session.get('user_id')
+    if not user_id or session.get('two_factor_pending'):
+        return jsonify({'success': False, 'error': 'Connexion requise'}), 401
+    codes = TwoFactor.confirm(int(user_id), (request.get_json(silent=True) or {}).get('code') or '')
+    if codes is None:
+        return jsonify({'success': False, 'error': 'Code incorrect', 'code': 'wrong_code'}), 400
+    two_factor.complete()
+    return jsonify({'success': True, 'recovery_codes': codes})
+
+
+@api_bp.route('/auth/2fa/verify', methods=['POST'])
+def two_factor_verify():
+    """Finish a login with an authenticator code or a recovery code."""
+    user_id = session.get('user_id')
+    if not user_id or not session.get('two_factor_pending'):
+        return jsonify({'success': False, 'error': 'Aucune connexion en attente'}), 400
+    data = request.get_json(silent=True) or {}
+    if not TwoFactor.verify(int(user_id), data.get('code') or '', data.get('recovery_code') or ''):
+        return jsonify({'success': False, 'error': 'Code incorrect', 'code': 'wrong_code'}), 401
+    two_factor.complete()
+    return jsonify({'success': True, 'user': AuthService.current_session_user()})
 
 
 @api_bp.route('/auth/register', methods=['POST'])
@@ -377,6 +453,15 @@ def search_medications():
         limit = 12
 
     results = MedicationCatalogService.search(query, limit=limit)
+
+    # Flag a declared allergy as soon as the suggestion appears (prescribers only).
+    patient_id = request.args.get('patient_id', type=int)
+    user = AuthService.current_user() if patient_id else None
+    patient = PatientService.get(int(user['id']), patient_id) if user and user.get('role') == 'prescriber' else None
+    allergies = [normalize_dci(a) for a in (patient or {}).get('allergies', [])]
+    for result in results:
+        substances = [normalize_dci(s) for s in result.get('substances', [])]
+        result['allergy_warning'] = [a for a in allergies if any(a == s or s.startswith(a + ' ') for s in substances)]
     return jsonify({'success': True, 'results': results})
 
 
@@ -391,25 +476,32 @@ def get_medication(medication_id):
 
 @api_bp.route('/prescriptions/analyze', methods=['POST'])
 def analyze_prescription():
-    """Analyze a prescription draft with IAM interactions and duplicate checks."""
+    """Analyze draft lines live: interactions, same substance, allergies, derogations."""
     user, error = current_api_user(required_role='prescriber')
     if error:
         return error
 
     data = request.get_json(silent=True) or {}
-    items = data.get('items') or data.get('medications') or []
-    if not isinstance(items, list):
+    lines = data.get('lines', data.get('items', []))
+    if not isinstance(lines, list):
         return jsonify({'success': False, 'error': 'La liste des médicaments est invalide'}), 400
-    if not items:
-        return jsonify({'success': True, 'items': [], 'alerts': [], 'interactions': [], 'summary': {
-            'items_count': 0,
-            'alerts_count': 0,
-            'interactions_count': 0,
-            'can_print': True,
-        }})
+    try:
+        content = normalize_content({'lines': lines, 'derogations': data.get('derogations') or {}})
+    except OrdonnanceError as exc:
+        return ordonnance_error(exc)
 
-    result = MedicationCatalogService.analyze_prescription(items)
-    return jsonify(result)
+    patient = None
+    if data.get('patient_id'):
+        patient = PatientService.get(int(user['id']), int(data['patient_id']))
+        if patient is None:
+            return jsonify({'success': False, 'error': 'Patient introuvable', 'code': 'not_found'}), 404
+    try:
+        result = analyze(content['lines'], patient=patient, derogations=content['derogations'])
+    except Exception:
+        current_app.logger.exception('IAM analysis failed')
+        return jsonify({'success': False, 'error': "L'analyse IAM est indisponible. Réessayez dans un instant.",
+                        'code': 'analysis_unavailable'}), 503
+    return jsonify({'success': True, **result})
 
 
 @api_bp.route('/prescriber/profile', methods=['GET', 'POST'])
@@ -475,36 +567,398 @@ def admin_establishments():
     return jsonify({'success': True, 'results': EstablishmentService.list_all_for_admin()})
 
 
-@api_bp.route('/patients/search', methods=['GET'])
+@api_bp.route('/patients', methods=['GET'])
 def search_patients():
-    """Search patient history for the current prescriber."""
+    """Find the current prescriber's patients by name prefix or birthdate."""
     user, error = current_api_user(required_role='prescriber')
     if error:
         return error
 
-    query = request.args.get('q') or request.args.get('query') or ''
+    if request.args.get('recent'):
+        results = PatientService.recent(int(user['id']))
+        trace(user, 'patient', None, 'list')
+        return jsonify({'success': True, 'results': results})
+    query = request.args.get('q') or ''
     if len(query.strip()) < 2:
         return jsonify({'success': True, 'results': []})
-    results = ProfileService.search_patients(int(user['id']), query)
-    for item in results:
-        birthdate = item.get('patient_birthdate')
-        if birthdate is not None:
-            item['patient_birthdate'] = birthdate.isoformat()
-        last_seen = item.get('last_seen_at')
-        if last_seen is not None:
-            item['last_seen_at'] = last_seen.isoformat()
-        if item.get('patient_weight') is not None:
-            item['patient_weight'] = float(item['patient_weight'])
+    results = PatientService.search(int(user['id']), query)
+    trace(user, 'patient', None, 'search')
     return jsonify({'success': True, 'results': results})
 
 
 @api_bp.route('/patients', methods=['POST'])
-def save_patient():
-    """Upsert a patient into the current prescriber's history."""
+def create_patient():
+    """Create a patient for the current prescriber."""
     user, error = current_api_user(required_role='prescriber')
     if error:
         return error
+    try:
+        patient = PatientService.create(int(user['id']), request.get_json(silent=True) or {})
+    except PatientError as exc:
+        return jsonify({'success': False, 'error': str(exc)}), 400
+    trace(user, 'patient', patient['id'], 'create')
+    return jsonify({'success': True, 'patient': patient}), 201
 
-    data = request.get_json(silent=True) or {}
-    patient = ProfileService.upsert_patient(int(user['id']), data)
+
+@api_bp.route('/patients/<int:patient_id>', methods=['GET'])
+def get_patient(patient_id):
+    """Read one of the current prescriber's patients."""
+    user, error = current_api_user(required_role='prescriber')
+    if error:
+        return error
+    patient = PatientService.get(int(user['id']), patient_id)
+    if patient is None:
+        return jsonify({'success': False, 'error': 'Patient introuvable'}), 404
+    trace(user, 'patient', patient_id, 'read')
     return jsonify({'success': True, 'patient': patient})
+
+
+@api_bp.route('/patients/<int:patient_id>', methods=['PUT'])
+def update_patient(patient_id):
+    """Correct a patient in place; the id and the ordonnances stay attached."""
+    user, error = current_api_user(required_role='prescriber')
+    if error:
+        return error
+    try:
+        patient = PatientService.update(int(user['id']), patient_id, request.get_json(silent=True) or {})
+    except PatientError as exc:
+        return jsonify({'success': False, 'error': str(exc)}), 400
+    if patient is None:
+        return jsonify({'success': False, 'error': 'Patient introuvable'}), 404
+    trace(user, 'patient', patient_id, 'update')
+    return jsonify({'success': True, 'patient': patient})
+
+
+def trace(user, object_type, object_id, action):
+    """Record a successful access in the access log (identifiers only)."""
+    AccessLog.record(int(user['id']), object_type, object_id, action, request.remote_addr)
+
+
+def ordonnance_error(exc: OrdonnanceError):
+    """Translate a rule refusal from the Ordonnance module into JSON."""
+    body = {'success': False, 'error': str(exc), 'code': exc.code}
+    if isinstance(exc, VersionConflict):
+        body['current'] = exc.current
+    if getattr(exc, 'reasons', None):
+        body['reasons'] = exc.reasons
+    return jsonify(body), exc.status
+
+
+@api_bp.route('/ordonnances', methods=['POST'])
+def create_ordonnance():
+    """Start a draft."""
+    user, error = current_api_user(required_role='prescriber')
+    if error:
+        return error
+    try:
+        draft = OrdonnanceService.create_draft(int(user['id']))
+    except OrdonnanceError as exc:
+        return ordonnance_error(exc)
+    trace(user, 'ordonnance', draft['id'], 'create')
+    return jsonify({'success': True, 'ordonnance': draft}), 201
+
+
+@api_bp.route('/ordonnances/<int:ordonnance_id>', methods=['GET'])
+def get_ordonnance(ordonnance_id):
+    """Read one of the current prescriber's ordonnances."""
+    user, error = current_api_user(required_role='prescriber')
+    if error:
+        return error
+    ordonnance = OrdonnanceService.get(int(user['id']), ordonnance_id)
+    if ordonnance is None:
+        return jsonify({'success': False, 'error': 'Ordonnance introuvable', 'code': 'not_found'}), 404
+    trace(user, 'ordonnance', ordonnance_id, 'read')
+    return jsonify({'success': True, 'ordonnance': ordonnance})
+
+
+@api_bp.route('/ordonnances/<int:ordonnance_id>', methods=['PUT'])
+def save_ordonnance(ordonnance_id):
+    """Autosave a draft: full content plus the version it was based on."""
+    user, error = current_api_user(required_role='prescriber')
+    if error:
+        return error
+    data = request.get_json(silent=True) or {}
+    try:
+        version = int(data.get('version'))
+    except (TypeError, ValueError):
+        return jsonify({'success': False, 'error': 'Version manquante', 'code': 'invalid'}), 400
+    try:
+        draft = OrdonnanceService.save_draft(int(user['id']), ordonnance_id, data.get('content') or {}, version)
+    except OrdonnanceError as exc:
+        return ordonnance_error(exc)
+    trace(user, 'ordonnance', ordonnance_id, 'update')
+    return jsonify({'success': True, 'ordonnance': draft})
+
+
+@api_bp.route('/ordonnances/<int:ordonnance_id>/check', methods=['GET'])
+def check_ordonnance(ordonnance_id):
+    """Verification step: refusal reasons, warnings, IAM analysis and referentials."""
+    user, error = current_api_user(required_role='prescriber')
+    if error:
+        return error
+    try:
+        check = OrdonnanceService.check(int(user['id']), ordonnance_id)
+    except OrdonnanceError as exc:
+        return ordonnance_error(exc)
+    except Exception:
+        current_app.logger.exception('Ordonnance check failed')
+        return jsonify({'success': False, 'error': "L'analyse IAM est indisponible. Réessayez dans un instant.",
+                        'code': 'analysis_unavailable'}), 503
+    trace(user, 'ordonnance', ordonnance_id, 'check')
+    return jsonify({'success': True, 'check': check})
+
+
+@api_bp.route('/ordonnances/<int:ordonnance_id>/issue', methods=['POST'])
+def issue_ordonnance(ordonnance_id):
+    """Issue at first print or PDF: freeze and number, or explain why not."""
+    user, error = current_api_user(required_role='prescriber')
+    if error:
+        return error
+    data = request.get_json(silent=True) or {}
+    try:
+        version = int(data.get('version'))
+    except (TypeError, ValueError):
+        return jsonify({'success': False, 'error': 'Version manquante', 'code': 'invalid'}), 400
+    try:
+        ordonnance = OrdonnanceService.issue(int(user['id']), ordonnance_id, version)
+    except OrdonnanceError as exc:
+        return ordonnance_error(exc)
+    except Exception:
+        current_app.logger.exception('Ordonnance issue failed')
+        return jsonify({'success': False, 'error': "L'analyse IAM est indisponible. Réessayez dans un instant.",
+                        'code': 'analysis_unavailable'}), 503
+    trace(user, 'ordonnance', ordonnance_id, 'issue')
+    return jsonify({'success': True, 'ordonnance': ordonnance,
+                    'print_url': f'/ordonnances/{ordonnance_id}/impression'})
+
+
+@api_bp.route('/ordonnances', methods=['GET'])
+def list_ordonnances():
+    """List drafts and issued ordonnances, most recent first, 50 per page."""
+    user, error = current_api_user(required_role='prescriber')
+    if error:
+        return error
+    try:
+        result = OrdonnanceService.list(
+            int(user['id']),
+            status=request.args.get('status') or None,
+            patient_id=request.args.get('patient_id', type=int),
+            page=request.args.get('page', 1, type=int),
+        )
+    except ValueError as exc:
+        return jsonify({'success': False, 'error': str(exc), 'code': 'invalid'}), 400
+    trace(user, 'ordonnance', None, 'list')
+    return jsonify({'success': True, **result})
+
+
+@api_bp.route('/ordonnances/<int:ordonnance_id>', methods=['DELETE'])
+def discard_ordonnance(ordonnance_id):
+    """Delete a draft; issued ordonnances are kept forever."""
+    user, error = current_api_user(required_role='prescriber')
+    if error:
+        return error
+    try:
+        OrdonnanceService.discard_draft(int(user['id']), ordonnance_id)
+    except OrdonnanceError as exc:
+        return ordonnance_error(exc)
+    trace(user, 'ordonnance', ordonnance_id, 'discard')
+    return jsonify({'success': True})
+
+
+@api_bp.route('/patients/<int:patient_id>/ordonnances', methods=['GET'])
+def patient_ordonnances(patient_id):
+    """Patient sheet: clinical data and ordonnance history."""
+    user, error = current_api_user(required_role='prescriber')
+    if error:
+        return error
+    patient = PatientService.get(int(user['id']), patient_id)
+    if patient is None:
+        return jsonify({'success': False, 'error': 'Patient introuvable', 'code': 'not_found'}), 404
+    result = OrdonnanceService.list(int(user['id']), patient_id=patient_id,
+                                    page=request.args.get('page', 1, type=int))
+    trace(user, 'patient', patient_id, 'read')
+    return jsonify({'success': True, 'patient': patient, **result})
+
+
+@api_bp.route('/ordonnances/cancel-reasons', methods=['GET'])
+def cancel_reasons():
+    """Common cancellation reasons offered by "Annuler et corriger"."""
+    user, error = current_api_user(required_role='prescriber')
+    if error:
+        return error
+    return jsonify({'success': True, 'reasons': CANCEL_REASONS})
+
+
+@api_bp.route('/ordonnances/<int:ordonnance_id>/renew', methods=['POST'])
+def renew_ordonnance(ordonnance_id):
+    """Prefilled draft from an issued ordonnance; a cancelled one needs confirm_cancelled."""
+    user, error = current_api_user(required_role='prescriber')
+    if error:
+        return error
+    data = request.get_json(silent=True) or {}
+    try:
+        result = OrdonnanceService.renew(int(user['id']), ordonnance_id,
+                                         confirm_cancelled=data.get('confirm_cancelled') is True)
+    except OrdonnanceError as exc:
+        return ordonnance_error(exc)
+    trace(user, 'ordonnance', ordonnance_id, 'renew')
+    trace(user, 'ordonnance', result['ordonnance']['id'], 'create')
+    return jsonify({'success': True, **result}), 201
+
+
+@api_bp.route('/ordonnances/<int:ordonnance_id>/cancel', methods=['POST'])
+def cancel_ordonnance(ordonnance_id):
+    """Cancel an issued ordonnance with a written reason."""
+    user, error = current_api_user(required_role='prescriber')
+    if error:
+        return error
+    data = request.get_json(silent=True) or {}
+    try:
+        ordonnance = OrdonnanceService.cancel(int(user['id']), ordonnance_id, data.get('reason') or '')
+    except OrdonnanceError as exc:
+        return ordonnance_error(exc)
+    trace(user, 'ordonnance', ordonnance_id, 'cancel')
+    return jsonify({'success': True, 'ordonnance': ordonnance})
+
+
+@api_bp.route('/ordonnances/<int:ordonnance_id>/cancel-and-correct', methods=['POST'])
+def cancel_and_correct_ordonnance(ordonnance_id):
+    """Cancel, then return the prefilled correction draft."""
+    user, error = current_api_user(required_role='prescriber')
+    if error:
+        return error
+    data = request.get_json(silent=True) or {}
+    try:
+        result = OrdonnanceService.cancel_and_correct(int(user['id']), ordonnance_id, data.get('reason') or '')
+    except OrdonnanceError as exc:
+        return ordonnance_error(exc)
+    trace(user, 'ordonnance', ordonnance_id, 'cancel')
+    trace(user, 'ordonnance', result['ordonnance']['id'], 'create')
+    return jsonify({'success': True, **result}), 201
+
+
+@api_bp.route('/ordonnances/<int:ordonnance_id>/access-log', methods=['GET'])
+def ordonnance_access_log(ordonnance_id):
+    """Who consulted or changed this ordonnance, for its prescriber only."""
+    user, error = current_api_user(required_role='prescriber')
+    if error:
+        return error
+    if OrdonnanceService.get(int(user['id']), ordonnance_id) is None:
+        return jsonify({'success': False, 'error': 'Ordonnance introuvable', 'code': 'not_found'}), 404
+    return jsonify({'success': True, 'entries': AccessLog.for_object('ordonnance', ordonnance_id)})
+
+
+@api_bp.route('/admin/catalog/gaps', methods=['GET'])
+def admin_catalog_gaps():
+    """Medications typed freely or searched in vain, most frequent first. No patient data."""
+    user, error = current_api_user(required_role='admin')
+    if error:
+        return error
+    return jsonify({'success': True, 'gaps': CatalogGaps.list()})
+
+
+@api_bp.route('/admin/catalog/substances', methods=['GET'])
+def admin_catalog_substances():
+    """Thesaurus substances to attach to a new catalog entry."""
+    user, error = current_api_user(required_role='admin')
+    if error:
+        return error
+    return jsonify({'success': True, 'results': CatalogGaps.substances(request.args.get('q') or '')})
+
+
+@api_bp.route('/admin/catalog/entries', methods=['POST'])
+def admin_create_catalog_entry():
+    """Create a catalog entry from thesaurus substances; prescribers find it at once."""
+    user, error = current_api_user(required_role='admin')
+    if error:
+        return error
+    try:
+        entry = CatalogGaps.create_entry(int(user['id']), request.get_json(silent=True) or {})
+    except CatalogEntryError as exc:
+        return jsonify({'success': False, 'error': str(exc)}), 400
+    return jsonify({'success': True, 'entry': entry}), 201
+
+
+@api_bp.route('/admin/waitlist', methods=['GET'])
+def admin_waitlist():
+    """Pharmacists waiting for the pharmacy offer."""
+    user, error = current_api_user(required_role='admin')
+    if error:
+        return error
+    return jsonify({'success': True, 'results': AuthService.list_waitlist()})
+
+
+@api_bp.route('/admin/waitlist.csv', methods=['GET'])
+def admin_waitlist_csv():
+    """Waitlist export, semicolon-separated for spreadsheet software in French locales."""
+    user, error = current_api_user(required_role='admin')
+    if error:
+        return error
+    import csv
+    import io
+
+    columns = ['email', 'first_name', 'last_name', 'profession', 'order_number', 'phone', 'requested_at']
+    buffer = io.StringIO()
+    writer = csv.DictWriter(buffer, fieldnames=columns, delimiter=';', extrasaction='ignore')
+    writer.writeheader()
+    writer.writerows(AuthService.list_waitlist())
+    return current_app.response_class(
+        '\ufeff' + buffer.getvalue(), mimetype='text/csv',
+        headers={'Content-Disposition': 'attachment; filename="liste-attente-officine.csv"'})
+
+
+@api_bp.route('/admin/accounts/<int:user_id>/2fa/reset', methods=['POST'])
+def admin_reset_two_factor(user_id):
+    """Reset a user's 2FA (lost phone); recorded in the access log."""
+    user, error = current_api_user(required_role='admin')
+    if error:
+        return error
+    if AuthService.get_user(user_id) is None:
+        return jsonify({'success': False, 'error': 'Compte introuvable'}), 404
+    TwoFactor.reset(user_id)
+    AccessLog.record(int(user['id']), 'account', user_id, 'reset_2fa', request.remote_addr)
+    return jsonify({'success': True})
+
+
+@api_bp.route('/prescriber/establishments/<int:establishment_id>/logo', methods=['GET'])
+def establishment_logo(establishment_id):
+    """Logo of one of the current prescriber's establishments, for the live preview."""
+    user, error = current_api_user(required_role='prescriber')
+    if error:
+        return error
+    logo = EstablishmentService.logo(int(user['id']), establishment_id)
+    if logo is None:
+        return jsonify({'success': False, 'error': 'Logo introuvable'}), 404
+    mime_type, content = logo
+    return send_file(BytesIO(content), mimetype=mime_type, max_age=300)
+
+
+@api_bp.route('/prescriber/assets', methods=['GET'])
+def prescriber_assets_status():
+    """Which of the signature and the stamp the prescriber has uploaded."""
+    user, error = current_api_user(required_role='prescriber')
+    if error:
+        return error
+    return jsonify({'success': True, 'assets': PrescriberAssets.status(int(user['id']))})
+
+
+@api_bp.route('/prescriber/assets/<kind>', methods=['GET', 'POST', 'DELETE'])
+def prescriber_asset(kind):
+    """Read, replace (raw PNG body or `image` file) or delete the signature or the stamp."""
+    user, error = current_api_user(required_role='prescriber')
+    if error:
+        return error
+    try:
+        if request.method == 'GET':
+            content = PrescriberAssets.get(int(user['id']), kind)
+            if content is None:
+                return jsonify({'success': False, 'error': 'Image introuvable'}), 404
+            return send_file(BytesIO(content), mimetype='image/png', max_age=0)
+        if request.method == 'DELETE':
+            PrescriberAssets.delete(int(user['id']), kind)
+            return jsonify({'success': True})
+        upload = request.files.get('image')
+        PrescriberAssets.save(int(user['id']), kind, upload.read() if upload else request.get_data())
+    except AssetError as exc:
+        return jsonify({'success': False, 'error': str(exc)}), 400
+    return jsonify({'success': True})

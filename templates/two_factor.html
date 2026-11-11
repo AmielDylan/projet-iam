@@ -1,0 +1,32 @@
+<!doctype html>
+{#- Second login step for accounts with two-factor authentication (ticket 22). -#}
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Vérification · DigiRemed</title>
+  <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible+Next:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/prescriber.css') }}">
+</head>
+<body>
+  <div class="auth">
+    <a class="brand auth-brand" href="/">DigiRemed</a>
+    <main class="auth-card">
+      <h1>Vérification en deux étapes</h1>
+      <p class="lead">Saisissez le code à six chiffres affiché par votre application d'authentification.</p>
+      {% if error %}<p class="form-error" role="alert">{{ error }}</p>{% endif %}
+      <form method="post" class="stack" autocomplete="off">
+        <label class="field">Code
+          <input name="code" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" autocomplete="one-time-code" autofocus
+                 style="font-size:22px; letter-spacing:.3em"></label>
+        <details>
+          <summary class="small" style="cursor:pointer">Utiliser un code de secours</summary>
+          <label class="field" style="margin-top:10px">Code de secours<input name="recovery_code" placeholder="abcd-efgh"></label>
+        </details>
+        <button type="submit" class="btn btn-primary btn-block">Valider</button>
+      </form>
+      <p class="auth-switch"><a href="/deconnexion">Annuler et revenir à la connexion</a></p>
+    </main>
+  </div>
+</body>
+</html>

@@ -7,6 +7,12 @@ from flask import Flask
 from app.config import get_config, Config
 from app.services.database import DatabasePool
 from app.services.auth import AuthService
+from app.services.patient import PatientService
+from app.services.schema import SchemaMigrator
+from app.services.prescriber_code import PrescriberCodes
+from app.services.session_lock import enforce_session_lock
+from app.services.two_factor import enforce_two_factor
+from app.services import vault as vault_module
 from app.api import api_bp
 from app.web import web_bp
 from app.errors import register_error_handlers
@@ -41,6 +47,9 @@ def create_app(config: Optional[Config] = None) -> Flask:
     # Store config for later use
     app.config['APP_CONFIG'] = config
 
+    # Health data keys: refuse to start without them in production
+    vault_module.install(vault_module.Vault(config.DATA_ENCRYPTION_KEYS, config.DATA_INDEX_KEY))
+
     # Initialize database pool
     DatabasePool.initialize(
         host=config.DB_HOST,
@@ -53,6 +62,10 @@ def create_app(config: Optional[Config] = None) -> Flask:
     )
     if not app.config['TESTING']:
         AuthService.ensure_schema()
+        PatientService.ensure_schema()
+        SchemaMigrator.apply_pending()
+        PatientService.migrate_legacy_history()
+        PrescriberCodes.ensure_all()
         if os.environ.get("ADMIN_EMAIL") and os.environ.get("ADMIN_PASSWORD"):
             AuthService.create_admin(
                 os.environ.get("ADMIN_EMAIL", ""),
@@ -60,6 +73,10 @@ def create_app(config: Optional[Config] = None) -> Flask:
                 os.environ.get("ADMIN_FIRST_NAME", ""),
                 os.environ.get("ADMIN_LAST_NAME", ""),
             )
+
+    # Lock idle sessions before any route runs (ticket 17)
+    app.before_request(enforce_session_lock)
+    app.before_request(enforce_two_factor)
 
     # Register blueprints
     app.register_blueprint(api_bp)

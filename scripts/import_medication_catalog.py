@@ -386,6 +386,18 @@ def main() -> int:
                 else:
                     stats.update(enrich_iam(cursor, batch_id, row, catalog_id, specialites, substances))
 
+        if args.apply_catalog:
+            # Issued ordonnances freeze the catalog version they were analyzed with.
+            # The table appears at the first application start (migration 012).
+            cursor.execute("SHOW TABLES LIKE 'referential_versions'")
+            if cursor.fetchone():
+                cursor.execute(
+                    "INSERT INTO referential_versions (kind, label) VALUES ('catalog', %s)",
+                    (f"{path.name} (lot {batch_id[:8]})"[:190],),
+                )
+            else:
+                print("Version du catalogue non enregistrée : démarrez l'application une fois, "
+                      "puis lancez scripts/record_referential.py catalog.", file=sys.stderr)
         conn.commit()
     except Exception:
         conn.rollback()
