@@ -14,7 +14,8 @@ from __future__ import annotations
 
 import base64
 import uuid
-from datetime import date, datetime
+import os
+from datetime import date, datetime, timedelta, timezone
 from typing import Any
 
 from app.services.analysis import analyze
@@ -27,7 +28,11 @@ from app.services.vault import vault
 
 
 MAX_LINES = 60
+PAGE_SIZE = 50
+LISTED_STATUSES = ("draft", "issued", "cancelled")
 PEDIATRIC_AGE = 15
+# Prescribers' local date (Benin: UTC+1, no daylight saving). The server runs in UTC.
+LOCAL_TIMEZONE = timezone(timedelta(hours=float(os.environ.get("APP_UTC_OFFSET_HOURS", "1"))))
 WEIGHT_MAX_AGE_DAYS = 92
 TEXT_FIELDS = ("general_note", "lab_results", "duration", "renewal")
 LINE_TEXT_FIELDS = ("name", "dosage", "form", "posology", "duration", "renewal", "quantity", "note")
@@ -198,7 +203,7 @@ class OrdonnanceService:
 
         code = PrescriberCodes.ensure(owner_id)
         snapshot = _snapshot(owner_id, ordonnance["content"], evaluation)
-        year = date.today().year
+        year = date.fromisoformat(snapshot["prescribed_on"]).year
 
         with DatabasePool.get_cursor(dictionary=True) as cursor:
             cursor.execute(
@@ -220,8 +225,9 @@ class OrdonnanceService:
                 (owner_id, year),
             )
             number = f"{code}-{year}-{cursor.fetchone()['last_number']:06d}"
+            cursor.execute("SELECT NOW() AS now")  # the database clock, like every other timestamp
             snapshot["number"] = number
-            snapshot["issued_at"] = datetime.now().replace(microsecond=0).isoformat()
+            snapshot["issued_at"] = cursor.fetchone()["now"].isoformat()
             cursor.execute(
                 """
                 UPDATE ordonnances
@@ -243,9 +249,54 @@ class OrdonnanceService:
         raise NotImplementedError("Ticket 08")
 
     @staticmethod
-    def list(owner_id: int, status: str | None = None, patient_id: int | None = None) -> list[dict[str, Any]]:
-        """List the prescriber's ordonnances, optionally filtered by status or patient."""
-        raise NotImplementedError("Ticket 06")
+    def list(owner_id: int, status: str | None = None, patient_id: int | None = None,
+             page: int = 1, per_page: int = PAGE_SIZE) -> dict[str, Any]:
+        """The prescriber's ordonnances, most recent first, optionally filtered by status or patient."""
+        if status is not None and status not in LISTED_STATUSES:
+            raise ValueError(f"Statut inconnu : {status}")
+        where = ["owner_id = %s", "status <> 'discarded'"]
+        params: list[Any] = [owner_id]
+        if status:
+            where.append("status = %s")
+            params.append(status)
+        if patient_id:
+            where.append("patient_id = %s")
+            params.append(patient_id)
+        condition = " AND ".join(where)
+
+        total = DatabasePool.execute_query(f"SELECT COUNT(*) FROM ordonnances WHERE {condition}", tuple(params))[0][0]
+        page = max(1, int(page or 1))
+        rows = DatabasePool.execute_query(
+            f"""
+            SELECT * FROM ordonnances WHERE {condition}
+            ORDER BY updated_at DESC, id DESC
+            LIMIT %s OFFSET %s
+            """,
+            (*params, per_page, (page - 1) * per_page),
+            dictionary=True,
+        )
+        patients: dict[int, Any] = {}
+        items = []
+        for row in rows:
+            item = _serialize(row)
+            if item["patient_id"] and item["patient_id"] not in patients:
+                patients[item["patient_id"]] = PatientService.get(owner_id, item["patient_id"])
+            items.append(_summary(item, patients.get(item["patient_id"])))
+        return {"items": items, "total": total, "page": page, "pages": max(1, -(-total // per_page))}
+
+    @staticmethod
+    def discard_draft(owner_id: int, ordonnance_id: int) -> None:
+        """Delete a draft from the prescriber's view; an issued ordonnance is never deleted."""
+        ordonnance = OrdonnanceService.get(owner_id, ordonnance_id)
+        if ordonnance is None:
+            raise NotFound()
+        if ordonnance["status"] != "draft":
+            raise NotEditable("Une ordonnance émise ne peut pas être supprimée")
+        with DatabasePool.get_cursor() as cursor:
+            cursor.execute(
+                "UPDATE ordonnances SET status = 'discarded' WHERE id = %s AND owner_id = %s AND status = 'draft'",
+                (ordonnance_id, owner_id),
+            )
 
 
 # Content ------------------------------------------------------------------------
@@ -357,6 +408,21 @@ def _serialize(row: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def _summary(item: dict[str, Any], patient: dict[str, Any] | None) -> dict[str, Any]:
+    """A list row: enough to recognize an ordonnance, from the snapshot once issued."""
+    source = item["snapshot"] or item["content"]
+    frozen_patient = (item["snapshot"] or {}).get("patient")
+    who = frozen_patient or patient or {}
+    return {
+        key: item[key]
+        for key in ("id", "status", "number", "version", "patient_id", "origin_id",
+                    "created_at", "updated_at", "issued_at", "cancelled_at")
+    } | {
+        "patient": {key: who.get(key) for key in ("first_name", "last_name", "birthdate")} if who else None,
+        "medications": [line.get("name") for line in source.get("lines", []) if line.get("name")],
+    }
+
+
 # Issuance -----------------------------------------------------------------------
 
 def _evaluate(owner_id: int, content: dict[str, Any]) -> dict[str, Any]:
@@ -365,7 +431,7 @@ def _evaluate(owner_id: int, content: dict[str, Any]) -> dict[str, Any]:
 
     reasons: list[dict[str, Any]] = []
     warnings: list[dict[str, Any]] = []
-    on_date = date.fromisoformat(content.get("prescribed_on") or date.today().isoformat())
+    on_date = date.fromisoformat(content.get("prescribed_on") or local_today().isoformat())
 
     patient = PatientService.get(owner_id, content["patient_id"]) if content.get("patient_id") else None
     if patient is None:
@@ -403,6 +469,10 @@ def _evaluate(owner_id: int, content: dict[str, Any]) -> dict[str, Any]:
 
     return {"reasons": reasons, "warnings": warnings, "analysis": analysis,
             "patient": patient, "lines": lines, "on_date": on_date}
+
+
+def local_today() -> date:
+    return datetime.now(LOCAL_TIMEZONE).date()
 
 
 def _reason(code: str, message: str, line_ids: list[str] | None = None, alert_id: str | None = None) -> dict[str, Any]:

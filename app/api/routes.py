@@ -638,3 +638,48 @@ def issue_ordonnance(ordonnance_id):
                         'code': 'analysis_unavailable'}), 503
     return jsonify({'success': True, 'ordonnance': ordonnance,
                     'print_url': f'/ordonnances/{ordonnance_id}/impression'})
+
+
+@api_bp.route('/ordonnances', methods=['GET'])
+def list_ordonnances():
+    """List drafts and issued ordonnances, most recent first, 50 per page."""
+    user, error = current_api_user(required_role='prescriber')
+    if error:
+        return error
+    try:
+        result = OrdonnanceService.list(
+            int(user['id']),
+            status=request.args.get('status') or None,
+            patient_id=request.args.get('patient_id', type=int),
+            page=request.args.get('page', 1, type=int),
+        )
+    except ValueError as exc:
+        return jsonify({'success': False, 'error': str(exc), 'code': 'invalid'}), 400
+    return jsonify({'success': True, **result})
+
+
+@api_bp.route('/ordonnances/<int:ordonnance_id>', methods=['DELETE'])
+def discard_ordonnance(ordonnance_id):
+    """Delete a draft; issued ordonnances are kept forever."""
+    user, error = current_api_user(required_role='prescriber')
+    if error:
+        return error
+    try:
+        OrdonnanceService.discard_draft(int(user['id']), ordonnance_id)
+    except OrdonnanceError as exc:
+        return ordonnance_error(exc)
+    return jsonify({'success': True})
+
+
+@api_bp.route('/patients/<int:patient_id>/ordonnances', methods=['GET'])
+def patient_ordonnances(patient_id):
+    """Patient sheet: clinical data and ordonnance history."""
+    user, error = current_api_user(required_role='prescriber')
+    if error:
+        return error
+    patient = PatientService.get(int(user['id']), patient_id)
+    if patient is None:
+        return jsonify({'success': False, 'error': 'Patient introuvable', 'code': 'not_found'}), 404
+    result = OrdonnanceService.list(int(user['id']), patient_id=patient_id,
+                                    page=request.args.get('page', 1, type=int))
+    return jsonify({'success': True, 'patient': patient, **result})

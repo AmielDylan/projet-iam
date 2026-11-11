@@ -1,13 +1,12 @@
 """Issuing: refusals, numbering, frozen snapshot, print view."""
 import re
-from datetime import date
 from unittest.mock import patch
 
 import pytest
 
 from app.services.auth import EstablishmentService
 from app.services.database import DatabasePool
-from app.services.ordonnance import IssueRefused, NotEditable, OrdonnanceService, VersionConflict
+from app.services.ordonnance import IssueRefused, NotEditable, OrdonnanceService, VersionConflict, local_today
 from app.services.patient import PatientService
 from app.services.prescriber_code import ALPHABET, PrescriberCodes
 from app.services.referential import ReferentialService
@@ -97,7 +96,7 @@ class TestIssuing:
 
         code = PrescriberCodes.of(prescriber)
         assert issued['status'] == 'issued'
-        assert issued['number'] == f'{code}-{date.today().year}-000001'
+        assert issued['number'] == f'{code}-{local_today().year}-000001'
         snapshot = issued['snapshot']
         assert snapshot['patient']['last_name'] == 'Koffi'
         assert snapshot['establishment']['name'] == 'Clinique du Lac'
