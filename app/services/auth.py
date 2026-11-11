@@ -775,7 +775,7 @@ class EstablishmentService:
                         logo_filename = %s,
                         logo_mime_type = %s,
                         logo_size_bytes = %s,
-                        logo_content = %s"""
+                        logo_content = _binary %s"""
                     params.extend([
                         logo_data["filename"],
                         logo_data["mime_type"],
@@ -810,8 +810,8 @@ class EstablishmentService:
                         (user_id, name, type, address, phone, email, identifier_label, identifier_value,
                          secondary_identifier_label, secondary_identifier_value, free_text,
                          logo_filename, logo_mime_type, logo_size_bytes, logo_content, is_active)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-                    """,
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, {logo}, %s)
+                    """.format(logo="_binary %s" if logo_data else "%s"),
                     (
                         user_id,
                         data["name"],
@@ -856,6 +856,17 @@ class EstablishmentService:
             dictionary=True,
         )
         return EstablishmentService.serialize(rows[0]) if rows else None
+
+    @staticmethod
+    def logo(user_id: int, establishment_id: int) -> tuple[str, bytes] | None:
+        """The establishment's logo for its owner: (mime type, bytes), or None."""
+        rows = DatabasePool.execute_query(
+            "SELECT logo_mime_type, logo_content FROM prescriber_establishments WHERE id = %s AND user_id = %s",
+            (establishment_id, user_id),
+        )
+        if not rows or not rows[0][1]:
+            return None
+        return rows[0][0], bytes(rows[0][1])
 
     @staticmethod
     def delete(user_id: int, establishment_id: int) -> bool:

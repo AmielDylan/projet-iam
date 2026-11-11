@@ -1,5 +1,5 @@
 /** Shared helpers and small components for the prescriber workspace. */
-import { html, useEffect, useRef } from '../../vendor/preact-htm-standalone.module.js';
+import { html, useEffect, useRef, useState } from '../../vendor/preact-htm-standalone.module.js';
 
 const PATHS = {
   search: '<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>',
@@ -82,4 +82,40 @@ export function alertTitle(alert) {
     CI: 'Contre-indication', ASDEC: 'Association déconseillée',
     PE: "Précaution d'emploi", APEC: 'À prendre en compte',
   }[alert.level] || 'Interaction';
+}
+
+/** Insert the slashes while digits are typed: "1203" becomes "12/03". */
+export function formatDateTyping(value) {
+  const digits = String(value || '').replace(/\D/g, '').slice(0, 8);
+  if (digits.length <= 2) return digits;
+  if (digits.length <= 4) return `${digits.slice(0, 2)}/${digits.slice(2)}`;
+  return `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4)}`;
+}
+
+/** DD/MM/YYYY to ISO, or null while incomplete or invalid. */
+export function parseFrDate(text) {
+  const m = String(text || '').trim().match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  if (!m) return null;
+  const iso = `${m[3]}-${m[2]}-${m[1]}`;
+  const d = new Date(`${iso}T00:00:00Z`);
+  return Number.isNaN(d.getTime()) || d.toISOString().slice(0, 10) !== iso ? null : iso;
+}
+
+/**
+ * Date field typed as JJ/MM/AAAA with automatic slashes. Keeps what is being typed,
+ * and reports `onText` on each keystroke (and `onDate` with the ISO date once complete, or null).
+ */
+export function DateInput({ value, onText, onDate, placeholder = 'JJ/MM/AAAA', label }) {
+  const [text, setText] = useState(value || '');
+  const typing = useRef(false);
+  useEffect(() => { if (!typing.current) setText(value || ''); }, [value]);
+  return html`<input value=${text} placeholder=${placeholder} inputmode="numeric" maxlength="10" aria-label=${label}
+    onFocus=${() => { typing.current = true; }} onBlur=${() => { typing.current = false; }}
+    onInput=${(e) => {
+      const next = formatDateTyping(e.target.value);
+      e.target.value = next;
+      setText(next);
+      if (onText) onText(next);
+      if (onDate && (next.length === 10 || next.length === 0)) onDate(parseFrDate(next));
+    }} />`;
 }

@@ -121,7 +121,9 @@ def prescriptions():
 def new_ordonnance():
     """Start a draft and open it at the patient step."""
     user = AuthService.current_user()
-    draft = OrdonnanceService.create_draft(int(user['id']))
+    establishments = EstablishmentService.list_for_prescriber(int(user['id']))
+    content = {'establishment_id': establishments[0]['id']} if establishments else None
+    draft = OrdonnanceService.create_draft(int(user['id']), content)
     AccessLog.record(int(user['id']), 'ordonnance', draft['id'], 'create', request.remote_addr)
     return redirect(url_for('web.write_ordonnance', ordonnance_id=draft['id'], etape=1))
 

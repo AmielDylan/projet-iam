@@ -102,6 +102,16 @@ class PatientService:
         return [_open(row) for row in rows]
 
     @staticmethod
+    def recent(owner_id: int, limit: int = 8) -> list[dict[str, Any]]:
+        """The prescriber's most recently seen patients."""
+        rows = DatabasePool.execute_query(
+            "SELECT id, record, last_seen_at FROM patients WHERE owner_id = %s ORDER BY last_seen_at DESC, id DESC LIMIT %s",
+            (owner_id, limit),
+            dictionary=True,
+        )
+        return [_open(row) for row in rows]
+
+    @staticmethod
     def touch(owner_id: int, patient_id: int) -> None:
         """Mark the patient as just seen, so recent patients come first."""
         with DatabasePool.get_cursor() as cursor:

@@ -53,6 +53,7 @@ export const Api = {
   searchMedications: (q, patientId) =>
     api(`/medications/search?q=${encodeURIComponent(q)}&limit=8${patientId ? `&patient_id=${patientId}` : ''}`),
   searchPatients: (q) => api(`/patients?q=${encodeURIComponent(q)}`),
+  recentPatients: () => api('/patients?recent=1'),
   createPatient: (data) => api('/patients', { method: 'POST', body: data }),
   updatePatient: (id, data) => api(`/patients/${id}`, { method: 'PUT', body: data }),
   unlock: (password) => api('/auth/unlock', { method: 'POST', body: { password } }),

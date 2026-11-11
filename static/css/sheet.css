@@ -1,0 +1,73 @@
+/*
+ * The ordonnance sheet (ticket 12). One stylesheet for the printed view and the live preview,
+ * with the same markup, so that what the prescriber sees is what is printed.
+ * Sizes are in millimetres and points: the preview scales the real sheet down, it never reflows it.
+ */
+.rx-sheet {
+  --rx-muted: #4a4f55;
+  --rx-soft: #f1f3f1;
+  --rx-rule: #b9bfbb;
+  box-sizing: border-box;
+  position: relative;
+  width: 148mm;
+  min-height: 210mm;
+  padding: 11mm 11mm 12mm;
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+  color: #111;
+  font-family: 'Atkinson Hyperlegible Next', 'Atkinson Hyperlegible', Arial, sans-serif;
+  font-size: 9.5pt;
+  line-height: 1.4;
+  font-variant-numeric: tabular-nums;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+.rx-sheet.is-a4 { width: 210mm; min-height: 297mm; padding: 15mm 15mm 16mm; font-size: 11pt; }
+.rx-sheet *, .rx-sheet *::before { box-sizing: border-box; }
+
+/* En-tête : prescripteur à gauche, établissement à droite. */
+.rx-head { display: flex; justify-content: space-between; gap: 8mm; padding-bottom: 3.5mm; border-bottom: 0.35mm solid #111; }
+.rx-who, .rx-where { line-height: 1.45; }
+.rx-who strong, .rx-where strong { display: block; font-size: 1.12em; }
+.rx-where { text-align: right; }
+.rx-where img { display: block; max-height: 14mm; max-width: 32mm; object-fit: contain; margin: 0 0 1.5mm auto; }
+.rx-line-text { display: block; }
+
+.rx-meta { display: flex; justify-content: space-between; gap: 6mm; margin: 3.5mm 0; }
+
+/* Patient : bloc à part, jamais confondu avec les lignes. */
+.rx-label { display: block; margin: 0 0 1mm; font-size: 0.74em; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--rx-muted); }
+.rx-patient { margin: 0 0 5mm; padding: 2.5mm 3mm; background: var(--rx-soft); border-radius: 1mm; }
+.rx-patient-name { font-size: 1.12em; font-weight: 700; }
+.rx-patient-facts { color: #222; }
+
+/* Lignes de prescription, numérotées. */
+.rx-lines { list-style: none; margin: 0; padding: 0; counter-reset: rx-line; }
+.rx-item { display: grid; grid-template-columns: 6mm minmax(0, 1fr); padding: 2.2mm 0; border-bottom: 0.2mm dotted var(--rx-rule); break-inside: avoid; }
+.rx-item::before { counter-increment: rx-line; content: counter(rx-line) "."; font-weight: 700; color: var(--rx-muted); }
+.rx-item.is-highlight { background: #fff6e5; }
+.rx-med { font-weight: 700; }
+.rx-dci { font-style: italic; font-weight: 400; color: #333; }
+.rx-posology { margin-top: 0.4mm; }
+.rx-small { font-size: 0.9em; color: #333; }
+.rx-placeholder { color: #8a9096; font-style: italic; }
+
+.rx-block { margin-top: 4mm; break-inside: avoid; }
+.rx-cancel { margin-top: 4mm; padding: 2mm 3mm; border: 0.3mm solid #b42318; color: #b42318; }
+
+/* Signature, puis pied de page. */
+.rx-sign { margin-top: auto; padding-top: 8mm; display: flex; justify-content: flex-end; break-inside: avoid; }
+.rx-sign div { width: 58mm; height: 20mm; border-top: 0.3mm solid #999; padding-top: 1mm; text-align: center; color: var(--rx-muted); font-size: 0.88em; }
+.rx-foot { display: flex; justify-content: space-between; gap: 6mm; margin-top: 3mm; font-size: 0.78em; color: var(--rx-muted); }
+
+.rx-watermark { position: absolute; inset: 0; display: grid; place-items: center; pointer-events: none;
+  font-size: 34pt; font-weight: 700; letter-spacing: 0.12em; transform: rotate(-24deg); color: rgba(17, 17, 17, 0.06); }
+.rx-watermark.is-cancelled { font-size: 46pt; color: rgba(180, 35, 24, 0.28); }
+
+@media print {
+  .rx-sheet { width: auto; min-height: 0; padding: 0; }
+  .rx-watermark { position: fixed; }
+  /* The footer repeats on every printed page. */
+  .rx-foot { position: fixed; bottom: 0; left: 0; right: 0; margin: 0; }
+}

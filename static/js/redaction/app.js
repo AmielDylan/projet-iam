@@ -136,12 +136,14 @@ function App({ initial }) {
   const onPatientField = (field, value) => {
     setPatientForm((f) => {
       const next = { ...f, [field]: value };
-      if (field === 'birthdate') next.birthdate_iso = parseFrDate(value);
+      if (field === 'birthdate') next.birthdate_iso = parseFrDate(value) || (value.length === 10 ? null : f.birthdate_iso);
       return next;
     });
   };
   useDebouncedEffect(async () => {
     if (!patientForm || !patientForm.last_name.trim() || creatingPatient.current) return;
+    // Wait until a date being typed is complete.
+    if ([patientForm.birthdate, patientForm.weighed_on].some((d) => d && d.length < 10)) return;
     setPatientSaving(true);
     try {
       if (patient) {

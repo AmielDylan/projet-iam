@@ -105,3 +105,34 @@ class TestPatientApi:
         assert renamed.get_json()['patient']['last_name'] == 'Koffy'
         assert missing.status_code == 404
         assert invalid.status_code == 400
+
+
+class TestRecentPatientsAndLogo:
+    def test_recent_patients_come_most_recent_first_and_stay_private(self, client, prescriber, other_prescriber):
+        first = PatientService.create(prescriber, {'last_name': 'Koffi'})
+        second = PatientService.create(prescriber, {'last_name': 'Agbo'})
+        PatientService.create(other_prescriber, {'last_name': 'Autre'})
+        PatientService.touch(prescriber, first['id'])
+        user = {'id': prescriber, 'role': 'prescriber', 'status': 'approved', 'must_change_password': 0}
+        with patch('app.api.routes.AuthService.current_user', return_value=user):
+            recent = client.get('/api/v1/patients?recent=1').get_json()['results']
+        assert [p['id'] for p in recent][:2] in ([first['id'], second['id']], [second['id'], first['id']])
+        assert {p['last_name'] for p in recent} == {'Koffi', 'Agbo'}
+
+    def test_logo_is_served_to_its_owner_only(self, client, prescriber, other_prescriber):
+        import io
+
+        from werkzeug.datastructures import FileStorage
+
+        from app.services.auth import EstablishmentService
+
+        png = b'\x89PNG\r\n\x1a\n' + b'0' * 20
+        logo = FileStorage(stream=io.BytesIO(png), filename='logo.png', content_type='image/png')
+        _, _, est = EstablishmentService.upsert(prescriber, {'name': 'Cabinet'}, logo=logo)
+        owner = {'id': prescriber, 'role': 'prescriber', 'status': 'approved', 'must_change_password': 0}
+        with patch('app.api.routes.AuthService.current_user', return_value=owner):
+            ok = client.get(f"/api/v1/prescriber/establishments/{est['id']}/logo")
+        with patch('app.api.routes.AuthService.current_user', return_value={**owner, 'id': other_prescriber}):
+            foreign = client.get(f"/api/v1/prescriber/establishments/{est['id']}/logo")
+        assert ok.status_code == 200 and ok.mimetype == 'image/png' and ok.data == png
+        assert foreign.status_code == 404

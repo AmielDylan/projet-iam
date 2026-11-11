@@ -68,7 +68,7 @@ svg.i { width: 18px; height: 18px; flex: none; stroke: currentColor; fill: none;
   border-bottom-width: 2px; border-radius: 5px; color: var(--ink-3); background: var(--panel); }
 
 /* ---------- en-tête ---------- */
-.appbar { position: sticky; top: 0; z-index: 30; height: 56px; display: flex; align-items: center; gap: 16px; padding: 0 20px;
+.appbar { position: sticky; top: 0; z-index: 30; height: 56px; display: flex; align-items: center; gap: 20px; padding: 0 32px;
   background: var(--panel); border-bottom: 1px solid var(--line); }
 .brand { font-weight: 700; letter-spacing: -.01em; }
 .crumbs { display: flex; gap: 8px; align-items: center; color: var(--ink-3); font-size: 14px; min-width: 0; }
@@ -176,7 +176,7 @@ h1 { font-size: 22px; line-height: 1.25; margin: 0 0 6px; letter-spacing: -.01em
 .line-alert .lvl { background: rgba(255, 255, 255, .7); }
 
 /* ---------- vérification (sections Stripe) ---------- */
-.review { display: flex; flex-direction: column; gap: 14px; }
+.review { display: flex; flex-direction: column; gap: 18px; }
 .section { border: 1px solid var(--line); border-radius: var(--r-panel); overflow: hidden; }
 .section.ci { border-color: var(--ci-line); } .section.justify { border-color: var(--asdec-line); }
 .section-head { display: flex; align-items: center; gap: 10px; padding: 10px 14px; }
@@ -195,7 +195,7 @@ h1 { font-size: 22px; line-height: 1.25; margin: 0 0 6px; letter-spacing: -.01em
 .ok-list { display: flex; flex-direction: column; gap: 6px; }
 .ok-row { display: flex; gap: 10px; align-items: center; color: var(--ink-2); font-size: 14px; }
 .ok-row svg { color: var(--act); }
-.scope { margin-top: 18px; padding: 14px 16px; border-radius: var(--r-panel); background: var(--field); font-size: 14px; color: var(--ink-2); }
+.scope { margin-top: 28px; padding: 14px 16px; border-radius: var(--r-panel); background: var(--field); font-size: 14px; color: var(--ink-2); }
 .scope b { color: var(--ink); }
 .scope ul { margin: 6px 0 8px; padding-left: 18px; }
 .scope small { display: block; color: var(--ink-3); }
@@ -206,32 +206,17 @@ h1 { font-size: 22px; line-height: 1.25; margin: 0 0 6px; letter-spacing: -.01em
 .footbar .gate { font-size: 14px; color: var(--ink-2); flex: 1; min-width: 0; }
 .footbar .gate b { color: var(--ink); }
 
-/* ---------- feuille A5 ---------- */
-.reading-title { align-self: stretch; display: flex; justify-content: space-between; align-items: center; font-size: 13px; font-weight: 600; color: var(--ink-3); max-width: 440px; margin: 0 auto; width: 100%; }
-.sheet { width: 100%; max-width: 440px; aspect-ratio: 148 / 210; background: var(--paper); border-radius: var(--r-sheet); box-shadow: var(--sheet-shadow);
-  padding: 22px 24px; font-size: 10.5px; line-height: 1.4; display: flex; flex-direction: column; overflow: hidden; position: relative; }
-.sheet .h { display: grid; grid-template-columns: 1fr auto; gap: 10px; border-bottom: 1px solid var(--ink); padding-bottom: 8px; }
-.sheet .h strong { font-size: 12px; display: block; }
-.sheet .pat { display: flex; justify-content: space-between; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--line-soft); }
-.sheet .m { display: grid; grid-template-columns: 1fr auto; gap: 0 10px; padding: 6px 0; }
-.sheet .m b { font-size: 11px; }
-.sheet .m .q { text-align: right; white-space: nowrap; }
-.sheet .m .x { grid-column: 1 / -1; color: var(--ink-2); }
-.sheet .m.is-hl { background: #FFF6E5; margin: 0 -6px; padding: 6px; }
-.sheet .glob { margin-top: 6px; font-weight: 700; }
-.sheet .bio { margin-top: 8px; padding-top: 6px; border-top: 1px dashed var(--line); color: var(--ink-2); }
-.sheet .foot { margin-top: auto; display: flex; justify-content: space-between; align-items: flex-end; gap: 10px; }
-.sheet .cachet { width: 42%; aspect-ratio: 4 / 3; border: 1px dashed var(--ink-3); display: grid; place-items: center; color: var(--ink-3); font-size: 9px; }
-.sheet .sign { text-align: right; }
-.sheet .sign .l { width: 110px; border-bottom: 1px solid var(--ink-3); height: 30px; margin-left: auto; }
-.sheet .no { font-size: 9.5px; color: var(--ink-2); margin-top: 2px; }
-.sheet .wm { position: absolute; inset: 0; display: grid; place-items: center; font-size: 30px; font-weight: 700; color: rgba(21, 25, 30, .05); transform: rotate(-24deg); pointer-events: none; letter-spacing: .12em; }
+/* ---------- aperçu : la feuille réelle (sheet.css), réduite ---------- */
+.reading-title { width: 100%; max-width: 480px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center;
+  font-size: 13px; font-weight: 600; color: var(--ink-3); }
+.sheet-frame { width: 100%; max-width: 480px; margin: 0 auto; position: relative; }
+.sheet-frame .rx-sheet { position: absolute; top: 0; left: 0; transform-origin: top left; box-shadow: var(--sheet-shadow); border-radius: var(--r-sheet); }
 .sheet-tools { display: flex; gap: 4px; padding: 4px; background: var(--panel); border: 1px solid var(--line); border-radius: 999px; box-shadow: var(--panel-shadow); }
 .sheet-tools .btn { height: 30px; border-radius: 999px; border-color: transparent; font-size: 13px; padding: 0 12px; }
 .sheet-tools .btn[aria-pressed="true"] { background: var(--field); }
 
 /* ---------- émise ---------- */
-.issued { border: 1px solid var(--line); border-radius: var(--r-panel); padding: 18px; }
+.issued { border: 1px solid var(--line); border-radius: var(--r-panel); padding: 20px; margin-bottom: 28px; }
 .issued h2 { margin: 0 0 4px; font-size: 18px; display: flex; gap: 8px; align-items: center; }
 .issued h2 svg { color: var(--act); }
 .issued p { margin: 0 0 14px; color: var(--ink-2); font-size: 14px; }

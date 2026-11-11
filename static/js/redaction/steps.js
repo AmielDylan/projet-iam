@@ -1,7 +1,7 @@
 /** The three steps of the prescribing flow: patient, treatment, verification. */
 import { html, useEffect, useRef, useState } from '../../vendor/preact-htm-standalone.module.js';
 import { Api } from './api.js';
-import { Icon, ageLabel, ageYears, alertTag, alertTitle, frDate, kindOf, useDebouncedEffect } from './ui.js';
+import { DateInput, Icon, ageLabel, ageYears, alertTag, alertTitle, frDate, kindOf, useDebouncedEffect } from './ui.js';
 
 const lineLabel = (content, id) => {
   const index = content.lines.findIndex((line) => line.line_id === id);
@@ -15,8 +15,12 @@ function PatientSearch({ onPick, onNew }) {
   const [q, setQ] = useState('');
   const [results, setResults] = useState([]);
   const [searched, setSearched] = useState(false);
+  const [recent, setRecent] = useState([]);
   const input = useRef(null);
-  useEffect(() => { input.current && input.current.focus(); }, []);
+  useEffect(() => {
+    if (input.current) input.current.focus();
+    Api.recentPatients().then((data) => setRecent(data.results)).catch(() => {});
+  }, []);
   useDebouncedEffect(() => {
     if (q.trim().length < 2) { setResults([]); setSearched(false); return; }
     Api.searchPatients(q).then((data) => { setResults(data.results); setSearched(true); }).catch(() => {});
@@ -27,7 +31,8 @@ function PatientSearch({ onPick, onNew }) {
       <label class="search"><${Icon} name="search" /><span class="sr">Rechercher un patient</span>
         <input ref=${input} value=${q} onInput=${(e) => setQ(e.target.value)} placeholder="Nom, prénom ou date de naissance" autocomplete="off" /></label>
     </div>
-    ${results.length > 0 && html`<div class="picklist">${results.map((p) => html`
+    ${!q.trim() && recent.length > 0 && html`<p class="group-title">Patients récents</p>`}
+    ${(q.trim() ? results : recent).length > 0 && html`<div class="picklist">${(q.trim() ? results : recent).map((p) => html`
       <button class="pick" key=${p.id} onClick=${() => onPick(p)}>
         <span class="avatar">${(p.first_name || ' ')[0]}${(p.last_name || ' ')[0]}</span>
         <span><b>${[p.title, p.first_name, p.last_name].filter(Boolean).join(' ')}</b>
@@ -63,11 +68,11 @@ export function PatientStep({ content, patient, form, onField, onPick, onNew, on
           ${[['F', 'Féminin'], ['M', 'Masculin']].map(([value, label]) => html`
             <label key=${value}><input type="radio" name="sex" checked=${f.sex === value} onChange=${() => onField('sex', value)} />${label}</label>`)}
         </div></div>
-      <label class="field c2">Date de naissance<input value=${f.birthdate} placeholder="JJ/MM/AAAA" inputmode="numeric"
-        onInput=${(e) => onField('birthdate', e.target.value)} /><span class="hint">${ageLabel(f.birthdate_iso)}</span></label>
+      <label class="field c2">Date de naissance<${DateInput} value=${f.birthdate} onText=${(v) => onField('birthdate', v)} />
+        <span class="hint">${ageLabel(f.birthdate_iso)}</span></label>
       <label class="field">Poids, kg<input value=${f.weight_kg} inputmode="decimal" onInput=${(e) => onField('weight_kg', e.target.value)} />
         ${child && !f.weight_kg && html`<span class="hint is-warn">Obligatoire avant 15 ans</span>`}</label>
-      <label class="field">Pesée le<input value=${f.weighed_on} placeholder="JJ/MM/AAAA" inputmode="numeric" onInput=${(e) => onField('weighed_on', e.target.value)} /></label>
+      <label class="field">Pesée le<${DateInput} value=${f.weighed_on} onText=${(v) => onField('weighed_on', v)} /></label>
       <label class="field c2">Grossesse ou allaitement
         <select value=${f.pregnancy || ''} onChange=${(e) => onField('pregnancy', e.target.value)}>
           <option value="">Non renseigné</option><option value="none">Non concernée</option>
@@ -84,8 +89,8 @@ export function PatientStep({ content, patient, form, onField, onPick, onNew, on
           <option value="">Choisir…</option>
           ${establishments.map((est) => html`<option key=${est.id} value=${est.id}>${est.name} · ${est.paper_format || 'A5'}</option>`)}
         </select><span class="hint"><a href="/etablissements">Gérer mes établissements</a></span></label>
-      <label class="field c2">Date de prescription<input value=${content.prescribed_on ? frDate(content.prescribed_on) : ''} placeholder="Aujourd'hui"
-        onChange=${(e) => onContentField('prescribed_on_text', e.target.value)} /></label>
+      <label class="field c2">Date de prescription<${DateInput} value=${content.prescribed_on ? frDate(content.prescribed_on) : ''}
+        placeholder="Aujourd'hui" onDate=${(iso) => onContentField('prescribed_on', iso)} /></label>
     </div>`;
 }
 

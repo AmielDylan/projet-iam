@@ -51,3 +51,12 @@ def test_a_pharmacist_approved_as_prescriber_by_mistake_still_cannot_prescribe(c
 
     assert api.status_code == 403 and api.get_json()['code'] == 'profession_not_allowed'
     assert page.status_code == 302
+
+
+def test_a_prescriber_request_keeps_its_identity_document(client, db):
+    response = register(client, 'Médecin', 'kofi@clinique.bj')
+    assert response.status_code == 200, response.get_json()
+    stored = DatabasePool.execute_query(
+        "SELECT d.content FROM identity_documents d JOIN iam_users u ON u.id = d.user_id WHERE u.email = 'kofi@clinique.bj'")
+    import base64
+    assert base64.b64decode(stored[0][0]) == b'%PDF-1.4 test'  # stored as base64 text

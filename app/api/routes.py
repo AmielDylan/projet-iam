@@ -573,6 +573,10 @@ def search_patients():
     if error:
         return error
 
+    if request.args.get('recent'):
+        results = PatientService.recent(int(user['id']))
+        trace(user, 'patient', None, 'list')
+        return jsonify({'success': True, 'results': results})
     query = request.args.get('q') or ''
     if len(query.strip()) < 2:
         return jsonify({'success': True, 'results': []})
@@ -913,3 +917,16 @@ def admin_reset_two_factor(user_id):
     TwoFactor.reset(user_id)
     AccessLog.record(int(user['id']), 'account', user_id, 'reset_2fa', request.remote_addr)
     return jsonify({'success': True})
+
+
+@api_bp.route('/prescriber/establishments/<int:establishment_id>/logo', methods=['GET'])
+def establishment_logo(establishment_id):
+    """Logo of one of the current prescriber's establishments, for the live preview."""
+    user, error = current_api_user(required_role='prescriber')
+    if error:
+        return error
+    logo = EstablishmentService.logo(int(user['id']), establishment_id)
+    if logo is None:
+        return jsonify({'success': False, 'error': 'Logo introuvable'}), 404
+    mime_type, content = logo
+    return send_file(BytesIO(content), mimetype=mime_type, max_age=300)

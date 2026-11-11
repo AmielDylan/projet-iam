@@ -1,106 +1,85 @@
 {#- Print view of an issued ordonnance. Rendered only from the frozen snapshot `s`.
-    No interface element: this page is the printed document. Final layout: ticket 12. -#}
+    Same markup and stylesheet (static/css/sheet.css) as the live preview in static/js/redaction/sheet.js. -#}
 {%- macro fr_date(iso) -%}{{ iso[8:10] ~ '/' ~ iso[5:7] ~ '/' ~ iso[0:4] if iso else '' }}{%- endmacro -%}
 {%- set e = s.establishment -%}{%- set p = s.prescriber -%}{%- set pt = s.patient -%}
+{%- set a4 = e.paper_format == 'A4' -%}
 {%- set cancelled = ordonnance.status == 'cancelled' -%}
 <!doctype html>
 <html lang="fr">
 <head>
   <meta charset="utf-8">
   <title>Ordonnance {{ s.number }}</title>
+  <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible+Next:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/sheet.css') }}">
   <style>
-    @page { size: {{ 'A4' if e.paper_format == 'A4' else 'A5' }}; margin: 14mm 12mm 18mm; }
-    * { box-sizing: border-box; }
-    html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-    body { margin: 0; font-family: 'Atkinson Hyperlegible Next', 'Atkinson Hyperlegible', Arial, sans-serif;
-           font-size: {{ '11pt' if e.paper_format == 'A4' else '9.5pt' }}; line-height: 1.4; color: #111;
-           font-variant-numeric: tabular-nums; }
-    @media screen { body { max-width: {{ '210mm' if e.paper_format == 'A4' else '148mm' }}; margin: 24px auto; padding: 14mm 12mm; background: #fff; box-shadow: 0 1px 8px rgba(0,0,0,.15); } html { background: #ECEFEC; } }
-    header { display: flex; justify-content: space-between; gap: 8mm; padding-bottom: 4mm; border-bottom: 1px solid #999; }
-    header img { max-height: 16mm; max-width: 35mm; object-fit: contain; display: block; margin-bottom: 2mm; }
-    .who strong { font-size: 1.15em; display: block; }
-    .who, .where { white-space: pre-line; }
-    .where { text-align: right; }
-    .meta { display: flex; justify-content: space-between; margin: 4mm 0; }
-    .patient { margin-bottom: 5mm; }
-    .patient strong { font-size: 1.1em; }
-    ol { list-style: none; padding: 0; margin: 0; }
-    li { padding: 2.5mm 0; border-bottom: 1px dotted #bbb; break-inside: avoid; }
-    .med { font-weight: 700; }
-    .dci { font-style: italic; color: #333; }
-    .posology { margin-top: .5mm; }
-    .small { color: #333; font-size: .92em; }
-    section { margin-top: 4mm; break-inside: avoid; }
-    h2 { font-size: 1em; margin: 0 0 1mm; }
-    .signature { margin-top: 10mm; margin-left: auto; width: 60mm; height: 22mm; border-top: 1px solid #999; padding-top: 1mm; text-align: center; color: #555; font-size: .9em; }
-    footer { position: fixed; bottom: 0; left: 0; right: 0; font-size: .8em; color: #555; display: flex; justify-content: space-between; }
-    .cancelled { position: fixed; top: 40%; left: 0; right: 0; text-align: center; font-size: 48pt; font-weight: 700;
-                 color: rgba(180, 35, 24, .28); transform: rotate(-24deg); letter-spacing: .1em; }
-    .cancel-note { margin-top: 4mm; padding: 2mm; border: 1px solid #b42318; color: #b42318; }
+    @page { size: {{ 'A4' if a4 else 'A5' }}; margin: {{ '15mm 15mm 18mm' if a4 else '11mm 11mm 14mm' }}; }
+    html { background: #ECEFEC; }
+    body { margin: 0; }
+    @media screen { .rx-sheet { margin: 24px auto; box-shadow: 0 1px 2px rgba(18,28,22,.06), 0 12px 32px rgba(18,28,22,.10); } }
+    @media print { html { background: none; } }
   </style>
 </head>
 <body>
-  {% if cancelled %}<div class="cancelled" aria-hidden="true">ANNULÉE</div>{% endif %}
+<article class="rx-sheet{{ ' is-a4' if a4 }}">
+  {% if cancelled %}<div class="rx-watermark is-cancelled" aria-hidden="true">ANNULÉE</div>{% endif %}
 
-  <header>
-    <div class="who">
-      <strong>{{ p.title ~ ' ' if p.title }}{{ p.first_name }} {{ p.last_name }}</strong>
-      {{- '\n' ~ p.profession if p.profession -}}
-      {{- '\n' ~ 'N° d\'ordre : ' ~ p.order_number if p.order_number -}}
-      {{- '\n' ~ (p.identifier_label or 'Identifiant') ~ ' : ' ~ p.identifier_value if p.identifier_value -}}
-      {{- '\n' ~ 'Tél. ' ~ (p.phone or e.phone) if (p.phone or e.phone) -}}
+  <header class="rx-head">
+    <div class="rx-who">
+      <strong>{{ [p.title, p.first_name, p.last_name] | select | join(' ') }}</strong>
+      {% if p.profession %}<span class="rx-line-text">{{ p.profession }}</span>{% endif %}
+      {% if p.order_number %}<span class="rx-line-text">N° d'ordre : {{ p.order_number }}</span>{% endif %}
+      {% if p.identifier_value %}<span class="rx-line-text">{{ p.identifier_label or 'Identifiant' }} : {{ p.identifier_value }}</span>{% endif %}
+      {% if p.phone or e.phone %}<span class="rx-line-text">Tél. {{ p.phone or e.phone }}</span>{% endif %}
     </div>
-    <div class="where">
+    <div class="rx-where">
       {% if e.logo %}<img src="{{ e.logo }}" alt="">{% endif %}
       <strong>{{ e.name }}</strong>
-      {{- '\n' ~ e.type if e.type -}}
-      {{- '\n' ~ e.address if e.address -}}
-      {{- '\n' ~ e.identifier_label ~ ' : ' ~ e.identifier_value if e.identifier_value -}}
-      {{- '\n' ~ e.free_text if e.free_text -}}
+      {% if e.type %}<span class="rx-line-text">{{ e.type }}</span>{% endif %}
+      {% if e.address %}<span class="rx-line-text">{{ e.address }}</span>{% endif %}
+      {% if e.identifier_value %}<span class="rx-line-text">{{ e.identifier_label }} : {{ e.identifier_value }}</span>{% endif %}
+      {% if e.free_text %}<span class="rx-line-text">{{ e.free_text }}</span>{% endif %}
     </div>
   </header>
 
-  <div class="meta">
-    <span>Ordonnance n° <strong>{{ s.number }}</strong></span>
-    <span>Le {{ fr_date(s.prescribed_on) }}</span>
-  </div>
+  <div class="rx-meta"><span>Ordonnance n° <strong>{{ s.number }}</strong></span><span>Le {{ fr_date(s.prescribed_on) }}</span></div>
 
-  <div class="patient">
-    <strong>{{ pt.title ~ ' ' if pt.title }}{{ pt.first_name }} {{ pt.last_name }}</strong>
-    {%- if pt.age_label %}, {{ pt.age_label }}{% endif %}
-    {%- if pt.sex %} · {{ 'Féminin' if pt.sex == 'F' else 'Masculin' }}{% endif %}
-    {%- if pt.weight_kg %} · {{ pt.weight_kg | string | replace('.', ',') }} kg{% if pt.weighed_on %} (pesé le {{ fr_date(pt.weighed_on) }}){% endif %}{% endif %}
-    {%- if pt.pregnancy == 'pregnant' %} · Enceinte{% elif pt.pregnancy == 'breastfeeding' %} · Allaitement{% endif %}
-  </div>
+  <section class="rx-patient">
+    <span class="rx-label">Patient</span>
+    <span class="rx-patient-name">{{ [pt.title, pt.first_name, pt.last_name] | select | join(' ') }}</span>
+    {%- set facts = [] -%}
+    {%- if pt.age_label %}{% set _ = facts.append(pt.age_label) %}{% endif -%}
+    {%- if pt.sex %}{% set _ = facts.append('Féminin' if pt.sex == 'F' else 'Masculin') %}{% endif -%}
+    {%- if pt.weight_kg %}{% set _ = facts.append((pt.weight_kg | string | replace('.', ',')) ~ ' kg' ~ (' (pesé le ' ~ fr_date(pt.weighed_on) ~ ')' if pt.weighed_on else '')) %}{% endif -%}
+    {%- if pt.pregnancy == 'pregnant' %}{% set _ = facts.append('Enceinte') %}{% elif pt.pregnancy == 'breastfeeding' %}{% set _ = facts.append('Allaitement') %}{% endif %}
+    {% if facts %}<span class="rx-line-text rx-patient-facts">{{ facts | join(' · ') }}</span>{% endif %}
+  </section>
 
-  <ol>
+  <span class="rx-label">Prescription</span>
+  <ol class="rx-lines">
     {% for line in s.lines %}
-    <li>
-      <span class="med">{{ line.name }}{{ ' ' ~ line.dosage if line.dosage }}{{ ', ' ~ line.form if line.form }}</span>
-      {%- if line.dci %} <span class="dci">({{ line.dci | join(' + ') }})</span>{% endif %}
-      <div class="posology">{{ line.posology }}</div>
-      <div class="small">
-        {%- set parts = [] -%}
-        {%- if line.duration or s.duration %}{% set _ = parts.append('Durée : ' ~ (line.duration or s.duration)) %}{% endif -%}
-        {%- if line.quantity %}{% set _ = parts.append('Quantité : ' ~ line.quantity) %}{% endif -%}
-        {%- if line.renewal or s.renewal %}{% set _ = parts.append('Renouvellement : ' ~ (line.renewal or s.renewal)) %}{% endif -%}
-        {{ parts | join(' · ') }}
-      </div>
-      {% if line.note %}<div class="small">{{ line.note }}</div>{% endif %}
-    </li>
+    <li class="rx-item"><div>
+      <span class="rx-med">{{ line.name }}{{ ' ' ~ line.dosage if line.dosage }}{{ ', ' ~ line.form | lower if line.form }}</span>
+      {%- if line.dci %} <span class="rx-dci">({{ line.dci | join(' + ') | lower }})</span>{% endif %}
+      <div class="rx-posology">{{ line.posology }}</div>
+      {%- set parts = [] -%}
+      {%- if line.duration or s.duration %}{% set _ = parts.append('Durée : ' ~ (line.duration or s.duration)) %}{% endif -%}
+      {%- if line.quantity %}{% set _ = parts.append('Quantité : ' ~ line.quantity) %}{% endif -%}
+      {%- if line.renewal or s.renewal %}{% set _ = parts.append('Renouvellement : ' ~ (line.renewal or s.renewal)) %}{% endif %}
+      {% if parts %}<div class="rx-small">{{ parts | join(' · ') }}</div>{% endif %}
+      {% if line.note %}<div class="rx-small">{{ line.note }}</div>{% endif %}
+    </div></li>
     {% endfor %}
   </ol>
 
-  {% if s.lab_results %}<section><h2>Bilan biologique</h2><div>{{ s.lab_results }}</div></section>{% endif %}
-  {% if s.general_note %}<section><div>{{ s.general_note }}</div></section>{% endif %}
-  {% if cancelled %}<div class="cancel-note">Ordonnance annulée le {{ fr_date((ordonnance.cancelled_at or '')[:10]) }}. Ne pas délivrer.</div>{% endif %}
+  {% if s.lab_results %}<section class="rx-block"><span class="rx-label">Bilan biologique</span><div>{{ s.lab_results }}</div></section>{% endif %}
+  {% if s.general_note %}<section class="rx-block"><span class="rx-label">Recommandations</span><div>{{ s.general_note }}</div></section>{% endif %}
+  {% if cancelled %}<div class="rx-cancel">Ordonnance annulée le {{ fr_date((ordonnance.cancelled_at or '')[:10]) }}. Ne pas délivrer.</div>{% endif %}
 
-  <div class="signature">Signature et cachet</div>
-
-  <footer><span>N° {{ s.number }}</span><span>Émise le {{ fr_date((s.issued_at or '')[:10]) }}</span></footer>
-
-  <script>
-    if (new URLSearchParams(location.search).get('print') === '1') { window.addEventListener('load', () => window.print()); }
-  </script>
+  <div class="rx-sign"><div>Signature et cachet</div></div>
+  <footer class="rx-foot"><span>N° {{ s.number }}</span><span>Émise le {{ fr_date((s.issued_at or '')[:10]) }}</span></footer>
+</article>
+<script>
+  if (new URLSearchParams(location.search).get('print') === '1') { window.addEventListener('load', () => window.print()); }
+</script>
 </body>
 </html>
