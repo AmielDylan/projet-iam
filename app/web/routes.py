@@ -1,7 +1,7 @@
 """Web page routes."""
 from urllib.parse import urlparse
 
-from flask import Blueprint, flash, redirect, render_template, request, url_for
+from flask import Blueprint, abort, flash, redirect, render_template, request, url_for
 
 from app.services.auth import (
     AuthService,
@@ -12,6 +12,7 @@ from app.services.auth import (
     require_approved_prescriber,
 )
 from app.services.interaction import InteractionService
+from app.services.ordonnance import OrdonnanceService
 from app.api.validators import sanitize_medication_name, ValidationError
 
 web_bp = Blueprint('web', __name__)
@@ -110,6 +111,17 @@ def prescriptions():
         prescriber_profile=ProfileService.get_profile(int(user['id'])),
         establishments=EstablishmentService.list_for_prescriber(int(user['id'])),
     )
+
+
+@web_bp.route('/ordonnances/<int:ordonnance_id>/impression')
+@require_approved_prescriber
+def print_ordonnance(ordonnance_id):
+    """Print view of an issued ordonnance, rendered only from its frozen snapshot."""
+    user = AuthService.current_user()
+    ordonnance = OrdonnanceService.get(int(user['id']), ordonnance_id)
+    if ordonnance is None or not ordonnance.get('snapshot'):
+        abort(404)
+    return render_template('print/ordonnance.html', ordonnance=ordonnance, s=ordonnance['snapshot'])
 
 
 @web_bp.route('/connexion', methods=['GET', 'POST'])

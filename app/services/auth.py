@@ -514,6 +514,10 @@ class AuthService:
             cursor.execute("DELETE FROM identity_documents WHERE user_id = %s", (user_id,))
         if not approve:
             return True, "Demande refusée.", None
+        if target.get("role") == "prescriber":
+            from app.services.prescriber_code import PrescriberCodes
+
+            PrescriberCodes.ensure(user_id)
         if email_sent:
             return True, "Demande acceptée et mot de passe envoyé.", None
         return True, "Demande acceptée. SMTP indisponible: copiez le message de transmission.", {"manual_delivery": manual_delivery}
@@ -646,7 +650,7 @@ class EstablishmentService:
             SELECT id, name, type, address, phone, email, identifier_label, identifier_value,
                    secondary_identifier_label, secondary_identifier_value, free_text,
                    logo_filename, logo_mime_type, logo_size_bytes, logo_content IS NOT NULL AS has_logo,
-                   is_active, created_at, updated_at
+                   is_active, paper_format, created_at, updated_at
             FROM prescriber_establishments
             WHERE user_id = %s {where_active}
             ORDER BY is_active DESC, name ASC
@@ -678,6 +682,9 @@ class EstablishmentService:
     def upsert(user_id: int, payload: dict[str, Any], logo: Any = None, establishment_id: int | None = None) -> tuple[bool, str, dict[str, Any] | None]:
         data = {field: str(payload.get(field) or "").strip() for field in ESTABLISHMENT_FIELDS}
         data["is_active"] = str(payload.get("is_active", "1")).lower() not in {"0", "false", "no"}
+        paper_format = str(payload.get("paper_format") or "").strip().upper()
+        if paper_format and paper_format not in {"A5", "A4"}:
+            return False, "Format de papier invalide : A5 ou A4.", None
         if not data["name"]:
             return False, "Nom d'établissement requis.", None
         logo_data, error = EstablishmentService.validate_logo(logo)
@@ -761,6 +768,11 @@ class EstablishmentService:
                     ),
                 )
                 target_id = int(cursor.lastrowid)
+            if paper_format:
+                cursor.execute(
+                    "UPDATE prescriber_establishments SET paper_format = %s WHERE id = %s AND user_id = %s",
+                    (paper_format, target_id, user_id),
+                )
         establishment = EstablishmentService.get(user_id, target_id)
         return True, "Établissement enregistré.", establishment
 
@@ -771,7 +783,7 @@ class EstablishmentService:
             SELECT id, name, type, address, phone, email, identifier_label, identifier_value,
                    secondary_identifier_label, secondary_identifier_value, free_text,
                    logo_filename, logo_mime_type, logo_size_bytes, logo_content IS NOT NULL AS has_logo,
-                   is_active, created_at, updated_at
+                   is_active, paper_format, created_at, updated_at
             FROM prescriber_establishments
             WHERE id = %s AND user_id = %s
             LIMIT 1
@@ -812,8 +824,9 @@ class EstablishmentService:
         item = {key: row.get(key) for key in (
             "id", "name", "type", "address", "phone", "email", "identifier_label", "identifier_value",
             "secondary_identifier_label", "secondary_identifier_value", "free_text", "logo_filename",
-            "logo_mime_type", "logo_size_bytes", "has_logo", "is_active"
+            "logo_mime_type", "logo_size_bytes", "has_logo", "is_active", "paper_format"
         )}
+        item["paper_format"] = item.get("paper_format") or "A5"
         item["has_logo"] = bool(item.get("has_logo"))
         item["is_active"] = bool(item.get("is_active"))
         if include_prescriber:

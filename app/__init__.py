@@ -9,6 +9,7 @@ from app.services.database import DatabasePool
 from app.services.auth import AuthService
 from app.services.patient import PatientService
 from app.services.schema import SchemaMigrator
+from app.services.prescriber_code import PrescriberCodes
 from app.services import vault as vault_module
 from app.api import api_bp
 from app.web import web_bp
@@ -62,6 +63,7 @@ def create_app(config: Optional[Config] = None) -> Flask:
         PatientService.ensure_schema()
         SchemaMigrator.apply_pending()
         PatientService.migrate_legacy_history()
+        PrescriberCodes.ensure_all()
         if os.environ.get("ADMIN_EMAIL") and os.environ.get("ADMIN_PASSWORD"):
             AuthService.create_admin(
                 os.environ.get("ADMIN_EMAIL", ""),

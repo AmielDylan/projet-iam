@@ -598,3 +598,43 @@ def save_ordonnance(ordonnance_id):
     except OrdonnanceError as exc:
         return ordonnance_error(exc)
     return jsonify({'success': True, 'ordonnance': draft})
+
+
+@api_bp.route('/ordonnances/<int:ordonnance_id>/check', methods=['GET'])
+def check_ordonnance(ordonnance_id):
+    """Verification step: refusal reasons, warnings, IAM analysis and referentials."""
+    user, error = current_api_user(required_role='prescriber')
+    if error:
+        return error
+    try:
+        check = OrdonnanceService.check(int(user['id']), ordonnance_id)
+    except OrdonnanceError as exc:
+        return ordonnance_error(exc)
+    except Exception:
+        current_app.logger.exception('Ordonnance check failed')
+        return jsonify({'success': False, 'error': "L'analyse IAM est indisponible. Réessayez dans un instant.",
+                        'code': 'analysis_unavailable'}), 503
+    return jsonify({'success': True, 'check': check})
+
+
+@api_bp.route('/ordonnances/<int:ordonnance_id>/issue', methods=['POST'])
+def issue_ordonnance(ordonnance_id):
+    """Issue at first print or PDF: freeze and number, or explain why not."""
+    user, error = current_api_user(required_role='prescriber')
+    if error:
+        return error
+    data = request.get_json(silent=True) or {}
+    try:
+        version = int(data.get('version'))
+    except (TypeError, ValueError):
+        return jsonify({'success': False, 'error': 'Version manquante', 'code': 'invalid'}), 400
+    try:
+        ordonnance = OrdonnanceService.issue(int(user['id']), ordonnance_id, version)
+    except OrdonnanceError as exc:
+        return ordonnance_error(exc)
+    except Exception:
+        current_app.logger.exception('Ordonnance issue failed')
+        return jsonify({'success': False, 'error': "L'analyse IAM est indisponible. Réessayez dans un instant.",
+                        'code': 'analysis_unavailable'}), 503
+    return jsonify({'success': True, 'ordonnance': ordonnance,
+                    'print_url': f'/ordonnances/{ordonnance_id}/impression'})

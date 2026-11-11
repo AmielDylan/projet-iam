@@ -386,6 +386,12 @@ def main() -> int:
                 else:
                     stats.update(enrich_iam(cursor, batch_id, row, catalog_id, specialites, substances))
 
+        if args.apply_catalog:
+            # Issued ordonnances freeze the catalog version they were analyzed with.
+            cursor.execute(
+                "INSERT INTO referential_versions (kind, label) VALUES ('catalog', %s)",
+                (f"{path.name} (lot {batch_id[:8]})"[:190],),
+            )
         conn.commit()
     except Exception:
         conn.rollback()

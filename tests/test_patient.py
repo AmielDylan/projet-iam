@@ -63,6 +63,7 @@ class TestStartup:
              patch('app.PatientService.ensure_schema'), \
              patch('app.SchemaMigrator.apply_pending') as migrate, \
              patch('app.PatientService.migrate_legacy_history') as copy_history, \
+             patch('app.PrescriberCodes.ensure_all'), \
              patch.dict('os.environ', {'ADMIN_EMAIL': '', 'ADMIN_PASSWORD': ''}):
             create_app(DevelopmentConfig())
 
