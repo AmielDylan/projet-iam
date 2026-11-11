@@ -28,7 +28,8 @@ RECOVERY_COUNT = 10
 OPEN_WHILE_PENDING = {"api.two_factor_verify", "api.auth_login", "api.auth_logout", "api.auth_session",
                       "web.two_factor_page", "web.login", "web.logout", "web.home", "static"}
 OPEN_WHILE_ENROLLING = OPEN_WHILE_PENDING | {"api.two_factor_status", "api.two_factor_setup",
-                                             "api.two_factor_confirm", "web.security_page"}
+                                             "api.two_factor_confirm", "web.security_page", "web.settings",
+                                             "api.prescriber_profile_api"}
 
 
 def required() -> bool:
@@ -165,7 +166,7 @@ def enforce_two_factor():
         if request.path.startswith("/api/"):
             return jsonify({"success": False, "code": "two_factor_enrollment_required",
                             "error": "Activez la double authentification pour continuer."}), 403
-        return redirect(url_for("web.security_page"))
+        return redirect(url_for("web.settings") + "#securite")
     return None
 
 

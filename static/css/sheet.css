@@ -57,8 +57,10 @@
 .rx-cancel { margin-top: 4mm; padding: 2mm 3mm; border: 0.3mm solid #b42318; color: #b42318; }
 
 /* Signature, puis pied de page. */
-.rx-sign { margin-top: auto; padding-top: 8mm; display: flex; justify-content: flex-end; break-inside: avoid; }
-.rx-sign div { width: 58mm; height: 20mm; border-top: 0.3mm solid #999; padding-top: 1mm; text-align: center; color: var(--rx-muted); font-size: 0.88em; }
+.rx-sign { margin-top: auto; padding-top: 7mm; display: flex; flex-direction: column; align-items: flex-end; break-inside: avoid; }
+.rx-stamp { width: 62mm; height: 26mm; border: 0.35mm dotted #8a9096; border-radius: 1mm; display: flex; align-items: flex-start; justify-content: center; padding-top: 1.5mm; color: var(--rx-muted); font-size: 0.82em; }
+.rx-signer { width: 62mm; margin-top: 1.5mm; text-align: center; font-weight: 700; }
+.rx-signer small { display: block; font-weight: 400; color: var(--rx-muted); font-size: 0.85em; }
 .rx-foot { display: flex; justify-content: space-between; gap: 6mm; margin-top: 3mm; font-size: 0.78em; color: var(--rx-muted); }
 
 .rx-watermark { position: absolute; inset: 0; display: grid; place-items: center; pointer-events: none;

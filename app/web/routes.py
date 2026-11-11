@@ -1,7 +1,7 @@
 """Web page routes."""
 from urllib.parse import urlparse
 
-from flask import Blueprint, abort, flash, redirect, render_template, request, session, url_for
+from flask import Blueprint, abort, flash, get_flashed_messages, redirect, render_template, request, session, url_for
 
 from app.services.auth import (
     AuthService,
@@ -22,6 +22,13 @@ from app.api.validators import sanitize_medication_name, ValidationError
 web_bp = Blueprint('web', __name__)
 
 
+def account_page(page: str, title: str, **extra):
+    """Login, account request and password pages (static/js/redaction/account.js)."""
+    initial = {'page': page, 'next': request.args.get('next', ''),
+               'flashes': get_flashed_messages(with_categories=True), **extra}
+    return render_template('prescriber_app.html', title=title, entry='account.js', initial=initial)
+
+
 def login_destination_for(user: dict, requested_next: str | None = None) -> str:
     """Return a safe post-login destination compatible with the user role."""
     role = user.get('role')
@@ -39,7 +46,7 @@ def login_destination_for(user: dict, requested_next: str | None = None) -> str:
 
     path = parsed.path.rstrip('/') or '/'
     allowed_prefixes = {
-        'prescriber': ('/ordonnances', '/patients', '/securite', '/prescripteur', '/etablissements', '/changer-mot-de-passe'),
+        'prescriber': ('/ordonnances', '/patients', '/interactions', '/reglages', '/securite', '/prescripteur', '/etablissements', '/changer-mot-de-passe'),
         'admin': ('/admin',),
     }.get(role, ())
     public_paths = ('/', '/changelog')
@@ -50,59 +57,10 @@ def login_destination_for(user: dict, requested_next: str | None = None) -> str:
 
 @web_bp.route('/', methods=['GET', 'POST'])
 def home():
-    """Render the public interaction page with optional interaction results."""
-    result = []
-    med_1_value = ''
-    med_2_value = ''
-    error_message = None
-
-    if request.method == 'POST':
-        med_1_raw = request.form.get('med-1', '')
-        med_2_raw = request.form.get('med-2', '')
-
-        try:
-            med_1 = sanitize_medication_name(med_1_raw)
-            med_2 = sanitize_medication_name(med_2_raw)
-
-            med_1_value = med_1
-            med_2_value = med_2
-
-            interactions = InteractionService.get_interactions(med_1, med_2)
-
-            # Format results for template compatibility
-            for interaction in interactions:
-                result.append([
-                    interaction['class_1'],
-                    interaction['class_2'],
-                    [
-                        interaction['details'],
-                        interaction['risques'],
-                        interaction['niveau'],
-                        interaction['actions']
-                    ]
-                ])
-
-            # Append med names at the end (legacy template format)
-            if result:
-                result.append(med_1)
-                result.append(med_2)
-
-        except ValidationError as e:
-            error_message = e.message
-            med_1_value = med_1_raw
-            med_2_value = med_2_raw
-        except Exception as e:
-            error_message = "An error occurred while processing your request"
-            med_1_value = med_1_raw
-            med_2_value = med_2_raw
-
-    return render_template(
-        'index.html',
-        resultats=result,
-        med_1_value=med_1_value,
-        med_2_value=med_2_value,
-        error_message=error_message
-    )
+    """Public page: interactions between two medications (static/js/redaction/home.js)."""
+    user = AuthService.current_session_user()
+    return render_template('prescriber_app.html', title='Interactions médicamenteuses', entry='home.js',
+                           initial={'user': {'role': user['role']} if user else None})
 
 
 @web_bp.route('/ordonnances')
@@ -115,13 +73,31 @@ def prescriptions():
     })
 
 
-@web_bp.route('/securite')
+@web_bp.route('/reglages')
 @require_login
-def security_page():
-    """Two-factor authentication settings (ticket 22)."""
-    return render_template('prescriber_app.html', title='Sécurité', entry='security.js',
+def settings():
+    """Settings: professional profile and security (two-factor authentication)."""
+    user = AuthService.current_user()
+    if user['role'] != 'prescriber':
+        return redirect(url_for('web.admin'))
+    return render_template('prescriber_app.html', title='Réglages', entry='settings.js',
                            extra_scripts=['vendor/qrcode-generator.js'],
-                           initial={'enrollment_required': bool(session.get('two_factor_enroll'))})
+                           initial={'tab': 'securite' if session.get('two_factor_enroll') else 'profil',
+                                    'enrollment_required': bool(session.get('two_factor_enroll'))})
+
+
+@web_bp.route('/securite')
+def security_page():
+    """Former address of the security page."""
+    return redirect(url_for('web.settings') + '#securite')
+
+
+@web_bp.route('/interactions')
+@require_approved_prescriber
+def interactions():
+    """The simple two-medication check, inside the prescriber workspace."""
+    return render_template('prescriber_app.html', title='Interactions médicamenteuses', entry='home.js',
+                           initial={'user': {'role': 'prescriber'}})
 
 
 @web_bp.route('/patients/<int:patient_id>')
@@ -217,7 +193,7 @@ def login():
             if user.get('must_change_password'):
                 return redirect(url_for('web.change_password', next=request.args.get('next') or ''))
             return redirect(login_destination_for(user, request.args.get('next')))
-    return render_template('account_app.html', account_page='login')
+    return account_page('login', title='Connexion')
 
 
 @web_bp.route('/connexion/verification', methods=['GET', 'POST'])
@@ -260,7 +236,7 @@ def register():
         flash(message, 'success' if success else 'danger')
         if success:
             return redirect(url_for('web.login'))
-    return render_template('account_app.html', account_page='register')
+    return account_page('register', title='Demander un accès')
 
 
 @web_bp.route('/changer-mot-de-passe', methods=['GET', 'POST'])
@@ -277,7 +253,8 @@ def change_password():
         flash(message, 'success' if success else 'danger')
         if success:
             return redirect(login_destination_for(user, request.args.get('next')))
-    return render_template('account_app.html', account_page='change-password')
+    return account_page('change-password', title='Mot de passe', role=user.get('role'),
+                        must_change=bool(user.get('must_change_password')))
 
 
 @web_bp.route('/deconnexion', methods=['POST', 'GET'])
@@ -291,20 +268,19 @@ def logout():
 @web_bp.route('/prescripteur', methods=['GET', 'POST'])
 @require_approved_prescriber
 def prescriber_profile():
-    """Manage the current prescriber's profile."""
-    user = AuthService.current_user()
+    """Former address of the profile, now in the settings page."""
     if request.method == 'POST':
+        user = AuthService.current_user()
         ProfileService.save_profile(int(user['id']), request.form.to_dict())
         flash('Profil prescripteur enregistré.', 'success')
-        return redirect(url_for('web.prescriber_profile'))
-    return render_template('account_app.html', account_page='profile')
+    return redirect(url_for('web.settings') + '#profil')
 
 
 @web_bp.route('/etablissements')
 @require_approved_prescriber
 def establishments():
     """Manage the current prescriber's establishments."""
-    return render_template('account_app.html', account_page='establishments')
+    return render_template('prescriber_app.html', title='Établissements', entry='establishments.js', initial={})
 
 
 @web_bp.route('/admin', methods=['GET', 'POST'])
@@ -323,7 +299,7 @@ def admin():
         )
         flash(message, 'success' if success else 'danger')
         return redirect(url_for('web.admin'))
-    return render_template('account_app.html', account_page='admin')
+    return render_template('prescriber_app.html', title='Administration', entry='admin.js', initial={})
 
 
 @web_bp.route('/changelog')

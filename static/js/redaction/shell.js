@@ -4,18 +4,18 @@ import { Api, onSessionLocked } from './api.js';
 import { Icon, ageLabel, frDate } from './ui.js';
 
 export function AppBar({ current }) {
-  return html`<header class="appbar">
+  return html`<header class="appbar"><div class="appbar-inner">
     <a class="brand" href="/ordonnances">DigiRemed</a>
     <nav class="appnav" aria-label="Navigation principale">
       <a href="/ordonnances" aria-current=${current === 'ordonnances' ? 'page' : undefined}>Ordonnances</a>
-      <a href="/prescripteur">Profil</a>
-      <a href="/etablissements">Établissements</a>
-      <a href="/securite" aria-current=${current === 'securite' ? 'page' : undefined}>Sécurité</a>
+      <a href="/interactions" aria-current=${current === 'interactions' ? 'page' : undefined}>Interactions</a>
+      <a href="/etablissements" aria-current=${current === 'etablissements' ? 'page' : undefined}>Établissements</a>
+      <a href="/reglages" aria-current=${current === 'reglages' ? 'page' : undefined}>Réglages</a>
     </nav>
     <span class="spacer"></span>
     <a class="btn btn-primary btn-sm" href="/ordonnances/nouvelle">Nouvelle ordonnance</a>
     <a class="btn btn-ghost btn-sm" href="/deconnexion">Déconnexion</a>
-  </header>`;
+  </div></header>`;
 }
 
 const STATUS = {

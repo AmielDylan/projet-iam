@@ -75,7 +75,10 @@
   {% if s.general_note %}<section class="rx-block"><span class="rx-label">Recommandations</span><div>{{ s.general_note }}</div></section>{% endif %}
   {% if cancelled %}<div class="rx-cancel">Ordonnance annulée le {{ fr_date((ordonnance.cancelled_at or '')[:10]) }}. Ne pas délivrer.</div>{% endif %}
 
-  <div class="rx-sign"><div>Signature et cachet</div></div>
+  <div class="rx-sign">
+    <div class="rx-stamp">Signature et cachet</div>
+    <div class="rx-signer">{{ [p.title, p.first_name, p.last_name] | select | join(' ') }}{% if p.profession %}<small>{{ p.profession }}</small>{% endif %}</div>
+  </div>
   <footer class="rx-foot"><span>N° {{ s.number }}</span><span>Émise le {{ fr_date((s.issued_at or '')[:10]) }}</span></footer>
 </article>
 <script>

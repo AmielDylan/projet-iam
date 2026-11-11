@@ -35,7 +35,8 @@ export async function api(path, { method = 'GET', body } = {}) {
     await unlockHandler();
     return api(path, { method, body });
   }
-  if (response.status === 401 && data.code !== 'wrong_password' && data.code !== 'wrong_code') {
+  // A refused login or code is an answer, not an expired session.
+  if (response.status === 401 && !path.startsWith('/auth/')) {
     window.location.href = `/connexion?next=${encodeURIComponent(location.pathname)}`;
   }
   throw new ApiError(response.status, data);

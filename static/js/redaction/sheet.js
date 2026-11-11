@@ -91,7 +91,11 @@ export function Sheet({ content, patient, establishment, prescriber, number, foc
         ${content.lab_results && html`<section class="rx-block"><span class="rx-label">Bilan biologique</span><div>${content.lab_results}</div></section>`}
         ${content.general_note && html`<section class="rx-block"><span class="rx-label">Recommandations</span><div>${content.general_note}</div></section>`}
 
-        <div class="rx-sign"><div>Signature et cachet</div></div>
+        <div class="rx-sign">
+          <div class="rx-stamp">Signature et cachet</div>
+          <div class="rx-signer">${join([prescriber.title, prescriber.first_name, prescriber.last_name])}
+            ${prescriber.profession && html`<small>${prescriber.profession}</small>`}</div>
+        </div>
         <footer class="rx-foot"><span>${number ? `N° ${number}` : "Numéro attribué à l'émission"}</span>
           <span>${number ? 'Émise' : 'Brouillon'}</span></footer>
       </article>

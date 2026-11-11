@@ -40,6 +40,47 @@ ACCOUNTS = [
 ]
 
 
+ADMIN = {"email": "admin@demo.local", "password": "Demo-Admin-2026"}
+PENDING = [
+    # (email, first name, last name, profession, role, status)
+    ("efua.adjovi@demo.local", "Efua", "Adjovi", "Médecin", "prescriber", "pending"),
+    ("rachidi.bello@demo.local", "Rachidi", "Bello", "Pharmacien", "pharmacist", "waitlist"),
+]
+
+
+def seed_admin_side() -> None:
+    """An administrator, one account request to review, one pharmacist on the waitlist."""
+    with DatabasePool.get_cursor() as cursor:
+        cursor.execute("SELECT id FROM iam_users WHERE email = %s", (ADMIN["email"],))
+        if not cursor.fetchone():
+            cursor.execute(
+                "INSERT INTO iam_users (email, password_hash, role, status, first_name, last_name, must_change_password) "
+                "VALUES (%s, %s, 'admin', 'approved', 'Admin', 'DigiRemed', 0)",
+                (ADMIN["email"], generate_password_hash(ADMIN["password"])),
+            )
+            print(f"Créé : {ADMIN['email']}")
+        for email, first, last, profession, role, status in PENDING:
+            cursor.execute("SELECT id FROM iam_users WHERE email = %s", (email,))
+            if cursor.fetchone():
+                continue
+            cursor.execute(
+                "INSERT INTO iam_users (email, password_hash, role, status, first_name, last_name, birthdate, profession, "
+                "order_number, phone, must_change_password) VALUES (%s, '', %s, %s, %s, %s, '1988-02-14', %s, 'BJ-9001', "
+                "'+229 01 90 00 00 00', 0)",
+                (email, role, status, first, last, profession),
+            )
+            if status == "pending":
+                pdf = b"%PDF-1.4\n1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj 2 0 obj<</Type/Pages/Kids[3 0 R]/Count 1>>endobj " \
+                      b"3 0 obj<</Type/Page/MediaBox[0 0 300 200]/Parent 2 0 R>>endobj\ntrailer<</Root 1 0 R>>"
+                import base64
+                cursor.execute(
+                    "INSERT INTO identity_documents (user_id, filename, mime_type, size_bytes, content) VALUES (%s, 'piece.pdf', "
+                    "'application/pdf', %s, %s)",
+                    (cursor.lastrowid, len(pdf), base64.b64encode(pdf).decode()),
+                )
+            print(f"Créé : {email} ({status})")
+
+
 def main() -> int:
     url = os.environ.get("MYSQL_URL", "")
     if ":33100/" not in url:
@@ -49,6 +90,7 @@ def main() -> int:
     vault_module.install(vault_module.Vault(config.DATA_ENCRYPTION_KEYS, config.DATA_INDEX_KEY))
     DatabasePool.initialize(host=config.DB_HOST, port=config.DB_PORT, user=config.DB_USER,
                             password=config.DB_PASSWORD, database=config.DB_NAME, pool_size=2, pool_name="seed")
+    seed_admin_side()
     for account in ACCOUNTS:
         rows = DatabasePool.execute_query("SELECT id FROM iam_users WHERE email = %s", (account["email"],))
         if rows:

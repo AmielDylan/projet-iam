@@ -249,13 +249,18 @@ function App({ initial }) {
   const crumb = ord.number ? `N° ${ord.number}${patientName ? ` · ${patientName}` : ''}` : `Brouillon${patientName ? ` · ${patientName}` : ''}`;
 
   return html`
-    <header class="appbar">
-      <a class="brand" href="/">DigiRemed</a>
-      <nav class="crumbs" aria-label="Fil d'Ariane"><a href="/ordonnances">Ordonnances</a><span aria-hidden="true">/</span><b>${crumb}</b></nav>
-      <span class="spacer"></span>
-      <${SaveStatus} state=${editable ? (dirty && saveState === 'saved' ? 'pending' : saveState) : 'issued'} savedAt=${savedAt} ord=${ord} />
-      <button class="btn btn-sm btn-ghost preview-toggle" onClick=${togglePreview}>
-        <span class="long">${preview ? 'Masquer' : 'Afficher'} l'aperçu</span><span class="short">Aperçu</span></button>
+    <header class=${`appbar appbar-desk ${preview ? '' : 'no-preview'}`}>
+      <div class="appbar-start">
+        <a class="brand" href="/ordonnances">DigiRemed</a>
+        <nav class="crumbs" aria-label="Fil d'Ariane"><a href="/ordonnances">Ordonnances</a><span aria-hidden="true">/</span>
+          ${patient ? html`<a href=${`/patients/${patient.id}`}><b>${crumb}</b></a>` : html`<b>${crumb}</b>`}</nav>
+        <span class="spacer"></span>
+        <${SaveStatus} state=${editable ? (dirty && saveState === 'saved' ? 'pending' : saveState) : 'issued'} savedAt=${savedAt} ord=${ord} />
+      </div>
+      <div class="appbar-end">
+        <button class="btn btn-sm btn-ghost preview-toggle" onClick=${togglePreview}>
+          <span class="long">${preview ? 'Masquer' : 'Afficher'} l'aperçu</span><span class="short">Aperçu</span></button>
+      </div>
     </header>
 
     <div class=${`desk ${preview ? '' : 'no-preview'}`}>
