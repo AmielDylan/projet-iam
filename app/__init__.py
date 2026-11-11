@@ -7,6 +7,7 @@ from flask import Flask
 from app.config import get_config, Config
 from app.services.database import DatabasePool
 from app.services.auth import AuthService
+from app.services.patient import PatientService
 from app.api import api_bp
 from app.web import web_bp
 from app.errors import register_error_handlers
@@ -53,6 +54,7 @@ def create_app(config: Optional[Config] = None) -> Flask:
     )
     if not app.config['TESTING']:
         AuthService.ensure_schema()
+        PatientService.ensure_schema()
         if os.environ.get("ADMIN_EMAIL") and os.environ.get("ADMIN_PASSWORD"):
             AuthService.create_admin(
                 os.environ.get("ADMIN_EMAIL", ""),

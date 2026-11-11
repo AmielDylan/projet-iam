@@ -7,6 +7,7 @@ from app.services.interaction import InteractionService
 from app.services.autocomplete import AutocompleteService
 from app.services.auth import AuthService, ProfileService, EstablishmentService, PROFESSIONS
 from app.services.catalog import MedicationCatalogService
+from app.services.patient import PatientService
 from app.api.validators import (
     sanitize_medication_name,
     validate_autocomplete_query,
@@ -485,7 +486,7 @@ def search_patients():
     query = request.args.get('q') or request.args.get('query') or ''
     if len(query.strip()) < 2:
         return jsonify({'success': True, 'results': []})
-    results = ProfileService.search_patients(int(user['id']), query)
+    results = PatientService.search(int(user['id']), query)
     for item in results:
         birthdate = item.get('patient_birthdate')
         if birthdate is not None:
@@ -506,5 +507,5 @@ def save_patient():
         return error
 
     data = request.get_json(silent=True) or {}
-    patient = ProfileService.upsert_patient(int(user['id']), data)
+    patient = PatientService.save(int(user['id']), data)
     return jsonify({'success': True, 'patient': patient})
