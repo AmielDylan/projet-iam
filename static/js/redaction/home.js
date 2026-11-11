@@ -36,7 +36,7 @@ function MedField({ label, value, onChange, onPick, onEnter, inputRef }) {
     <div class="filter-search"><label class="search"><${Icon} name="search" />
       <input ref=${inputRef} value=${value} placeholder="Spécialité, substance ou classe" autocomplete="off" onKeyDown=${onKeyDown}
         onInput=${(e) => onChange(e.target.value)} onBlur=${() => setTimeout(() => setOpen(false), 150)} /></label>
-      ${open && results.length > 0 && html`<div class="suggest" style="top:58px">${results.map((r, i) => html`
+      ${open && results.length > 0 && html`<div class="suggest" style="top:46px">${results.map((r, i) => html`
         <div key=${r.resultat + r.type} class=${`opt ${i === hl ? 'is-hl' : ''}`} onMouseDown=${(e) => { e.preventDefault(); pick(r); }}>
           <b>${r.resultat}</b><span class="side"><span class="lvl lvl-info">${TYPES[r.type] || r.type}</span></span></div>`)}</div>`}
     </div></div>`;

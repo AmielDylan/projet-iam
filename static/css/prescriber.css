@@ -419,7 +419,9 @@ a.btn-primary { color: #fff; }
 }
 .section.pe .section-head { background: var(--pe-bg); color: var(--pe); }
 .result-title { font-size: 18px; margin: 8px 0 0; }
-.med-field .search { height: 52px; }
+.med-field .search { height: 40px; padding: 0 12px; border-radius: var(--r-ctl); gap: 10px; }
+.med-field .search input { font-size: 15px; }
+.med-field .search svg { width: 16px; height: 16px; }
 .field .search input, .field .search input:focus { border: 0; box-shadow: none; height: auto; padding: 0; background: transparent; }
 
 /* ---------- pied de page commun ---------- */
