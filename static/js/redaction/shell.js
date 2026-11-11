@@ -1,6 +1,7 @@
 /** Shared pieces of the prescriber pages: top bar, status badge, ordonnance table. */
 import { html, useEffect, useRef, useState } from '../../vendor/preact-htm-standalone.module.js';
 import { Api, onSessionLocked } from './api.js';
+import { clearAll } from './offline.js';
 import { Icon, ageLabel, frDate } from './ui.js';
 
 export function AppBar({ current }) {
@@ -13,7 +14,7 @@ export function AppBar({ current }) {
       <a href="/reglages" aria-current=${current === 'reglages' ? 'page' : undefined}>Réglages</a>
     </nav>
     <span class="spacer"></span>
-    <a class="btn btn-ghost btn-sm" href="/deconnexion">Déconnexion</a>
+    <a class="btn btn-ghost btn-sm" href="/deconnexion" onClick=${clearAll}>Déconnexion</a>
   </div></header>`;
 }
 
@@ -116,6 +117,6 @@ export function LockScreen({ onUnlocked }) {
       <p>Après 10 minutes d'inactivité, les données patient sont masquées. Votre travail est intact.</p>
       <label class="field">Mot de passe<input ref=${input} type="password" value=${password} onInput=${(e) => setPassword(e.target.value)} /></label>
       ${error && html`<p class="form-error">${error}</p>`}
-      <div class="row"><a class="btn btn-ghost" href="/deconnexion">Changer d'utilisateur</a><button class="btn btn-primary" type="submit">Déverrouiller</button></div>
+      <div class="row"><a class="btn btn-ghost" href="/deconnexion" onClick=${clearAll}>Changer d'utilisateur</a><button class="btn btn-primary" type="submit">Déverrouiller</button></div>
     </form></div>`;
 }

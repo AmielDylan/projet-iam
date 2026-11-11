@@ -1,4 +1,5 @@
 """Web page routes."""
+import secrets
 from urllib.parse import urlparse
 
 from flask import Blueprint, abort, flash, get_flashed_messages, redirect, render_template, request, session, url_for
@@ -159,6 +160,8 @@ def write_ordonnance(ordonnance_id):
         'establishments': EstablishmentService.list_for_prescriber(owner_id),
         'prescriber': prescriber_identity(owner_id),
         'step': step,
+        # Seals the offline copy of the draft on this device (ticket 16); gone at logout.
+        'offline_key': session.setdefault('offline_key', secrets.token_urlsafe(32)),
     }
     return render_template('redaction.html', initial=initial)
 

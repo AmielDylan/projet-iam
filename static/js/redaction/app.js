@@ -2,8 +2,9 @@
  * Prescribing screen (ticket 11): three steps, autosaved draft, live IAM analysis, issuing.
  * The server holds every rule; this file keeps the screen in step with it.
  */
-import { html, render, useCallback, useEffect, useRef, useState } from '../../vendor/preact-htm-standalone.module.js';
+import { html, render, useCallback, useEffect, useMemo, useRef, useState } from '../../vendor/preact-htm-standalone.module.js';
 import { Api } from './api.js';
+import { offlineStore, purgeExpired } from './offline.js';
 import { useSessionLock } from './shell.js';
 import { Sheet } from './sheet.js';
 import { CheckStep, PatientStep, TreatmentStep } from './steps.js';
@@ -45,6 +46,7 @@ function App({ initial }) {
   const savedJson = useRef(JSON.stringify(initial.ordonnance.content));
   const saving = useRef(false);
   const latest = useRef(initial.ordonnance.content);
+  const offline = useMemo(() => offlineStore(initial.offline_key, initial.ordonnance.id), []);
 
   const [patient, setPatient] = useState(initial.patient);
   const [patientForm, setPatientForm] = useState(initial.patient ? patientToForm(initial.patient) : null);
@@ -92,32 +94,62 @@ function App({ initial }) {
       setSaveState('saved');
       setSavedAt(new Date());
       setSavedVersion(data.ordonnance.version);
+      offline.clear();
       // Typed during the request: send the rest.
       if (JSON.stringify(latest.current) !== json) setTimeout(() => save(), 0);
     } catch (error) {
       if (error.code === 'version_conflict') {
         const current = error.body.current;
+        const mine = payload;
         version.current = current.version;
         savedJson.current = JSON.stringify(current.content);
         setContent(current.content);
         setSavedVersion(current.version);
         setSaveState('saved');
-        setNotice('Ce brouillon a été modifié dans un autre onglet : la version la plus récente est affichée.');
+        offline.clear();
+        setNotice({
+          text: 'Ce brouillon a été modifié ailleurs entre-temps : la version la plus récente est affichée.',
+          action: { label: 'Rétablir ma version', run: () => setContent(mine) },
+        });
       } else if (error.code === 'not_editable') {
         location.reload();
       } else if (error.code === 'network') {
+        await offline.save({ content: payload, basedOn: version.current });
         setSaveState('offline');
         setTimeout(() => { saving.current = false; save(); }, RETRY_DELAY);
         return;
       } else {
         setSaveState('error');
-        setNotice(error.message);
+        setNotice({ text: error.message });
       }
     }
     saving.current = false;
   }, [ord.id, editable]);
 
   useDebouncedEffect(() => { if (dirty) save(); }, [content], SAVE_DELAY);
+
+  /* ---------- offline copy (ticket 16) ---------- */
+  useEffect(() => {
+    purgeExpired();
+    if (!editable) { offline.clear(); return; }
+    offline.load().then((copy) => {
+      if (!copy || JSON.stringify(copy.content) === savedJson.current) { offline.clear(); return; }
+      if (copy.basedOn === version.current) {
+        setContent(copy.content);
+        setNotice({ text: 'Le brouillon gardé sur cet appareil pendant la coupure a été rétabli. Il se synchronise.' });
+      } else {
+        setNotice({
+          text: 'Une version gardée sur cet appareil pendant une coupure diffère du brouillon enregistré, modifié depuis.',
+          action: { label: 'Rétablir la version de cet appareil', run: () => setContent(copy.content) },
+        });
+      }
+    });
+    const goneOffline = () => setSaveState((s) => (s === 'saving' || s === 'saved' ? 'offline' : s));
+    const backOnline = () => { saving.current = false; setSaveState('saved'); setTimeout(() => save(), 0); };
+    window.addEventListener('offline', goneOffline);
+    window.addEventListener('online', backOnline);
+    return () => { window.removeEventListener('offline', goneOffline); window.removeEventListener('online', backOnline); };
+  }, []);
   useEffect(() => {
     const warn = (e) => { if (dirty) { e.preventDefault(); e.returnValue = ''; } };
     window.addEventListener('beforeunload', warn);
@@ -267,7 +299,9 @@ function App({ initial }) {
       <section class="work" aria-label="Rédaction">
         <div class="work-inner">
           <${Stepper} step=${step} setStep=${setStep} count=${editable ? stepCount : 0} blocking=${blocking > 0} issued=${!editable} />
-          ${notice && html`<div class="notice" role="status"><span>${notice}</span><button class="btn btn-sm btn-ghost" onClick=${() => setNotice('')}>Fermer</button></div>`}
+          ${notice && html`<div class="notice" role="status"><span>${typeof notice === 'string' ? notice : notice.text}</span>
+            ${notice.action && html`<button class="btn btn-sm" onClick=${() => { notice.action.run(); setNotice(''); }}>${notice.action.label}</button>`}
+            <button class="btn btn-sm btn-ghost" onClick=${() => setNotice('')}>Fermer</button></div>`}
           ${step === 1 && html`<${PatientStep} content=${content} patient=${patient} form=${patientForm} onField=${onPatientField}
             onPick=${onPickPatient} onNew=${onNewPatient} onChange=${onChangePatient} saving=${patientSaving} error=${patientError}
             establishments=${initial.establishments} onContentField=${onContentField} />`}
@@ -306,7 +340,7 @@ function SaveStatus({ state, savedAt, ord }) {
     saved: savedAt ? `Enregistré à ${time}` : 'Brouillon enregistré',
     pending: 'Modifications en cours',
     saving: 'Enregistrement…',
-    offline: 'Hors ligne · nouvel essai automatique',
+    offline: 'Hors ligne · gardé sur cet appareil',
     error: "Échec de l'enregistrement",
     issued: ord.status === 'cancelled' ? 'Annulée' : `Émise le ${frDate(ord.issued_at)}`,
   }[state];
