@@ -79,7 +79,7 @@ export function Sheet({ content, patient, establishment, prescriber, number, foc
               (line.renewal || content.renewal) && `Renouvellement : ${line.renewal || content.renewal}`,
             ];
             return html`<li class=${`rx-item ${focusLineId === line.line_id ? 'is-highlight' : ''}`} key=${line.line_id}><div>
-              <span class="rx-med">${line.name}${line.dosage && ` ${line.dosage}`}${line.form && `, ${line.form.toLowerCase()}`}</span>
+              <span class="rx-med">${line.label || html`${line.name}${line.dosage && ` ${line.dosage}`}${line.form && `, ${line.form.toLowerCase()}`}`}</span>
               ${line.substances && line.substances.length > 0 && html` <span class="rx-dci">(${line.substances.join(' + ').toLowerCase()})</span>`}
               <div class="rx-posology">${line.posology || html`<span class="rx-placeholder">Posologie à préciser</span>`}</div>
               ${join(parts, ' · ') && html`<div class="rx-small">${join(parts, ' · ')}</div>`}

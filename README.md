@@ -29,13 +29,13 @@ git clone https://github.com/AmielDylan/projet-iam.git
 cd projet-iam
 pip install -r requirements.txt
 
-# 2. Configurer l'environnement
-cp .env.example .env
-# Éditer .env avec vos identifiants MySQL
+# 2. Relier le dossier à Doppler (source des variables, projet projet-iam)
+doppler login
+doppler setup --no-interactive
 
 # 3. Lancer
-python application.py
-# ou : flask run
+doppler run -- python application.py
+# ou : doppler run -- flask run
 ```
 
 L'application est disponible sur `http://localhost:5000`.

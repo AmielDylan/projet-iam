@@ -58,7 +58,7 @@
   <ol class="rx-lines">
     {% for line in s.lines %}
     <li class="rx-item"><div>
-      <span class="rx-med">{{ line.name }}{{ ' ' ~ line.dosage if line.dosage }}{{ ', ' ~ line.form | lower if line.form }}</span>
+      <span class="rx-med">{% if line.label %}{{ line.label }}{% else %}{{ line.name }}{{ ' ' ~ line.dosage if line.dosage }}{{ ', ' ~ line.form | lower if line.form }}{% endif %}</span>
       {%- if line.dci %} <span class="rx-dci">({{ line.dci | join(' + ') | lower }})</span>{% endif %}
       <div class="rx-posology">{{ line.posology }}</div>
       {%- set parts = [] -%}

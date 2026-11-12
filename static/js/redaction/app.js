@@ -205,10 +205,10 @@ function App({ initial }) {
   const onAdd = (item) => {
     const id = newLineId();
     const line = item.id ? {
-      line_id: id, medication_id: item.id, name: item.name, dosage: item.dosage || '', form: item.form || '',
+      line_id: id, medication_id: item.id, name: item.name, dosage: item.dosage || '', form: item.form || '', label: item.label || '',
       substances: item.substances || [], posology: '', duration: '', renewal: '', quantity: '', note: '',
     } : {
-      line_id: id, medication_id: null, name: item.name, dosage: '', form: '', substances: [],
+      line_id: id, medication_id: null, name: item.name, dosage: '', form: '', label: '', substances: [],
       posology: '', duration: '', renewal: '', quantity: '', note: '',
     };
     setContent((c) => ({ ...c, lines: [...c.lines, line] }));

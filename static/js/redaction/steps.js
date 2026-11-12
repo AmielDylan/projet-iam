@@ -165,7 +165,7 @@ function Composer({ patientId, onAdd }) {
               ${option.kind === 'catalog' ? html`
                 <b>${option.item.name}${option.item.dosage && ` ${option.item.dosage}`}
                   ${option.item.substances.length > 0 && html` <span class="dci">(${option.item.substances.join(', ').toLowerCase()})</span>`}</b>
-                <span class="meta">${[option.item.form, option.item.presentation].filter(Boolean).join(' · ')}</span>
+                <span class="meta">${option.item.label || [option.item.form, option.item.presentation].filter(Boolean).join(' · ')}</span>
                 ${option.item.allergy_warning && option.item.allergy_warning.length > 0
                   && html`<span class="side"><span class="lvl lvl-justify">Allergie déclarée</span></span>`}`
               : html`<b>Utiliser « ${option.name} » en saisie libre</b><span class="meta">Ne sera pas vérifié par l'analyse</span>`}
@@ -196,7 +196,7 @@ export function TreatmentStep({ content, analysis, analysisError, patientId, onA
           <div>
             <div class="drug">${line.name}${line.dosage && ` ${line.dosage}`}
               ${line.substances && line.substances.length > 0 && html` <span class="dci">(${line.substances.join(', ').toLowerCase()})</span>`}</div>
-            <div class="drug-sub">${line.medication_id ? (line.form || 'Catalogue') : 'Saisie libre'}</div>
+            <div class="drug-sub">${line.medication_id ? (line.label || line.form || 'Catalogue') : 'Saisie libre'}</div>
             <div class="line-fields">
               <input aria-label=${`Posologie, ligne ${i + 1}`} placeholder="Posologie" value=${line.posology}
                 ref=${focusLineId === line.line_id ? focusRef : null} onInput=${(e) => onLineField(line.line_id, 'posology', e.target.value)} />

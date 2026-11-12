@@ -11,11 +11,9 @@ sys.path.insert(0, str(ROOT))
 
 from app import create_app
 from app.services.auth import AuthService
-from scripts.import_medication_catalog import load_env
 
 
 def main() -> int:
-    load_env(ROOT / ".env")
     app = create_app()
     with app.app_context():
         success, message = AuthService.create_admin(

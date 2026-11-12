@@ -6,11 +6,8 @@ The variable is named 'application' for AWS Elastic Beanstalk compatibility.
 """
 import os
 
-from dotenv import load_dotenv
-
-# Load environment variables from .env file
-load_dotenv()
-
+# Configuration comes from the environment only: Doppler injects it locally
+# (`doppler run -- python application.py`) and Railway in production.
 from app import create_app
 
 # Create the application instance

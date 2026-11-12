@@ -11,7 +11,6 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from dotenv import load_dotenv  # noqa: E402
 
 from app.config import get_config  # noqa: E402
 from app.services import vault as vault_module  # noqa: E402
@@ -24,7 +23,6 @@ def main() -> int:
     parser.add_argument("action", choices=("reseal", "reindex"))
     args = parser.parse_args()
 
-    load_dotenv()
     config = get_config()
     vault_module.install(vault_module.Vault(config.DATA_ENCRYPTION_KEYS, config.DATA_INDEX_KEY))
     DatabasePool.initialize(host=config.DB_HOST, port=config.DB_PORT, user=config.DB_USER,

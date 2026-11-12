@@ -114,3 +114,34 @@ class TestAllergyInSearch:
         get_patient.assert_called_once_with(3, 9)
         assert results[0]['allergy_warning'] == ['AMOXICILLINE']
         assert results[1]['allergy_warning'] == []
+
+
+class TestProductLabels:
+    """Results that name, dosage and form cannot tell apart carry their full product name."""
+
+    @staticmethod
+    def _item(name, dosage, form, specialite):
+        return {'name': name, 'dosage': dosage, 'form': form, 'specialite': specialite}
+
+    def test_twins_and_unreliable_forms_get_a_label(self):
+        results = [
+            self._item('DOLIPRANE', '1G', 'COMPRIMÉ', 'DOLIPRANE 1G CPR 8'),
+            self._item('DOLIPRANE', '1G', 'COMPRIMÉ', 'DOLIPRANE 1G CPR EFF 8'),
+            self._item('DOLIPRANE', '1G', '', 'DOLIPRANE 1G AD SUPPO 8'),
+            self._item('DOLIPRANE', '1G', 'GEL', 'DOLIPRANE 1G GELULE 8'),
+            self._item('DOLIPRANE', '500MG', 'COMPRIMÉ', 'DOLIPRANE 500MG CPR 16'),
+        ]
+        with patch('app.services.catalog.DatabasePool.execute_query',
+                   return_value=[('DOLIPRANE', '1G', 'COMPRIMÉ')]) as query:
+            MedicationCatalogService._add_labels(results)
+
+        assert [r['label'] for r in results] == [
+            'DOLIPRANE 1G CPR 8', 'DOLIPRANE 1G CPR EFF 8', 'DOLIPRANE 1G AD SUPPO 8', 'DOLIPRANE 1G GELULE 8', '']
+        assert query.call_args[0][1] == ('DOLIPRANE',)
+
+    def test_label_survives_line_normalization(self):
+        from app.services.ordonnance import normalize_content
+
+        content = normalize_content({'lines': [{'medication_id': 3, 'name': 'DOLIPRANE', 'dosage': '1G',
+                                                'form': 'COMPRIMÉ', 'label': 'DOLIPRANE 1G CPR EFF 8'}]})
+        assert content['lines'][0]['label'] == 'DOLIPRANE 1G CPR EFF 8'

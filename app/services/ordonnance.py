@@ -44,7 +44,8 @@ PEDIATRIC_AGE = 15
 LOCAL_TIMEZONE = timezone(timedelta(hours=float(os.environ.get("APP_UTC_OFFSET_HOURS", "1"))))
 WEIGHT_MAX_AGE_DAYS = 92
 TEXT_FIELDS = ("general_note", "lab_results", "duration", "renewal")
-LINE_TEXT_FIELDS = ("name", "dosage", "form", "posology", "duration", "renewal", "quantity", "note")
+# `label`: the full product name, kept when name, dosage and form do not identify the product.
+LINE_TEXT_FIELDS = ("name", "dosage", "form", "label", "posology", "duration", "renewal", "quantity", "note")
 
 
 # Errors -------------------------------------------------------------------------
