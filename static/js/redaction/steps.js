@@ -63,7 +63,21 @@ function PatientSearch({ onPick, onNew }) {
 }
 
 export function PatientStep({ content, patient, form, onField, onPick, onNew, onChange, saving, error,
-  establishments, onContentField, onEstablishmentCreated }) {
+  establishments, onContentField, onEstablishmentCreated, target, onTargetReached }) {
+  const establishmentRef = useRef(null);
+  const [flash, setFlash] = useState(false);
+  // Coming from « Compléter » on the establishment: scroll there, highlight it, put the cursor in it.
+  useEffect(() => {
+    const section = establishmentRef.current;
+    if (target !== 'establishment' || !section) return;
+    section.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    const field = section.querySelector('select, .invite .btn-primary');
+    if (field) field.focus({ preventScroll: true });
+    setFlash(true);
+    const timer = setTimeout(() => setFlash(false), 2400);
+    onTargetReached();
+    return () => clearTimeout(timer);
+  }, [target]);
   if (!content.patient_id && !form) {
     return html`<h1>Patient</h1>
       <p class="lead">Retrouvez le patient par son nom ou sa date de naissance, ou créez-le.</p>
@@ -102,7 +116,8 @@ export function PatientStep({ content, patient, form, onField, onPick, onNew, on
         onInput=${(e) => onField('allergies', e.target.value)} /><span class="hint">Comparées aux DCI de chaque ligne, dès la recherche.</span></label>
       <span class="field c2 save-state" aria-live="polite">${saving ? 'Enregistrement…' : patient ? 'Patient enregistré' : ''}</span>
     </div>
-    <p class="group-title">En-tête</p>
+    <section class=${`est-section ${flash ? 'is-target' : ''}`} id="etablissement" ref=${establishmentRef}>
+    <p class="group-title">Établissement et date</p>
     ${establishments.length === 0 ? html`<${FirstEstablishment} onCreated=${onEstablishmentCreated} />` : ''}
     <div class="grid">
       ${establishments.length > 0 && html`<label class="field c4">Établissement
@@ -112,7 +127,8 @@ export function PatientStep({ content, patient, form, onField, onPick, onNew, on
         </select><span class="hint"><a href="/etablissements">Gérer mes établissements</a></span></label>`}
       <label class="field c2">Date de prescription<${DateInput} value=${content.prescribed_on ? frDate(content.prescribed_on) : ''}
         placeholder="Aujourd'hui" onDate=${(iso) => onContentField('prescribed_on', iso)} /></label>
-    </div>`;
+    </div>
+    </section>`;
 }
 
 /** No establishment yet: create the first one here, without leaving the draft. */
@@ -325,7 +341,7 @@ export function CheckStep({ content, check, checkError, ordonnance, onDerogation
       ${missing.length > 0 && html`<article class="section justify"><div class="section-head"><${Icon} name="alert" /><h3>À compléter</h3></div>
         <div class="section-body ok-list">${missing.map((r) => html`<div class="ok-row" key=${r.code}>
           <span style="flex:1">${r.message}${r.line_ids && ` (${linesLabel(content, r.line_ids)})`}</span>
-          <button class="btn btn-sm" onClick=${() => goStep(REASON_STEP[r.code])}>Compléter</button></div>`)}</div></article>`}
+          <button class="btn btn-sm" onClick=${() => goStep(REASON_STEP[r.code], r.code === 'establishment_missing' ? 'establishment' : null)}>Compléter</button></div>`)}</div></article>`}
       ${alerts.filter((a) => a.requirement !== 'info').map((a) => html`
         <article class=${`section ${kindOf(a)}`} key=${a.id}>
           <div class="section-head"><${Icon} name=${a.requirement === 'blocking' ? 'ban' : 'alert'} />

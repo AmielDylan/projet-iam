@@ -70,13 +70,16 @@ function App({ initial }) {
   const dirty = editable && JSON.stringify(content) !== savedJson.current;
   const [establishments, setEstablishments] = useState(initial.establishments);
   const establishment = establishments.find((e) => e.id === content.establishment_id);
+  // A section to bring into view once the step is shown (« Compléter » from the check step).
+  const [target, setTarget] = useState(null);
+  const goStep = (n, where = null) => { setTarget(where); setStep(n); };
 
   /* ---------- step in the address, so a reload comes back here ---------- */
   useEffect(() => {
     const url = new URL(location.href);
     url.searchParams.set('etape', String(step));
     history.replaceState(null, '', url);
-    window.scrollTo(0, 0);
+    if (!target) window.scrollTo(0, 0);
   }, [step]);
 
   /* ---------- autosave with versions ---------- */
@@ -305,13 +308,13 @@ function App({ initial }) {
             <button class="btn btn-sm btn-ghost" onClick=${() => setNotice('')}>Fermer</button></div>`}
           ${step === 1 && html`<${PatientStep} content=${content} patient=${patient} form=${patientForm} onField=${onPatientField}
             onPick=${onPickPatient} onNew=${onNewPatient} onChange=${onChangePatient} saving=${patientSaving} error=${patientError}
-            establishments=${establishments} onContentField=${onContentField}
+            establishments=${establishments} onContentField=${onContentField} target=${target} onTargetReached=${() => setTarget(null)}
             onEstablishmentCreated=${(est) => { setEstablishments((list) => [...list, est]); onContentField('establishment_id', est.id); }} />`}
           ${step === 2 && html`<${TreatmentStep} content=${content} analysis=${analysis} analysisError=${analysisError}
             patientId=${content.patient_id} onAdd=${onAdd} onLineField=${onLineField} onRemoveLine=${onRemoveLine}
             onContentField=${onContentField} focusLineId=${focusLineId} goStep=${setStep} />`}
           ${step === 3 && html`<${CheckStep} content=${content} check=${check} checkError=${checkError} ordonnance=${ord}
-            onDerogation=${onDerogation} onEditLine=${(id) => { setFocusLineId(id); setStep(2); }} goStep=${setStep}
+            onDerogation=${onDerogation} onEditLine=${(id) => { setFocusLineId(id); setStep(2); }} goStep=${goStep}
             onReprint=${reprint} onCancelCorrect=${() => setDialog({ kind: 'cancel' })} />`}
         </div>
         <div class="footbar"><div class="footbar-inner">
