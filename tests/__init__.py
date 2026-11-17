@@ -1,1 +1,1 @@
-"""Test suite for Projet IAM."""
+"""Test suite for DigiRemed."""

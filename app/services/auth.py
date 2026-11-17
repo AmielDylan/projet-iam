@@ -511,12 +511,12 @@ class AuthService:
         greeting = f"Bonjour {full_name}," if full_name else "Bonjour,"
         return (
             f"{greeting}\n\n"
-            "Votre compte prescripteur Projet IAM a été validé.\n\n"
+            "Votre compte prescripteur DigiRemed a été validé.\n\n"
             f"Adresse de connexion: {target['email']}\n"
             f"Mot de passe temporaire: {password}\n\n"
             "Ce mot de passe est valable 24h. Vous devrez le changer à la première connexion.\n"
             "Connexion: https://projet-iam-web-production.up.railway.app/connexion\n\n"
-            "Projet IAM"
+            "DigiRemed"
         )
 
     @staticmethod
@@ -536,7 +536,7 @@ class AuthService:
             try:
                 EmailService.send(
                     target["email"],
-                    "Votre compte Projet IAM est validé",
+                    "Votre compte DigiRemed est validé",
                     manual_message,
                 )
                 email_sent = True
