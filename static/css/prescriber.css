@@ -180,6 +180,10 @@ h1 { font-size: 22px; line-height: 1.25; margin: 0 0 6px; letter-spacing: -.01em
 @media (prefers-reduced-motion: reduce) { .est-section.is-target { animation: none; background: var(--act-tint); } }
 .invite { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 16px; padding: 16px 18px;
   border: 1px solid var(--act-tint-2); border-radius: var(--r-panel); background: var(--act-tint); }
+.invite-actions { display: flex; gap: 8px; flex: none; }
+.dialog-note { display: flex; gap: 10px; align-items: flex-start; margin-top: 12px; padding: 10px 12px; border-radius: var(--r-ctl); background: var(--pe-bg); font-size: 14px; }
+.dialog-note svg { width: 16px; height: 16px; flex: none; margin-top: 2px; color: var(--pe); }
+.dialog-note p { margin: 0; color: var(--ink); }
 .invite p { margin: 4px 0 0; max-width: 60ch; color: var(--ink-2); font-size: 14px; }
 .invite.is-open { display: flex; flex-direction: column; align-items: stretch; gap: 14px; background: var(--panel); border-color: var(--line); }
 .invite.is-open .form-error, .invite.is-open p.small { margin: 0; }

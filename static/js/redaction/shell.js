@@ -120,3 +120,34 @@ export function LockScreen({ onUnlocked }) {
       <div class="row"><a class="btn btn-ghost" href="/deconnexion" onClick=${clearAll}>Changer d'utilisateur</a><button class="btn btn-primary" type="submit">Déverrouiller</button></div>
     </form></div>`;
 }
+
+/* ---------- signature and stamp not saved yet ---------- */
+const LATER_KEY = 'rx-assets-later';
+const missingAssets = (assets) => (assets ? ['signature', 'stamp'].filter((kind) => !assets[kind]) : []);
+
+/** « votre signature et votre cachet », « votre signature » or « votre cachet ». */
+export function assetsLabel(assets) {
+  const missing = missingAssets(assets);
+  if (!missing.length) return '';
+  return missing.length === 2 ? 'votre signature et votre cachet' : missing[0] === 'signature' ? 'votre signature' : 'votre cachet';
+}
+
+/** Invitation to import the signature and the stamp, until done or put off for a week. */
+export function AssetsInvite({ assets }) {
+  const missing = missingAssets(assets);
+  const [later, setLater] = useState(() => {
+    try { return Number(localStorage.getItem(LATER_KEY) || 0) > Date.now(); } catch (e) { return false; }
+  });
+  if (!missing.length || later) return null;
+  const putOff = () => {
+    try { localStorage.setItem(LATER_KEY, String(Date.now() + 7 * 24 * 3600 * 1000)); } catch (e) { /* private mode */ }
+    setLater(true);
+  };
+  const where = missing.length === 2 ? 'ils figureront' : missing[0] === 'signature' ? 'elle figurera' : 'il figurera';
+  return html`<div class="invite" role="note">
+    <div><b>Ajoutez ${assetsLabel(assets)}</b>
+      <p>Importez une photo prise sur fond blanc : le fond est retiré automatiquement, et ${where} sur vos ordonnances exportées en PDF.</p></div>
+    <div class="invite-actions"><button class="btn btn-ghost" type="button" onClick=${putOff}>Plus tard</button>
+      <a class="btn btn-primary" href="/reglages#signature">Ajouter</a></div>
+  </div>`;
+}
