@@ -3,9 +3,9 @@
  * The server holds every rule; this file keeps the screen in step with it.
  */
 import { html, render, useCallback, useEffect, useMemo, useRef, useState } from '../../vendor/preact-htm-standalone.module.js';
-import { Api } from './api.js';
+import { Api, api } from './api.js';
 import { offlineStore, purgeExpired } from './offline.js';
-import { useSessionLock } from './shell.js';
+import { AssetsInvite, assetsLabel, useSessionLock } from './shell.js';
 import { Sheet } from './sheet.js';
 import { CheckStep, PatientStep, TreatmentStep } from './steps.js';
 import { Icon, frDate, newLineId, useDebouncedEffect } from './ui.js';
@@ -303,6 +303,7 @@ function App({ initial }) {
       <section class="work" aria-label="Rédaction">
         <div class="work-inner">
           <${Stepper} step=${step} setStep=${setStep} count=${editable ? stepCount : 0} blocking=${blocking > 0} issued=${!editable} />
+          ${editable && step === 1 && html`<${AssetsInvite} assets=${initial.assets} />`}
           ${notice && html`<div class="notice" role="status"><span>${typeof notice === 'string' ? notice : notice.text}</span>
             ${notice.action && html`<button class="btn btn-sm" onClick=${() => { notice.action.run(); setNotice(''); }}>${notice.action.label}</button>`}
             <button class="btn btn-sm btn-ghost" onClick=${() => setNotice('')}>Fermer</button></div>`}
@@ -382,13 +383,20 @@ function Gate({ saveState, dirty, check, blocking, unjustified }) {
 
 function IssueDialog({ patientName, pdf, onCancel, onConfirm }) {
   const ref = useRef(null);
-  useEffect(() => { ref.current.showModal(); }, []);
+  const [missing, setMissing] = useState('');
+  useEffect(() => {
+    ref.current.showModal();
+    // Asked afresh: they may have been added in another tab meanwhile.
+    api('/prescriber/assets').then((d) => setMissing(assetsLabel(d.assets))).catch(() => {});
+  }, []);
   // The print window opens inside the click, so that popup blockers let it through.
   const confirm = () => onConfirm(window.open('', '_blank'));
   return html`<dialog ref=${ref} onCancel=${onCancel} aria-labelledby="issue-title">
     <h2 id="issue-title">Émettre l'ordonnance${patientName ? ` de ${patientName}` : ''} ?</h2>
     <p>Elle reçoit un numéro et ne peut plus être modifiée. En cas d'erreur, vous pourrez l'annuler et la corriger.</p>
-    ${pdf && html`<p class="small" style="margin-top:8px">Votre signature et votre cachet enregistrés dans les réglages y sont ajoutés. Dans la fenêtre qui s'ouvre, choisissez « Enregistrer au format PDF ».</p>`}
+    ${pdf && html`<p class="small" style="margin-top:8px">${missing ? 'Dans' : 'Votre signature et votre cachet enregistrés dans les réglages y sont ajoutés. Dans'} la fenêtre qui s'ouvre, choisissez « Enregistrer au format PDF ».</p>`}
+    ${missing && html`<div class="dialog-note" role="note"><${Icon} name="info" />
+      <p>Vous n'avez pas encore enregistré ${missing}. ${pdf ? 'Le PDF portera un cadre vide, à signer à la main.' : 'Utile pour vos ordonnances exportées en PDF.'}${' '}<a href="/reglages#signature" target="_blank" rel="noopener">Les ajouter dans les réglages</a> (nouvel onglet), puis revenez émettre.</p></div>`}
     <div class="row"><button class="btn" onClick=${onCancel}>Continuer la rédaction</button>
       <button class="btn btn-primary" onClick=${confirm}>${pdf ? 'Émettre et exporter' : 'Imprimer et émettre'}</button></div>
   </dialog>`;

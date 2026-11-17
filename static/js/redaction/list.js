@@ -1,12 +1,12 @@
 /** Ordonnances page (ticket 06): drafts and issued ordonnances, filters, pagination. */
 import { html, render, useEffect, useState } from '../../vendor/preact-htm-standalone.module.js';
 import { Api } from './api.js';
-import { AppBar, Footer, OrdonnanceTable, Pager, patientName, useSessionLock } from './shell.js';
+import { AppBar, AssetsInvite, Footer, OrdonnanceTable, Pager, patientName, useSessionLock } from './shell.js';
 import { Icon, useDebouncedEffect } from './ui.js';
 
 const FILTERS = [['', 'Toutes'], ['draft', 'Brouillons'], ['issued', 'Émises'], ['cancelled', 'Annulées']];
 
-function ListPage() {
+function ListPage({ initial }) {
   const params = new URLSearchParams(location.search);
   const [status, setStatus] = useState(params.get('statut') || '');
   const [patient, setPatient] = useState(null);
@@ -38,6 +38,7 @@ function ListPage() {
         <div><h1>Ordonnances</h1><p class="lead">Brouillons et ordonnances émises, les plus récentes d'abord.</p></div>
         ${data && !firstTime && html`<a class="btn btn-primary" href="/ordonnances/nouvelle">Nouvelle ordonnance</a>`}
       </div>
+      <${AssetsInvite} assets=${initial.assets} />
       <div class="toolbar">
         <div class="seg seg-inline" role="group" aria-label="Statut">${FILTERS.map(([value, label]) => html`
           <button key=${value} aria-pressed=${status === value} onClick=${() => { setStatus(value); setPage(1); }}>${label}</button>`)}</div>
@@ -82,4 +83,5 @@ function PatientFilter({ patient, onChange }) {
   </div>`;
 }
 
-render(html`<${ListPage} />`, document.getElementById('app'));
+const initial = JSON.parse(document.getElementById('initial-data').textContent);
+render(html`<${ListPage} initial=${initial} />`, document.getElementById('app'));

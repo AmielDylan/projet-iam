@@ -15,6 +15,7 @@ from app.services.auth import (
 from app.services.interaction import InteractionService
 from app.services.ordonnance import OrdonnanceService, prescriber_identity
 from app.services.patient import PatientService
+from app.services.prescriber_assets import PrescriberAssets
 from app.services.access_log import AccessLog
 from app.services import two_factor
 from app.services.two_factor import TwoFactor
@@ -71,6 +72,7 @@ def prescriptions():
     user = AuthService.current_user()
     return render_template('prescriber_app.html', title='Ordonnances', entry='list.js', initial={
         'prescriber': prescriber_identity(int(user['id'])),
+        'assets': PrescriberAssets.status(int(user['id'])),
     })
 
 
@@ -159,6 +161,7 @@ def write_ordonnance(ordonnance_id):
         'patient': patient,
         'establishments': EstablishmentService.list_for_prescriber(owner_id),
         'prescriber': prescriber_identity(owner_id),
+        'assets': PrescriberAssets.status(owner_id),
         'step': step,
         # Seals the offline copy of the draft on this device (ticket 16); gone at logout.
         'offline_key': session.setdefault('offline_key', secrets.token_urlsafe(32)),
