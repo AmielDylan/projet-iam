@@ -29,12 +29,14 @@ function ListPage() {
   }, [status]);
 
   const filtered = status || patient;
+  // The first-ordonnance invitation has its own button: no second one next to the title.
+  const firstTime = data && data.items.length === 0 && !filtered;
   return html`
     <${AppBar} current="ordonnances" />
     <main class="page">
       <div class="page-head">
         <div><h1>Ordonnances</h1><p class="lead">Brouillons et ordonnances émises, les plus récentes d'abord.</p></div>
-        <a class="btn btn-primary" href="/ordonnances/nouvelle">Nouvelle ordonnance</a>
+        ${data && !firstTime && html`<a class="btn btn-primary" href="/ordonnances/nouvelle">Nouvelle ordonnance</a>`}
       </div>
       <div class="toolbar">
         <div class="seg seg-inline" role="group" aria-label="Statut">${FILTERS.map(([value, label]) => html`

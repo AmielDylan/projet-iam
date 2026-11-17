@@ -5,7 +5,7 @@
  */
 :root {
   /* Fond et surfaces : Cal.com, plateaux blancs sur fond gris (ici gris vert). */
-  --canvas: #ECEFEC;
+  --canvas: #F5F7F5;
   --panel: #FFFFFF;
   --paper: #FFFFFF;
   --field: #F6F7F5;
@@ -417,8 +417,54 @@ a.btn-primary { color: #fff; }
   .est { grid-template-columns: 48px minmax(0, 1fr); }
   .est-actions { grid-column: 1 / -1; }
 }
-.section.pe .section-head { background: var(--pe-bg); color: var(--pe); }
-.result-title { font-size: 18px; margin: 8px 0 0; }
+
+/* Interactions page: result card, one foldable block per interaction, coloured by ANSM level. */
+.lvl-asdec { color: var(--asdec); background: var(--asdec-bg); }
+.lvl-pe { color: var(--pe); background: var(--pe-bg); }
+.lvl-apec { color: var(--apec); background: var(--apec-bg); }
+.ix { display: flex; flex-direction: column; gap: 12px; padding: 20px 22px; background: var(--panel); border: 1px solid var(--line); border-radius: var(--r-panel); }
+.ix-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 4px; }
+.ix-eyebrow { display: block; font-size: 12px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--ink-3); }
+.ix-head h2 { margin: 2px 0 0; font-size: 18px; font-weight: 500; }
+.ix-head h2 b { font-weight: 700; }
+.ix-actions { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.ix-none { margin: 0; color: var(--ink-2); }
+.ix-item { border: 1px solid var(--line); border-radius: var(--r-ctl); overflow: hidden; }
+.ix-item.is-ci { border-color: var(--ci-line); }
+.ix-item.is-asdec { border-color: var(--asdec-line); }
+.ix-item summary { display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto; align-items: center; gap: 12px;
+  padding: 10px 14px; cursor: pointer; list-style: none; font-size: 14px; }
+.ix-item summary::-webkit-details-marker { display: none; }
+.ix-item summary:focus-visible { outline: 2px solid var(--act); outline-offset: -2px; }
+.ix-item.is-ci summary { background: var(--ci-bg); }
+.ix-item.is-asdec summary { background: var(--asdec-bg); }
+.ix-item.is-pe summary { background: var(--pe-bg); }
+.ix-item.is-apec summary { background: var(--apec-bg); }
+.ix-n { font-size: 12px; font-weight: 700; color: var(--ink-3); font-variant-numeric: tabular-nums; }
+.ix-pair { font-weight: 700; color: var(--ink); }
+.ix-pair small { font-size: 13px; font-weight: 400; color: var(--ink-2); }
+.ix-item .lvl { background: var(--panel); }
+.ix-chevron { width: 16px; height: 16px; fill: none; stroke: var(--ink-3); stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; transition: transform .15s ease; }
+.ix-item[open] .ix-chevron { transform: rotate(180deg); }
+.ix-body { display: flex; flex-direction: column; gap: 12px; padding: 14px 14px 16px; border-top: 1px solid var(--line-soft); }
+.ix-body p { margin: 0; max-width: 75ch; color: var(--ink-2); font-size: 14px; white-space: pre-line; }
+.ix-body .ix-label { margin-bottom: 2px; font-size: 12px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--ink-3); }
+.ix-details p:not(.ix-label) { font-size: 13px; }
+.ix-legend { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; padding-top: 4px; font-size: 13px; color: var(--ink-2); }
+.ix-legend > span { font-weight: 600; color: var(--ink-3); }
+.ix-legend ul { display: flex; flex-wrap: wrap; gap: 8px 16px; margin: 0; padding: 0; list-style: none; }
+.ix-legend li { display: inline-flex; align-items: center; gap: 6px; }
+.ix-summary { padding: 14px 16px; border-radius: var(--r-ctl); background: var(--act-tint); }
+.ix-summary p { margin: 0; font-size: 14px; color: var(--ink); max-width: 75ch; }
+.ix-summary .ix-summary-title { margin-bottom: 6px; font-size: 13px; font-weight: 700; color: var(--act); }
+.ix-summary .ix-summary-note { margin-top: 8px; font-size: 12px; color: var(--ink-3); }
+.ix-foot { margin: 0; font-size: 12px; color: var(--ink-3); }
+@media (max-width: 640px) {
+  .ix { padding: 16px; }
+  .ix-item summary { grid-template-columns: auto minmax(0, 1fr) auto; }
+  .ix-item summary .lvl { grid-column: 2; grid-row: 2; justify-self: start; }
+  .ix-chevron { grid-column: 3; grid-row: 1; }
+}
 .med-field .search { height: 40px; padding: 0 12px; border-radius: var(--r-ctl); gap: 10px; }
 .med-field .search input { font-size: 15px; }
 .med-field .search svg { width: 16px; height: 16px; }

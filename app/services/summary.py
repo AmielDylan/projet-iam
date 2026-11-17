@@ -6,7 +6,8 @@ import requests as http
 logger = logging.getLogger(__name__)
 
 _GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions'
-_GROQ_MODEL = 'llama-3.1-8b-instant'
+# Groq retires models: llama-3.1-8b-instant disappeared in 2026. GROQ_MODEL overrides the default.
+_GROQ_MODEL = 'openai/gpt-oss-20b'
 
 
 def generate_interaction_summary(med1: str, med2: str, interactions: list) -> str | None:
@@ -40,7 +41,9 @@ def generate_interaction_summary(med1: str, med2: str, interactions: list) -> st
         "- Pas de titres, pas de tirets, pas de listes, pas de markdown\n"
         "- Commence directement par le risque principal\n"
         "- Termine par ce qu'il faut faire\n"
-        "- Aucune introduction ni formule de politesse"
+        "- Aucune introduction ni formule de politesse\n"
+        "- Si un niveau est une CONTRE-INDICATION, écris que l'association est contre-indiquée "
+        "et ne doit pas être prescrite ; ne propose jamais de la surveiller ou d'ajuster une dose à la place"
     )
 
     try:
@@ -48,9 +51,11 @@ def generate_interaction_summary(med1: str, med2: str, interactions: list) -> st
             _GROQ_URL,
             headers={'Authorization': f'Bearer {api_key}', 'Content-Type': 'application/json'},
             json={
-                'model': _GROQ_MODEL,
+                'model': os.environ.get('GROQ_MODEL') or _GROQ_MODEL,
+                # gpt-oss reasons before answering: keep it short, and leave room for both.
+                'reasoning_effort': 'low',
                 'messages': [{'role': 'user', 'content': prompt}],
-                'max_tokens': 120,
+                'max_tokens': 400,
                 'temperature': 0.1,
             },
             timeout=15,
