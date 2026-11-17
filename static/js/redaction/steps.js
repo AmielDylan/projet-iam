@@ -25,7 +25,7 @@ function useExplanations(alerts, content) {
   return (id) => explained.get(id);
 }
 const Plain = ({ text }) => text && html`<span class="ai-line" title="Explication simplifiée générée par IA, à titre indicatif">
-  <span aria-hidden="true">✦ </span>${text}</span>`;
+  <${Icon} name="spark" />${text}</span>`;
 
 const linesLabel = (content, ids) => ids.map((id) => lineLabel(content, id)).filter(Boolean).join(' + ');
 

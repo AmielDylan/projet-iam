@@ -1,0 +1,176 @@
+<!doctype html>
+{#- Public home page. Direction: .impeccable/surfaces/templates-home-html.md. Photos: static/img/accueil/PROVENANCE.md. -#}
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>DigiRemed · L'ordonnance vérifiée pendant que vous l'écrivez</title>
+  <meta name="description" content="DigiRemed aide les prescripteurs du Bénin et d'Afrique francophone à rédiger des ordonnances vérifiées selon le thésaurus des interactions médicamenteuses de l'ANSM.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible+Next:wght@400;500;600;700&family=Host+Grotesk:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/prescriber.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/home.css') }}">
+</head>
+<body class="home">
+<a class="skip" href="#verifier">Aller à la vérification</a>
+{%- set check_icon %}<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>{% endset %}
+<div class="sheet-page">
+  <header class="hero">
+    <div class="hero-photo"><img src="{{ url_for('static', filename='img/accueil/hero-prescription.jpg') }}" alt="Une prescriptrice rédige une ordonnance face à sa patiente." fetchpriority="high"></div>
+
+    <nav class="pillnav" aria-label="Navigation principale">
+      <a class="brand" href="/">DigiRemed</a>
+      <a href="/" aria-current="page">Accueil</a>
+      <a href="#securite">Sécurité</a>
+      <a href="#ordonnance">L'ordonnance</a>
+      <a href="#pour-qui">Pour qui</a>
+    </nav>
+
+    <div class="notch-top">
+      {% if user and user.role == 'admin' %}
+        <a class="btn-mint" href="/admin">Administration</a>
+      {% elif user %}
+        <a class="btn-mint" href="/ordonnances">Mes ordonnances</a>
+      {% else %}
+        <a class="link-quiet" href="/connexion">Connexion</a>
+        <a class="btn-mint" href="/inscription">Demander un accès</a>
+      {% endif %}
+    </div>
+
+    <p class="lead-on-photo">Pour les médecins, dentistes, sages-femmes et infirmiers du Bénin et d'Afrique francophone.</p>
+
+    <div class="notch-title"><h1>L'ordonnance vérifiée pendant que vous l'écrivez</h1></div>
+    {% if not user %}<p class="mobile-login">Déjà un compte ? <a href="/connexion">Connexion</a></p>{% endif %}
+
+    <form class="verify-card" id="verifier" action="/interactions" method="get" novalidate>
+      <h2>Vérifier une interaction</h2>
+      <p>Saisissez deux médicaments. La réponse vient du thésaurus de l'ANSM.</p>
+      <label class="hfield"><span>Premier médicament</span>
+        <input name="med1" autocomplete="off" placeholder="Nom, substance ou classe" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="suggest-med1"></label>
+      <label class="hfield"><span>Second médicament</span>
+        <input name="med2" autocomplete="off" placeholder="Nom, substance ou classe" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="suggest-med2"></label>
+      <p class="checker-error" role="alert" hidden>Indiquez les deux médicaments.</p>
+      <div class="checker-foot">
+        <small>Une aide à la décision. Elle ne remplace pas votre jugement.</small>
+        <button class="btn-check" type="submit">Vérifier<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+      </div>
+    </form>
+  </header>
+
+  <main>
+    <section class="mint-panel safety" id="securite" aria-labelledby="securite-titre">
+      <div class="safety-side">
+        <div class="block-head">
+          <h2 id="securite-titre">Des résultats sûrs, tirés du thésaurus de l'ANSM</h2>
+          <p>Chaque médicament que vous ajoutez est comparé aux autres lignes de l'ordonnance, pendant que vous l'écrivez.</p>
+        </div>
+        <div>
+          <p class="big-number">22&#8239;705</p>
+          <p>médicaments dans le catalogue, à retrouver par leur nom ou leur DCI.</p>
+        </div>
+      </div>
+      <ul class="points">
+        <li><span class="lvl lvl-ci">CI</span><div><h3>Une contre-indication bloque l'ordonnance</h3>
+          <p>Vous devez retirer ou remplacer un médicament. Aucune exception n'est possible.</p></div></li>
+        <li><span class="lvl lvl-asdec">ASDEC</span><div><h3>Une association déconseillée demande un motif écrit</h3>
+          <p>C'est aussi le cas d'un doublon de DCI ou d'une allergie déclarée. Le motif reste joint à l'ordonnance.</p></div></li>
+        <li><span class="lvl lvl-pe">PE</span><div><h3>Les précautions s'affichent sous la ligne concernée</h3>
+          <p>Le risque, la conduite à tenir et une explication en mots simples.</p></div></li>
+        <li><span class="lvl lvl-info">Limites</span><div><h3>Ce qui n'est pas encore vérifié est indiqué</h3>
+          <p>Grossesse, fonction rénale, doses : la liste accompagne chaque vérification.</p></div></li>
+      </ul>
+    </section>
+
+    <section class="specimen" id="ordonnance" aria-labelledby="ordonnance-titre">
+      <div class="paper-stage">
+        <figure class="paper" role="img" aria-label="Illustration d'une ordonnance DigiRemed, exemple fictif, avec quatre repères numérotés.">
+          <span class="pin pin-1" aria-hidden="true">1</span><span class="pin pin-2" aria-hidden="true">2</span>
+          <span class="pin pin-3" aria-hidden="true">3</span><span class="pin pin-4" aria-hidden="true">4</span>
+          <div class="paper-head" aria-hidden="true">
+            <div><b>Dr Awa Mensah</b><span>Médecin généraliste</span><span>N° d'ordre : BJ-2147</span></div>
+            <div class="right"><span class="logo"></span><b>Cabinet Les Cocotiers</b><span>Haie Vive, Cotonou</span></div>
+          </div>
+          <div class="paper-meta" aria-hidden="true"><span>Ordonnance n° <b>8GTX-2026-000012</b></span><span>Le 12/11/2026</span></div>
+          <div class="paper-patient" aria-hidden="true"><small>Patient</small><b>M. Codjo Ahouansou</b><span>55 ans · Masculin · 74 kg</span></div>
+          <div class="paper-lines" aria-hidden="true"><small>Prescription</small>
+            <div class="paper-line"><b>1. Amoxicilline 500 mg, gélule <i>(amoxicilline)</i></b><span>1 gélule matin et soir, pendant 7 jours</span></div>
+            <div class="paper-line"><b>2. Paracétamol 1 g, comprimé <i>(paracétamol)</i></b><span>1 comprimé si douleur, 3 par jour au maximum</span></div>
+            <div class="paper-line"><b>3. Oméprazole 20 mg, gélule <i>(oméprazole)</i></b><span>1 gélule le matin, à jeun</span></div>
+          </div>
+          <div class="paper-note" aria-hidden="true"><small>Recommandations</small><span>Prendre l'amoxicilline au milieu du repas.</span></div>
+          <div class="paper-sign" aria-hidden="true">
+            <div class="box"><span class="stamp"></span><svg viewBox="0 0 74 32"><path d="M2 22c6-14 10-16 12-8s-2 12 3 9 8-16 12-14-1 15 4 13 9-10 13-9 3 7 8 5 9-6 16-8"/></svg></div>
+            <b>Dr Awa Mensah</b>
+          </div>
+          <div class="paper-foot" aria-hidden="true"><span>N° 8GTX-2026-000012</span><span>Émise le 12/11/2026</span></div>
+        </figure>
+        <span class="specimen-note">Exemple fictif</span>
+      </div>
+      <div>
+        <div class="block-head">
+          <h2 id="ordonnance-titre">À quoi ressemble votre ordonnance</h2>
+          <p>Elle s'imprime en A5 ou en A4, ou s'exporte en PDF. Ce que vous voyez à l'écran est ce qui sera imprimé.</p>
+        </div>
+        <ol class="legend">
+          <li><div><b>Un numéro unique</b><span>Attribué à l'émission. L'ordonnance ne peut plus être modifiée ensuite.</span></div></li>
+          <li><div><b>Le patient</b><span>Avec son âge, et son poids quand il est nécessaire.</span></div></li>
+          <li><div><b>Les médicaments et leur DCI</b><span>Chaque ligne a été vérifiée avec les autres avant l'émission.</span></div></li>
+          <li><div><b>Votre signature et votre cachet</b><span>Ajoutés automatiquement à l'export PDF.</span></div></li>
+        </ol>
+      </div>
+    </section>
+
+    <section class="who" id="pour-qui" aria-labelledby="qui-titre">
+      <div class="who-photo"><img src="{{ url_for('static', filename='img/accueil/equipe-tablette.jpg') }}" alt="Une médecin en blouse blanche, stéthoscope autour du cou, penchée sur son travail." loading="lazy"></div>
+      <div class="who-card">
+        <h2 id="qui-titre">Pour les professionnels qui prescrivent</h2>
+        <ul>
+          <li>{{ check_icon }}Médecins</li>
+          <li>{{ check_icon }}Chirurgiens-dentistes</li>
+          <li>{{ check_icon }}Sages-femmes</li>
+          <li>{{ check_icon }}Infirmiers</li>
+        </ul>
+        <p class="note">Chaque compte est ouvert après vérification d'une pièce justificative. Les pharmaciens peuvent rejoindre une liste d'attente : une offre pour les officines est prévue.</p>
+        <span class="ghost-number" aria-hidden="true">4</span>
+      </div>
+    </section>
+
+    <section class="privacy" aria-labelledby="conf-titre">
+      <div class="privacy-text">
+        <div class="block-head"><h2 id="conf-titre">Les données de vos patients sont protégées</h2></div>
+        <ul>
+          <li>{{ check_icon }}<span>Les informations des patients sont chiffrées dans la base.</span></li>
+          <li>{{ check_icon }}<span>Vous seul voyez vos patients et vos ordonnances.</span></li>
+          <li>{{ check_icon }}<span>Après dix minutes sans activité, la session se verrouille.</span></li>
+          <li>{{ check_icon }}<span>Pendant une coupure réseau, le brouillon reste sur votre appareil, chiffré.</span></li>
+        </ul>
+      </div>
+      <div class="privacy-photo"><img src="{{ url_for('static', filename='img/accueil/medecin-sourire-tablette.jpg') }}" alt="Une médecin en blouse blanche consulte une tablette en souriant." loading="lazy"></div>
+    </section>
+
+    <section class="closing" aria-labelledby="fin-titre">
+      <div>
+        <h2 id="fin-titre">Rédigez votre prochaine ordonnance avec DigiRemed</h2>
+        <p>Envoyez votre demande avec une pièce justificative. Après vérification, vous recevez votre mot de passe par email.</p>
+        <div class="actions">
+          {% if user %}<a class="btn-dark" href="{{ '/admin' if user.role == 'admin' else '/ordonnances' }}">Ouvrir mon espace<span class="arrow-round" aria-hidden="true"><svg class="ico" viewBox="0 0 24 24"><path d="M7 17 17 7M9 7h8v8"/></svg></span></a>
+          {% else %}<a class="btn-dark" href="/inscription">Demander un accès<span class="arrow-round" aria-hidden="true"><svg class="ico" viewBox="0 0 24 24"><path d="M7 17 17 7M9 7h8v8"/></svg></span></a><a class="link-quiet" href="/connexion">J'ai déjà un compte</a>{% endif %}
+        </div>
+      </div>
+      <a class="to-top" href="#">Haut<br>de page</a>
+    </section>
+  </main>
+
+  <footer class="home-foot">
+    <div class="about"><strong>DigiRemed</strong>
+      <p>DigiRemed vous aide à prescrire. L'analyse suit le thésaurus des interactions médicamenteuses de l'ANSM et ne remplace pas votre jugement.</p></div>
+    <nav aria-labelledby="pied-utiliser"><h2 id="pied-utiliser">Utiliser</h2>
+      <ul><li><a href="#verifier">Vérifier une interaction</a></li><li><a href="/connexion">Connexion</a></li><li><a href="/inscription">Demander un accès</a></li></ul></nav>
+    <nav aria-labelledby="pied-decouvrir"><h2 id="pied-decouvrir">Découvrir</h2>
+      <ul><li><a href="#securite">Sécurité</a></li><li><a href="#ordonnance">L'ordonnance</a></li><li><a href="#pour-qui">Pour qui</a></li></ul></nav>
+  </footer>
+</div>
+<script src="{{ url_for('static', filename='js/home-page.js') }}" defer></script>
+</body>
+</html>

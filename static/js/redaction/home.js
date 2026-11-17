@@ -86,9 +86,11 @@ function Home({ initial }) {
   const prescriber = initial.user && initial.user.role === 'prescriber';
   return html`
     ${prescriber ? html`<${AppBar} current="interactions" />` : html`<header class="appbar"><div class="appbar-inner">
-      <a class="brand" href="/">DigiRemed</a><span class="spacer"></span>
-      ${initial.user ? html`<a class="btn btn-primary btn-sm" href=${initial.user.role === 'admin' ? '/admin' : '/ordonnances'}>${initial.user.role === 'admin' ? 'Administration' : 'Mes ordonnances'}</a>`
-        : html`<a class="btn btn-ghost btn-sm" href="/inscription">Demander un accès</a><a class="btn btn-primary btn-sm" href="/connexion">Connexion</a>`}
+      <a class="brand" href="/">DigiRemed</a>
+      <nav class="appnav" aria-label="Navigation principale"><a href="/">Accueil</a><a href="/interactions" aria-current="page">Interactions</a></nav>
+      <span class="spacer"></span>
+      ${initial.user ? html`<a class="btn-mint btn-mint-sm" href=${initial.user.role === 'admin' ? '/admin' : '/ordonnances'}>${initial.user.role === 'admin' ? 'Administration' : 'Mes ordonnances'}</a>`
+        : html`<a class="link-quiet" href="/connexion">Connexion</a><a class="btn-mint btn-mint-sm" href="/inscription">Demander un accès</a>`}
     </div></header>`}
     <main class="page">
       <h1>Interactions entre deux médicaments</h1>
@@ -114,8 +116,7 @@ function Result({ result }) {
   const present = LEVELS.filter((level) => items.some((it) => levelOf(it.niveau) === level));
   return html`<section class="ix" aria-live="polite">
     <header class="ix-head">
-      <div><span class="ix-eyebrow">Interaction médicamenteuse</span>
-        <h2>entre <b>${med1}</b> et <b>${med2}</b></h2></div>
+      <h2>Interaction entre <b>${med1}</b> et <b>${med2}</b></h2>
       <div class="ix-actions">
         ${present.map((level) => html`<span class=${`lvl lvl-${level.key}`} key=${level.key} title=${level.title}>${level.tag}</span>`)}
         <${ShareButton} med1=${result.med_1} med2=${result.med_2} />
@@ -157,7 +158,7 @@ function Summary({ result, items }) {
   }, [result]);
   if (state.status === 'none') return null;
   return html`<div class="ix-summary">
-    <p class="ix-summary-title"><span aria-hidden="true">✦</span> Résumé</p>
+    <p class="ix-summary-title"><${Icon} name="spark" />Résumé</p>
     ${state.status === 'loading' ? html`<p class="muted">Résumé en cours de génération…</p>` : html`
       <p>${state.text}</p>
       <p class="ix-summary-note">Résumé généré par intelligence artificielle à titre indicatif. Il ne remplace pas la lecture du thésaurus ni l'avis d'un professionnel de santé.</p>`}

@@ -1,0 +1,732 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-17T23:22:49+00:00",
+  "title": "Design System: DigiRemed",
+  "extensions": {
+    "colorMeta": {
+      "ground": {
+        "role": "neutral",
+        "displayName": "Vert d'eau du sol",
+        "canonical": "#E6EEEA",
+        "tonalRamp": [
+          "#222B26",
+          "#3B4F45",
+          "#537463",
+          "#6B9A82",
+          "#91B0A1",
+          "#B6C8BF",
+          "#D7DFDB",
+          "#F1F3F2"
+        ]
+      },
+      "canvas": {
+        "role": "neutral",
+        "displayName": "Vert d'eau de l'atelier",
+        "canonical": "#F0F5F2",
+        "tonalRamp": [
+          "#222B25",
+          "#3B4F43",
+          "#527560",
+          "#699B7D",
+          "#90B19D",
+          "#B6C8BD",
+          "#D7E0DA",
+          "#F1F4F2"
+        ]
+      },
+      "mint": {
+        "role": "neutral",
+        "displayName": "Vert d'eau des panneaux",
+        "canonical": "#EEF4F1",
+        "tonalRamp": [
+          "#212B26",
+          "#3A5045",
+          "#517663",
+          "#689D82",
+          "#8FB2A1",
+          "#B5C9BF",
+          "#D7E0DB",
+          "#F1F4F2"
+        ]
+      },
+      "mint-2": {
+        "role": "neutral",
+        "displayName": "Menthe soutenue",
+        "canonical": "#DCEBE3",
+        "tonalRamp": [
+          "#202D26",
+          "#375344",
+          "#4C7B62",
+          "#60A480",
+          "#8BB79F",
+          "#B3CCBE",
+          "#D5E1DB",
+          "#F0F4F2"
+        ]
+      },
+      "mint-pill-end": {
+        "role": "secondary",
+        "displayName": "Menthe de pilule",
+        "canonical": "#CFE7DA",
+        "tonalRamp": [
+          "#1E2E26",
+          "#345643",
+          "#468161",
+          "#59AB7F",
+          "#86BC9E",
+          "#B0CFBE",
+          "#D4E2DB",
+          "#F0F4F2"
+        ]
+      },
+      "panel": {
+        "role": "neutral",
+        "displayName": "Blanc feuille",
+        "canonical": "#FFFFFF",
+        "tonalRamp": [
+          "#262626",
+          "#454545",
+          "#636363",
+          "#828282",
+          "#A1A1A1",
+          "#BFBFBF",
+          "#DBDBDB",
+          "#F2F2F2"
+        ]
+      },
+      "field": {
+        "role": "neutral",
+        "displayName": "Champ teinté",
+        "canonical": "#F1F6F3",
+        "tonalRamp": [
+          "#212B25",
+          "#3A5043",
+          "#507660",
+          "#679D7D",
+          "#8FB29D",
+          "#B5C9BD",
+          "#D7E0DA",
+          "#F1F4F2"
+        ]
+      },
+      "rule": {
+        "role": "neutral",
+        "displayName": "Filet sur vert d'eau",
+        "canonical": "#D9E3DE",
+        "tonalRamp": [
+          "#232A26",
+          "#3D4D45",
+          "#567163",
+          "#6F9582",
+          "#94ADA1",
+          "#B8C6BF",
+          "#D8DFDB",
+          "#F1F3F2"
+        ]
+      },
+      "line": {
+        "role": "neutral",
+        "displayName": "Filet de contrôle",
+        "canonical": "#D6DBD7",
+        "tonalRamp": [
+          "#252825",
+          "#424843",
+          "#5E6960",
+          "#7A8A7D",
+          "#9BA69D",
+          "#BCC2BD",
+          "#DADDDA",
+          "#F2F3F2"
+        ]
+      },
+      "line-soft": {
+        "role": "neutral",
+        "displayName": "Filet intérieur",
+        "canonical": "#E6E9E6",
+        "tonalRamp": [
+          "#252825",
+          "#424842",
+          "#5E695E",
+          "#7A8A7A",
+          "#9BA69B",
+          "#BCC2BC",
+          "#DADDDA",
+          "#F2F3F2"
+        ]
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "Encre",
+        "canonical": "#15191E",
+        "tonalRamp": [
+          "#22262A",
+          "#3C444E",
+          "#546273",
+          "#6C8098",
+          "#929FAF",
+          "#B7BEC7",
+          "#D7DBDF",
+          "#F1F2F3"
+        ]
+      },
+      "ink-2": {
+        "role": "neutral",
+        "displayName": "Encre seconde",
+        "canonical": "#4E5761",
+        "tonalRamp": [
+          "#242629",
+          "#3F454A",
+          "#5A636D",
+          "#75818F",
+          "#98A0A9",
+          "#BABFC4",
+          "#D9DBDE",
+          "#F2F2F3"
+        ]
+      },
+      "ink-3": {
+        "role": "neutral",
+        "displayName": "Encre tierce",
+        "canonical": "#5B646C",
+        "tonalRamp": [
+          "#242628",
+          "#404549",
+          "#5C646B",
+          "#77838D",
+          "#9AA1A8",
+          "#BBBFC3",
+          "#D9DBDD",
+          "#F2F2F3"
+        ]
+      },
+      "placeholder": {
+        "role": "neutral",
+        "displayName": "Indication",
+        "canonical": "#5F6A72",
+        "tonalRamp": [
+          "#242728",
+          "#40464A",
+          "#5C656B",
+          "#77848D",
+          "#99A2A8",
+          "#BBC0C3",
+          "#D9DCDD",
+          "#F2F2F3"
+        ]
+      },
+      "act": {
+        "role": "primary",
+        "displayName": "Vert pharmacie",
+        "canonical": "#0B7A55",
+        "tonalRamp": [
+          "#133A2D",
+          "#1A7053",
+          "#1AAC7C",
+          "#1BE9A4",
+          "#5DE4B7",
+          "#99E6CC",
+          "#C9EDE1",
+          "#EDF8F4"
+        ]
+      },
+      "act-hover": {
+        "role": "primary",
+        "displayName": "Vert pharmacie profond",
+        "canonical": "#08603F",
+        "tonalRamp": [
+          "#123A2B",
+          "#197050",
+          "#19AD76",
+          "#19EB9C",
+          "#5CE5B2",
+          "#98E6C9",
+          "#C9EEE0",
+          "#EDF8F4"
+        ]
+      },
+      "act-tint": {
+        "role": "primary",
+        "displayName": "Teinte verte 8 %",
+        "canonical": "rgba(11, 122, 85, .08)"
+      },
+      "act-tint-2": {
+        "role": "primary",
+        "displayName": "Teinte verte 16 %",
+        "canonical": "rgba(11, 122, 85, .16)"
+      },
+      "ci": {
+        "role": "tertiary",
+        "displayName": "Rouge contre-indication",
+        "canonical": "#B42318",
+        "tonalRamp": [
+          "#381714",
+          "#6C231E",
+          "#A62A21",
+          "#E13124",
+          "#DE6C63",
+          "#E3A19C",
+          "#ECCDCB",
+          "#F7EEED"
+        ]
+      },
+      "ci-bg": {
+        "role": "tertiary",
+        "displayName": "Fond CI",
+        "canonical": "#FCEBE9",
+        "tonalRamp": [
+          "#381814",
+          "#6C261E",
+          "#A62F21",
+          "#E03824",
+          "#DE7063",
+          "#E2A49C",
+          "#ECCECB",
+          "#F7EEED"
+        ]
+      },
+      "ci-line": {
+        "role": "tertiary",
+        "displayName": "Bord CI",
+        "canonical": "#F2C4BF",
+        "tonalRamp": [
+          "#361A17",
+          "#672923",
+          "#9D352A",
+          "#D44030",
+          "#D6766B",
+          "#DEA7A1",
+          "#EAD0CD",
+          "#F7EFEE"
+        ]
+      },
+      "asdec": {
+        "role": "tertiary",
+        "displayName": "Orange déconseillé",
+        "canonical": "#B54708",
+        "tonalRamp": [
+          "#3C2011",
+          "#743816",
+          "#B34E13",
+          "#F36311",
+          "#EB8D57",
+          "#EAB495",
+          "#EFD6C8",
+          "#F8F1EC"
+        ]
+      },
+      "asdec-bg": {
+        "role": "tertiary",
+        "displayName": "Fond ASDEC",
+        "canonical": "#FDF0E3",
+        "tonalRamp": [
+          "#3B2612",
+          "#714518",
+          "#AF6318",
+          "#ED8217",
+          "#E7A15B",
+          "#E7BF97",
+          "#EEDBC9",
+          "#F8F2ED"
+        ]
+      },
+      "asdec-line": {
+        "role": "tertiary",
+        "displayName": "Bord ASDEC",
+        "canonical": "#F3D2B0",
+        "tonalRamp": [
+          "#382715",
+          "#6B451F",
+          "#A46423",
+          "#DD8327",
+          "#DCA265",
+          "#E1C09D",
+          "#EBDCCB",
+          "#F7F2EE"
+        ]
+      },
+      "pe": {
+        "role": "tertiary",
+        "displayName": "Ocre précaution",
+        "canonical": "#8A6A00",
+        "tonalRamp": [
+          "#3E330F",
+          "#786011",
+          "#BB920C",
+          "#FEC406",
+          "#F2CC50",
+          "#EDD891",
+          "#F1E7C6",
+          "#F9F6EC"
+        ]
+      },
+      "pe-bg": {
+        "role": "tertiary",
+        "displayName": "Fond PE",
+        "canonical": "#FBF4DC",
+        "tonalRamp": [
+          "#393114",
+          "#6E5B1C",
+          "#A98A1E",
+          "#E4B820",
+          "#E1C460",
+          "#E4D39B",
+          "#ECE5CA",
+          "#F7F5ED"
+        ]
+      },
+      "apec": {
+        "role": "tertiary",
+        "displayName": "Gris à prendre en compte",
+        "canonical": "#4E5761",
+        "tonalRamp": [
+          "#242629",
+          "#3F454A",
+          "#5A636D",
+          "#75818F",
+          "#98A0A9",
+          "#BABFC4",
+          "#D9DBDE",
+          "#F2F2F3"
+        ]
+      },
+      "apec-bg": {
+        "role": "tertiary",
+        "displayName": "Fond APEC",
+        "canonical": "#EEF0F1",
+        "tonalRamp": [
+          "#242729",
+          "#40474A",
+          "#5B666C",
+          "#76868E",
+          "#99A3A8",
+          "#BBC1C4",
+          "#D9DCDD",
+          "#F2F2F3"
+        ]
+      },
+      "rx-ink": {
+        "role": "neutral",
+        "displayName": "Encre de la feuille imprimée",
+        "canonical": "#111111",
+        "tonalRamp": [
+          "#262626",
+          "#454545",
+          "#636363",
+          "#828282",
+          "#A1A1A1",
+          "#BFBFBF",
+          "#DBDBDB",
+          "#F2F2F2"
+        ]
+      },
+      "rx-muted": {
+        "role": "neutral",
+        "displayName": "Gris de la feuille imprimée",
+        "canonical": "#4a4f55",
+        "tonalRamp": [
+          "#252628",
+          "#414548",
+          "#5D6369",
+          "#7A818B",
+          "#9BA0A6",
+          "#BCBFC2",
+          "#DADBDD",
+          "#F2F2F3"
+        ]
+      },
+      "rx-soft": {
+        "role": "neutral",
+        "displayName": "Fond patient de la feuille",
+        "canonical": "#f1f3f1",
+        "tonalRamp": [
+          "#242824",
+          "#414941",
+          "#5D6A5D",
+          "#798C79",
+          "#9AA79A",
+          "#BCC3BC",
+          "#DADDDA",
+          "#F2F3F2"
+        ]
+      },
+      "rx-rule": {
+        "role": "neutral",
+        "displayName": "Pointillé de la feuille",
+        "canonical": "#b9bfbb",
+        "tonalRamp": [
+          "#252726",
+          "#434744",
+          "#606762",
+          "#7D8880",
+          "#9DA49F",
+          "#BDC1BF",
+          "#DADCDB",
+          "#F2F3F2"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display",
+        "purpose": "Titre de l'accueil, dans l'encoche blanche en bas à gauche de la photo."
+      },
+      "numeral": {
+        "displayName": "Chiffre de preuve",
+        "purpose": "Le chiffre unique de la section sécurité (22 705)."
+      },
+      "headline": {
+        "displayName": "Titre de section",
+        "purpose": "Titres de section de l'accueil et du panneau de connexion."
+      },
+      "title": {
+        "displayName": "Titre de carte",
+        "purpose": "Carte Vérifier et résultat d'interaction."
+      },
+      "title-workspace": {
+        "displayName": "Titre de page",
+        "purpose": "Titres de page de l'espace prescripteur (32px sur la connexion)."
+      },
+      "body-public": {
+        "displayName": "Texte public",
+        "purpose": "Texte courant de l'accueil."
+      },
+      "body": {
+        "displayName": "Texte",
+        "purpose": "Texte de l'espace prescripteur, chiffres tabulaires."
+      },
+      "label": {
+        "displayName": "Étiquette",
+        "purpose": "Étiquettes de champ, en casse normale."
+      },
+      "level": {
+        "displayName": "Sigle de niveau",
+        "purpose": "CI, ASDEC, PE, APEC."
+      }
+    },
+    "shadows": [
+      {
+        "name": "floating-card",
+        "value": "0 18px 40px -12px rgba(14, 33, 26, .30), 0 2px 6px rgba(14, 33, 26, .06)",
+        "purpose": "Carte Vérifier posée sur la photo."
+      },
+      {
+        "name": "pill-on-photo",
+        "value": "0 6px 20px rgba(14, 33, 26, .10)",
+        "purpose": "Navigation en pilule sur la photo."
+      },
+      {
+        "name": "suggest",
+        "value": "0 14px 30px -10px rgba(14, 33, 26, .28)",
+        "purpose": "Liste de suggestions des champs publics."
+      },
+      {
+        "name": "specimen-paper",
+        "value": "0 30px 60px -24px rgba(14, 33, 26, .35), 0 2px 6px rgba(14, 33, 26, .08)",
+        "purpose": "Ordonnance illustrée inclinée de l'accueil."
+      },
+      {
+        "name": "panel-shadow",
+        "value": "0 1px 5px -4px rgba(21, 25, 30, .5), 0 4px 8px rgba(21, 25, 30, .05)",
+        "purpose": "Poignée du bureau de rédaction."
+      },
+      {
+        "name": "sheet-shadow",
+        "value": "0 1px 2px rgba(18, 28, 22, .06), 0 12px 32px rgba(18, 28, 22, .10)",
+        "purpose": "Feuille d'aperçu dans la table de lecture."
+      },
+      {
+        "name": "dialog",
+        "value": "0 24px 64px rgba(0, 0, 0, .22)",
+        "purpose": "Dialogues."
+      },
+      {
+        "name": "focus-halo",
+        "value": "0 0 0 3px rgba(11, 122, 85, .16)",
+        "purpose": "Halo de focus des champs."
+      }
+    ],
+    "motion": [
+      {
+        "name": "ease",
+        "value": "cubic-bezier(.16, 1, .3, 1)",
+        "purpose": "Entrées de l'accueil et pastille Haut de page."
+      },
+      {
+        "name": "state",
+        "value": ".15s ease",
+        "purpose": "Changements de fond et de bord des boutons et champs."
+      },
+      {
+        "name": "hero-settle",
+        "value": "1.4s, scale(1.06) et saturate(.6) vers l'état normal",
+        "purpose": "Arrivée de la photo de l'accueil, si le mouvement n'est pas réduit."
+      },
+      {
+        "name": "card-rise",
+        "value": ".9s, délai .25s, translateY(18px) vers 0",
+        "purpose": "Arrivée de la carte Vérifier, si le mouvement n'est pas réduit."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "phone-s",
+        "value": "480px"
+      },
+      {
+        "name": "phone",
+        "value": "640px"
+      },
+      {
+        "name": "tablet",
+        "value": "720px"
+      },
+      {
+        "name": "auth",
+        "value": "860px"
+      },
+      {
+        "name": "home",
+        "value": "980px"
+      },
+      {
+        "name": "desk",
+        "value": "1180px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Bouton principal",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Vert pharmacie plein, un par écran : Se connecter, Nouvelle ordonnance, Vérifier.",
+      "html": "<button class=\"ds-btn-primary\">Se connecter</button>",
+      "css": ".ds-btn-primary{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:var(--ctl,36px);padding:0 16px;border:1px solid var(--act,#0B7A55);border-radius:999px;background:var(--act,#0B7A55);color:#fff;font:600 14px/1 'Atkinson Hyperlegible Next',system-ui,sans-serif;cursor:pointer;transition:background .15s,border-color .15s}.ds-btn-primary:hover{background:var(--act-hover,#08603F);border-color:var(--act-hover,#08603F)}.ds-btn-primary:focus-visible{outline:2px solid var(--act,#0B7A55);outline-offset:2px}"
+    },
+    {
+      "name": "Bouton Vérifier",
+      "kind": "button",
+      "refersTo": "button-check",
+      "description": "Action principale de la carte Vérifier de l'accueil, 46px, avec flèche.",
+      "html": "<button class=\"ds-btn-check\">Vérifier<svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M5 12h14M13 6l6 6-6 6\"/></svg></button>",
+      "css": ".ds-btn-check{display:inline-flex;align-items:center;gap:8px;height:46px;padding:0 22px;border:0;border-radius:999px;background:var(--act,#0B7A55);color:#fff;font:700 16px/1 'Atkinson Hyperlegible Next',system-ui,sans-serif;cursor:pointer;transition:background .15s ease,transform .1s ease}.ds-btn-check svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}.ds-btn-check:hover{background:var(--act-hover,#08603F)}.ds-btn-check:active{transform:translateY(1px)}.ds-btn-check:focus-visible{outline:2px solid var(--act,#0B7A55);outline-offset:2px}"
+    },
+    {
+      "name": "Pilule blanc-menthe",
+      "kind": "button",
+      "refersTo": "button-mint",
+      "description": "Porte « Demander un accès » (ou Mes ordonnances une fois connecté).",
+      "html": "<a class=\"ds-btn-mint\" href=\"#\">Demander un accès</a>",
+      "css": ".ds-btn-mint{display:inline-flex;align-items:center;gap:10px;padding:14px 26px;border-radius:999px;text-decoration:none;white-space:nowrap;font:700 15px/1 'Atkinson Hyperlegible Next',system-ui,sans-serif;color:var(--ink,#15191E);background:linear-gradient(100deg,#F4F8F6 0%,#CFE7DA 100%);box-shadow:inset 0 0 0 1px rgba(21,25,30,.06);transition:box-shadow .2s ease}.ds-btn-mint:hover{box-shadow:inset 0 0 0 1px rgba(21,25,30,.16),0 6px 16px rgba(14,33,26,.10)}.ds-btn-mint:focus-visible{outline:2px solid var(--act,#0B7A55);outline-offset:2px}"
+    },
+    {
+      "name": "Pilule noire à flèche ronde",
+      "kind": "button",
+      "refersTo": "button-dark",
+      "description": "Action de clôture de l'accueil.",
+      "html": "<a class=\"ds-btn-dark\" href=\"#\">Demander un accès<span class=\"ds-arrow\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M7 17 17 7M9 7h8v8\"/></svg></span></a>",
+      "css": ".ds-btn-dark{display:inline-flex;align-items:center;gap:10px;padding:14px 26px;border-radius:999px;background:var(--ink,#15191E);color:#fff;text-decoration:none;font:700 15px/1 'Atkinson Hyperlegible Next',system-ui,sans-serif}.ds-btn-dark:hover{background:#2A3038}.ds-btn-dark:focus-visible{outline:2px solid var(--act,#0B7A55);outline-offset:2px}.ds-arrow{display:grid;place-items:center;width:28px;height:28px;margin-right:-12px;border-radius:50%;background:#fff;color:var(--ink,#15191E)}.ds-arrow svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}"
+    },
+    {
+      "name": "Bouton discret et lien discret",
+      "kind": "button",
+      "refersTo": "button-ghost",
+      "description": "Actions de second rang : Connexion, Copier le lien, J'ai déjà un compte.",
+      "html": "<a class=\"ds-link-quiet\" href=\"#\">Connexion</a> <button class=\"ds-btn-ghost\">Copier le lien</button>",
+      "css": ".ds-link-quiet{display:inline-flex;align-items:center;text-decoration:none;font:600 15px/1 'Atkinson Hyperlegible Next',system-ui,sans-serif;padding:12px 18px;border-radius:999px;color:var(--ink-2,#4E5761)}.ds-link-quiet:hover{color:var(--ink,#15191E);background:var(--mint,#EEF4F1)}.ds-btn-ghost{display:inline-flex;align-items:center;height:30px;padding:0 12px;border:1px solid transparent;border-radius:999px;background:transparent;color:var(--ink-2,#4E5761);font:600 13px/1 'Atkinson Hyperlegible Next',system-ui,sans-serif;cursor:pointer}.ds-btn-ghost:hover{background:var(--field,#F1F6F3);color:var(--ink,#15191E)}.ds-link-quiet:focus-visible,.ds-btn-ghost:focus-visible{outline:2px solid var(--act,#0B7A55);outline-offset:2px}"
+    },
+    {
+      "name": "Champ public",
+      "kind": "input",
+      "refersTo": "input-public",
+      "description": "Champ en pilule vert d'eau de la carte Vérifier.",
+      "html": "<label class=\"ds-hfield\"><span>Premier médicament</span><input placeholder=\"Nom, substance ou classe\"></label>",
+      "css": ".ds-hfield{display:block;font-family:'Atkinson Hyperlegible Next',system-ui,sans-serif}.ds-hfield>span{display:block;font-size:14px;font-weight:600;color:var(--ink-2,#4E5761);margin-bottom:4px}.ds-hfield input{width:100%;height:46px;padding:0 16px;border:1px solid var(--line,#D6DBD7);border-radius:999px;font:inherit;font-size:16px;color:var(--ink,#15191E);background:var(--mint,#EEF4F1);transition:border-color .15s ease,background .15s ease}.ds-hfield input::placeholder{color:var(--placeholder,#5F6A72)}.ds-hfield input:focus{outline:none;border-color:var(--act,#0B7A55);background:#fff;box-shadow:0 0 0 3px rgba(11,122,85,.16)}"
+    },
+    {
+      "name": "Champ de l'espace prescripteur",
+      "kind": "input",
+      "refersTo": "input-field",
+      "description": "Champ blanc de 40px, rayon 10px, étiquette au-dessus.",
+      "html": "<label class=\"ds-field\">Nom du patient<input placeholder=\"Nom et prénom\"></label>",
+      "css": ".ds-field{display:flex;flex-direction:column;gap:6px;font:600 13px/1.3 'Atkinson Hyperlegible Next',system-ui,sans-serif;color:var(--ink-2,#4E5761)}.ds-field input{height:40px;border:1px solid var(--line,#D6DBD7);border-radius:10px;padding:0 12px;background:#fff;font:400 15px 'Atkinson Hyperlegible Next',system-ui,sans-serif;color:var(--ink,#15191E)}.ds-field input::placeholder{color:var(--placeholder,#5F6A72)}.ds-field input:focus{outline:none;border-color:var(--act,#0B7A55);box-shadow:0 0 0 3px rgba(11,122,85,.16)}"
+    },
+    {
+      "name": "Navigation en pilule",
+      "kind": "nav",
+      "refersTo": "nav-pill",
+      "description": "Pilule blanche sur la photo, page courante en pilule noire.",
+      "html": "<nav class=\"ds-pillnav\"><a class=\"ds-brand\" href=\"#\">DigiRemed</a><a href=\"#\" aria-current=\"page\">Accueil</a><a href=\"#\">Sécurité</a><a href=\"#\">Pour qui</a></nav>",
+      "css": ".ds-pillnav{display:inline-flex;align-items:center;gap:2px;padding:5px;background:#fff;border-radius:999px;box-shadow:0 6px 20px rgba(14,33,26,.10);font-family:'Atkinson Hyperlegible Next',system-ui,sans-serif}.ds-pillnav a{text-decoration:none;padding:9px 16px;border-radius:999px;font-size:15px;font-weight:600;color:var(--ink-2,#4E5761)}.ds-pillnav a:hover{color:var(--ink,#15191E);background:var(--mint,#EEF4F1)}.ds-pillnav a:focus-visible{outline:2px solid var(--act,#0B7A55);outline-offset:2px}.ds-pillnav .ds-brand{color:var(--ink,#15191E);font-family:'Host Grotesk',system-ui,sans-serif;font-size:17px;padding-right:12px}.ds-pillnav .ds-brand:hover{background:none}.ds-pillnav a[aria-current=page]{background:var(--ink,#15191E);color:#fff}"
+    },
+    {
+      "name": "Étiquettes de niveau ANSM",
+      "kind": "chip",
+      "refersTo": "level-ci",
+      "description": "Sigle en texte, couleur du niveau ; seul usage des couleurs ANSM.",
+      "html": "<span class=\"ds-lvl ds-ci\">CI</span> <span class=\"ds-lvl ds-asdec\">ASDEC</span> <span class=\"ds-lvl ds-pe\">PE</span> <span class=\"ds-lvl ds-apec\">APEC</span>",
+      "css": ".ds-lvl{display:inline-flex;align-items:center;height:22px;padding:0 7px;border-radius:5px;font:700 12px/1 'Atkinson Hyperlegible Next',system-ui,sans-serif;letter-spacing:.02em;white-space:nowrap}.ds-ci{color:var(--ci,#B42318);background:var(--ci-bg,#FCEBE9)}.ds-asdec{color:var(--asdec,#B54708);background:var(--asdec-bg,#FDF0E3)}.ds-pe{color:var(--pe,#8A6A00);background:var(--pe-bg,#FBF4DC)}.ds-apec{color:var(--apec,#4E5761);background:var(--apec-bg,#EEF0F1)}"
+    },
+    {
+      "name": "Carte Vérifier",
+      "kind": "card",
+      "refersTo": "verify-card",
+      "description": "Composant signature : la vérification d'interaction posée sur la photo.",
+      "html": "<form class=\"ds-verify\"><h2>Vérifier une interaction</h2><p>Saisissez deux médicaments. La réponse vient du thésaurus de l'ANSM.</p><input placeholder=\"Premier médicament\"><input placeholder=\"Second médicament\"><div class=\"ds-foot\"><small>Une aide à la décision. Elle ne remplace pas votre jugement.</small><button type=\"button\">Vérifier</button></div></form>",
+      "css": ".ds-verify{width:380px;max-width:100%;padding:20px;background:#fff;border-radius:22px;box-shadow:0 18px 40px -12px rgba(14,33,26,.30),0 2px 6px rgba(14,33,26,.06);font-family:'Atkinson Hyperlegible Next',system-ui,sans-serif;color:var(--ink,#15191E)}.ds-verify h2{margin:0 0 4px;font:400 22px/1.2 'Host Grotesk',system-ui,sans-serif;letter-spacing:-.02em}.ds-verify p{margin:0 0 14px;font-size:15px;color:var(--ink-2,#4E5761)}.ds-verify input{display:block;width:100%;height:46px;margin-bottom:10px;padding:0 16px;border:1px solid var(--line,#D6DBD7);border-radius:999px;background:var(--mint,#EEF4F1);font:inherit;font-size:16px}.ds-verify input:focus{outline:none;border-color:var(--act,#0B7A55);background:#fff;box-shadow:0 0 0 3px rgba(11,122,85,.16)}.ds-foot{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:14px;padding-top:14px;border-top:1px solid var(--line-soft,#E6E9E6)}.ds-foot small{font-size:13px;color:var(--ink-3,#5B646C);line-height:1.35}.ds-foot button{height:46px;padding:0 22px;border:0;border-radius:999px;background:var(--act,#0B7A55);color:#fff;font:700 16px/1 inherit;cursor:pointer}.ds-foot button:hover{background:var(--act-hover,#08603F)}"
+    }
+  ],
+  "narrative": {
+    "northStar": "La feuille sur la table de consultation",
+    "overview": "DigiRemed se présente comme une table de travail calme : de grandes feuilles blanches aux coins généreux posées sur un fond vert d'eau pâle, des panneaux intérieurs vert d'eau, une encre presque noire. Le public ne voit pas un site marketing puis un outil ; il voit la consultation elle-même, une grande photo de prescription dans laquelle la vérification d'interaction fonctionne déjà. L'espace prescripteur, la connexion et l'inscription reprennent le même vocabulaire : pilules, titres en Host Grotesk, onglet actif en noir.\n\nLa couleur est un signal, jamais un décor. Un seul vert, le vert pharmacie, porte l'action principale de chaque écran (Vérifier, Se connecter, Nouvelle ordonnance). Les couleurs ANSM n'existent que sur les étiquettes et blocs d'alerte. Tout le reste se joue en vert d'eau, blanc et encre. La densité est double : aérée sur l'accueil public (texte à 17px, panneaux à 40px de marge intérieure), resserrée dans l'espace de rédaction (texte à 15px, contrôles de 36px).\n\nLa feuille d'ordonnance imprimée a son propre système (sheet.css), en millimètres et en points, noir sur blanc, et ne suit pas le langage de l'écran : ce qui s'affiche dans l'aperçu est exactement ce qui s'imprime.\n\nLes photos actuelles sont des photos libres (Unsplash, Pexels) en attente des photos réelles de DigiRemed ; leur source et leur licence sont listées dans `static/img/accueil/PROVENANCE.md`. Chaque photo n'apparaît qu'une fois sur le site.",
+    "keyCharacteristics": [
+      "Feuilles blanches à grands rayons (28 à 32px) sur fond vert d'eau, séparées par une gouttière de 12px.",
+      "Un seul vert plein, réservé au bouton de l'action principale.",
+      "Pilules partout : boutons, champs publics, navigation, onglet actif noir.",
+      "Host Grotesk léger et serré pour les titres, Atkinson Hyperlegible Next pour tout le texte.",
+      "Niveaux ANSM nommés en toutes lettres (CI, ASDEC, PE, APEC), jamais signalés par la seule couleur.",
+      "Feuille d'ordonnance imprimée traitée comme un système à part."
+    ],
+    "rules": [
+      {
+        "name": "La règle du vert unique",
+        "body": "Le vert pharmacie plein ne remplit que le bouton de l'action principale. « Demander un accès » n'est jamais vert : il prend la pilule blanc-menthe, ou la pilule noire en clôture de page.",
+        "section": "colors"
+      },
+      {
+        "name": "La règle des niveaux",
+        "body": "Rouge, orange, ocre et gris n'apparaissent que sur une étiquette ou un bloc de niveau ANSM (ou une erreur, pour le rouge). Chaque étiquette porte son sigle en texte.",
+        "section": "colors"
+      },
+      {
+        "name": "La règle des titres posés",
+        "body": "Les titres Host Grotesk restent en graisse 400 (500 dans l'espace prescripteur, 600 pour la marque) avec un approche négatif ; pas de gras ni de capitales pour faire crier un titre.",
+        "section": "typography"
+      },
+      {
+        "name": "La règle du plat par défaut",
+        "body": "Une feuille ou un panneau au repos n'a pas d'ombre. Seul ce qui flotte (carte sur photo, pilule sur photo, suggestions, dialogue) en reçoit une.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "**Do** poser chaque nouvelle surface comme une feuille blanche à grands rayons (28 à 32px) sur `ground` ou `canvas`, avec une gouttière de 12px entre les feuilles.",
+      "**Do** réserver le vert pharmacie plein (`act`) au bouton de l'action principale, un par écran.",
+      "**Do** donner à « Demander un accès » la pilule blanc-menthe (ou la pilule noire en clôture).",
+      "**Do** marquer l'état actif d'une navigation en pilule noire (`ink`, texte blanc).",
+      "**Do** écrire le sigle ANSM en texte dans chaque étiquette de niveau.",
+      "**Do** accompagner toute analyse d'interaction de la mention d'aide à la décision.",
+      "**Do** tester chaque premier écran sur téléphone : l'action principale doit y tenir.",
+      "**Do** utiliser des icônes SVG au trait (2 à 2.4px, bouts arrondis), coloré en `currentColor` ou en vert pour une coche."
+    ],
+    "donts": [
+      "**Don't** remplir de vert un bouton secondaire, une inscription, un fond ou un décor.",
+      "**Don't** utiliser le rouge, l'orange ou l'ocre ANSM hors d'une alerte de niveau ou d'une erreur.",
+      "**Don't** aligner une rangée de cartes égales sous un titre et un bouton.",
+      "**Don't** répéter une photo sur le site, ni montrer de capture d'interface, de logo de partenaire, de prix ou de témoignage.",
+      "**Don't** porter le titre de l'accueil au-delà de 68px : il masque le sujet de la photo.",
+      "**Don't** ajouter une ombre à une feuille ou un panneau au repos.",
+      "**Don't** appliquer le langage écran (pilules, vert d'eau, Host Grotesk) à la feuille d'ordonnance imprimée."
+    ]
+  }
+}

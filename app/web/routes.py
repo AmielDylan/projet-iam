@@ -59,10 +59,9 @@ def login_destination_for(user: dict, requested_next: str | None = None) -> str:
 
 @web_bp.route('/', methods=['GET', 'POST'])
 def home():
-    """Public page: interactions between two medications (static/js/redaction/home.js)."""
+    """Public home page (templates/home.html), with the interaction check in its first screen."""
     user = AuthService.current_session_user()
-    return render_template('prescriber_app.html', title='Interactions médicamenteuses', entry='home.js',
-                           initial={'user': {'role': user['role']} if user else None})
+    return render_template('home.html', user={'role': user['role']} if user else None)
 
 
 @web_bp.route('/ordonnances')
@@ -96,11 +95,11 @@ def security_page():
 
 
 @web_bp.route('/interactions')
-@require_approved_prescriber
 def interactions():
-    """The simple two-medication check, inside the prescriber workspace."""
+    """The two-medication check: public, and inside the workspace for a signed-in prescriber."""
+    user = AuthService.current_session_user()
     return render_template('prescriber_app.html', title='Interactions médicamenteuses', entry='home.js',
-                           initial={'user': {'role': 'prescriber'}})
+                           initial={'user': {'role': user['role']} if user else None})
 
 
 @web_bp.route('/patients/<int:patient_id>')

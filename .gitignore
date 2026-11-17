@@ -145,3 +145,6 @@ Thumbs.db
 # Node (if any)
 node_modules/
 package-lock.json
+
+# Impeccable review captures (regenerated)
+.impeccable/review/
