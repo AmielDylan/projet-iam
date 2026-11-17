@@ -46,6 +46,15 @@ def generate_interaction_summary(med1: str, med2: str, interactions: list) -> st
         "et ne doit pas être prescrite ; ne propose jamais de la surveiller ou d'ajuster une dose à la place"
     )
 
+    return _ask(prompt, f'{med1} / {med2}')
+
+
+
+def _ask(prompt: str, about: str) -> str | None:
+    """One Groq completion, or None when the key is missing or the call fails."""
+    api_key = os.environ.get('GROQ_API_KEY')
+    if not api_key:
+        return None
     try:
         resp = http.post(
             _GROQ_URL,
@@ -61,7 +70,48 @@ def generate_interaction_summary(med1: str, med2: str, interactions: list) -> st
             timeout=15,
         )
         resp.raise_for_status()
-        return resp.json()['choices'][0]['message']['content'].strip()
+        return resp.json()['choices'][0]['message']['content'].strip() or None
     except Exception:
-        logger.exception("Groq summary failed for %s / %s", med1, med2)
+        logger.exception("Groq call failed for %s", about)
         return None
+
+
+LEVEL_LABELS = {
+    'CI': 'contre-indication',
+    'ASDEC': 'association déconseillée',
+    'PE': "précaution d'emploi",
+    'APEC': 'à prendre en compte',
+}
+# Successful explanations only, so that a failure is retried; the analysis reruns at every keystroke.
+_explanations: dict[tuple[str, ...], str] = {}
+_MAX_CACHED = 2000
+
+
+def explain_interaction(drug_1: str, drug_2: str, level: str, risks: str, conduct: str) -> str | None:
+    """One plain-language sentence on an interaction alert of the ordonnance.
+
+    Only drug names and thesaurus text are sent to Groq, never patient data.
+    """
+    key = (drug_1, drug_2, level, risks, conduct)
+    if key in _explanations:
+        return _explanations[key]
+    level_label = LEVEL_LABELS.get(level, 'interaction')
+    prompt = (
+        f"Explique en une seule phrase courte, en français courant, l'interaction entre {drug_1} et {drug_2}.\n"
+        f"Niveau ANSM : {level_label}.\n"
+        f"Risques : {risks[:300] or 'non précisés'}\n"
+        f"Conduite à tenir : {conduct[:300] or 'non précisée'}\n\n"
+        "Règles strictes :\n"
+        "- Une seule phrase, 30 mots maximum\n"
+        "- Mots simples : remplace le jargon par ce qu'il veut dire (par exemple « saignements » pour « hémorragies »)\n"
+        "- Dis le risque, puis ce qu'il faut faire\n"
+        "- Pas de titre, pas de liste, pas de markdown, pas d'introduction\n"
+        "- Si le niveau est une contre-indication, dis que l'association est contre-indiquée et ne doit pas être "
+        "prescrite ; ne propose jamais de la surveiller ou d'ajuster une dose à la place"
+    )
+    text = _ask(prompt, f'{drug_1} / {drug_2}')
+    if text:
+        if len(_explanations) >= _MAX_CACHED:
+            _explanations.clear()
+        _explanations[key] = text
+    return text

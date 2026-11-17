@@ -49,6 +49,7 @@ export const Api = {
   issue: (id, version) => api(`/ordonnances/${id}/issue`, { method: 'POST', body: { version } }),
   cancelReasons: () => api('/ordonnances/cancel-reasons'),
   cancelAndCorrect: (id, reason) => api(`/ordonnances/${id}/cancel-and-correct`, { method: 'POST', body: { reason } }),
+  explain: (alerts) => api('/prescriptions/explain', { method: 'POST', body: { alerts } }),
   analyze: (lines, patientId, derogations) =>
     api('/prescriptions/analyze', { method: 'POST', body: { lines, patient_id: patientId, derogations } }),
   searchMedications: (q, patientId) =>

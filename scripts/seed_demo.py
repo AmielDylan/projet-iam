@@ -37,6 +37,12 @@ ACCOUNTS = [
          {"title": "Mme", "first_name": "Rosine", "last_name": "Dossou", "birthdate": "20/09/1994", "sex": "F",
           "weight_kg": "68", "weighed_on": "05/11/2026", "pregnancy": "pregnant"},
      ]},
+    # No establishment yet: the prescribing screen invites to create one (first sign-in).
+    {"email": "yao.kpade@demo.local", "password": "Demo-Abomey-2026", "first_name": "Yao", "last_name": "Kpadé",
+     "profession": "Médecin", "order_number": "BJ-4421", "phone": "+229 01 95 00 00 03", "establishment": None,
+     "patients": [
+         {"title": "M.", "first_name": "Codjo", "last_name": "Ahouansou", "birthdate": "02/02/1971", "sex": "M"},
+     ]},
 ]
 
 
@@ -113,7 +119,8 @@ def main() -> int:
                 (user_id, account["first_name"], account["last_name"], account["profession"], account["phone"], account["email"]),
             )
         PrescriberCodes.ensure(user_id)
-        EstablishmentService.upsert(user_id, account["establishment"])
+        if account["establishment"]:
+            EstablishmentService.upsert(user_id, account["establishment"])
         for patient in account["patients"]:
             PatientService.create(user_id, patient)
         print(f"Créé : {account['email']} (code {PrescriberCodes.of(user_id)})")

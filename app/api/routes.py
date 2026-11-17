@@ -474,6 +474,37 @@ def get_medication(medication_id):
     return jsonify({'success': True, 'medication': medication})
 
 
+@api_bp.route('/prescriptions/explain', methods=['POST'])
+def explain_alerts():
+    """One plain-language sentence per interaction alert, written by Groq (drug names and thesaurus text only)."""
+    user, error = current_api_user(required_role='prescriber')
+    if error:
+        return error
+    data = request.get_json(silent=True) or {}
+    alerts = data.get('alerts')
+    if not isinstance(alerts, list):
+        return jsonify({'success': False, 'error': 'Liste des alertes invalide'}), 400
+
+    def text(value, limit):
+        return str(value or '').strip()[:limit]
+
+    asked = []
+    for alert in alerts[:12]:
+        if not isinstance(alert, dict) or not alert.get('id'):
+            continue
+        drugs = [text(d, 120) for d in (alert.get('drugs') or []) if text(d, 120)][:2]
+        if len(drugs) < 2:
+            continue
+        asked.append((text(alert['id'], 40), drugs, text(alert.get('level'), 10),
+                      text(alert.get('risks'), 600), text(alert.get('conduct'), 600)))
+
+    from concurrent.futures import ThreadPoolExecutor
+    from app.services.summary import explain_interaction
+    with ThreadPoolExecutor(max_workers=4) as pool:
+        texts = list(pool.map(lambda a: explain_interaction(a[1][0], a[1][1], a[2], a[3], a[4]), asked))
+    return jsonify({'success': True, 'explanations': {a[0]: t for a, t in zip(asked, texts) if t}})
+
+
 @api_bp.route('/prescriptions/analyze', methods=['POST'])
 def analyze_prescription():
     """Analyze draft lines live: interactions, same substance, allergies, derogations."""
