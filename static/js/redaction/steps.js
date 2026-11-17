@@ -1,12 +1,32 @@
 /** The three steps of the prescribing flow: patient, treatment, verification. */
 import { html, useEffect, useRef, useState } from '../../vendor/preact-htm-standalone.module.js';
-import { Api } from './api.js';
+import { Api, api } from './api.js';
 import { DateInput, Icon, ageLabel, ageYears, alertTag, alertTitle, frDate, kindOf, useDebouncedEffect } from './ui.js';
 
 const lineLabel = (content, id) => {
   const index = content.lines.findIndex((line) => line.line_id === id);
   return index < 0 ? '' : `${index + 1}. ${content.lines[index].name}`;
 };
+// Plain-language sentence per interaction alert (Groq), kept for the session: alert ids are stable.
+const explained = new Map(); // alert id -> text, '' when unavailable, null while asked
+function useExplanations(alerts, content) {
+  const [, redraw] = useState(0);
+  const ids = alerts.map((a) => a.id).join();
+  useEffect(() => {
+    const todo = alerts.filter((a) => a.type === 'interaction' && !explained.has(a.id));
+    if (!todo.length) return;
+    todo.forEach((a) => explained.set(a.id, null));
+    const name = (id) => (content.lines.find((l) => l.line_id === id) || {}).name || '';
+    Api.explain(todo.map((a) => ({ id: a.id, drugs: a.line_ids.map(name), level: a.level,
+      risks: (a.details && a.details.risks) || '', conduct: (a.details && a.details.conduct) || '' })))
+      .then((d) => { todo.forEach((a) => explained.set(a.id, (d.explanations || {})[a.id] || '')); redraw((n) => n + 1); })
+      .catch(() => { todo.forEach((a) => explained.set(a.id, '')); });
+  }, [ids]);
+  return (id) => explained.get(id);
+}
+const Plain = ({ text }) => text && html`<span class="ai-line" title="Explication simplifiée générée par IA, à titre indicatif">
+  <span aria-hidden="true">✦ </span>${text}</span>`;
+
 const linesLabel = (content, ids) => ids.map((id) => lineLabel(content, id)).filter(Boolean).join(' + ');
 
 /* ================================ Patient ================================ */
@@ -43,7 +63,7 @@ function PatientSearch({ onPick, onNew }) {
 }
 
 export function PatientStep({ content, patient, form, onField, onPick, onNew, onChange, saving, error,
-  establishments, onContentField }) {
+  establishments, onContentField, onEstablishmentCreated }) {
   if (!content.patient_id && !form) {
     return html`<h1>Patient</h1>
       <p class="lead">Retrouvez le patient par son nom ou sa date de naissance, ou créez-le.</p>
@@ -83,15 +103,54 @@ export function PatientStep({ content, patient, form, onField, onPick, onNew, on
       <span class="field c2 save-state" aria-live="polite">${saving ? 'Enregistrement…' : patient ? 'Patient enregistré' : ''}</span>
     </div>
     <p class="group-title">En-tête</p>
+    ${establishments.length === 0 ? html`<${FirstEstablishment} onCreated=${onEstablishmentCreated} />` : ''}
     <div class="grid">
-      <label class="field c4">Établissement
+      ${establishments.length > 0 && html`<label class="field c4">Établissement
         <select value=${content.establishment_id || ''} onChange=${(e) => onContentField('establishment_id', e.target.value ? Number(e.target.value) : null)}>
           <option value="">Choisir…</option>
           ${establishments.map((est) => html`<option key=${est.id} value=${est.id}>${est.name} · ${est.paper_format || 'A5'}</option>`)}
-        </select><span class="hint"><a href="/etablissements">Gérer mes établissements</a></span></label>
+        </select><span class="hint"><a href="/etablissements">Gérer mes établissements</a></span></label>`}
       <label class="field c2">Date de prescription<${DateInput} value=${content.prescribed_on ? frDate(content.prescribed_on) : ''}
         placeholder="Aujourd'hui" onDate=${(iso) => onContentField('prescribed_on', iso)} /></label>
     </div>`;
+}
+
+/** No establishment yet: create the first one here, without leaving the draft. */
+function FirstEstablishment({ onCreated }) {
+  const [form, setForm] = useState(null);
+  const [error, setError] = useState('');
+  const [busy, setBusy] = useState(false);
+  if (!form) {
+    return html`<div class="invite">
+      <div><b>Créez d'abord votre établissement</b>
+        <p>L'en-tête de l'ordonnance reprend le nom, l'adresse et le téléphone de votre lieu d'exercice. Une fois créé, il sert pour toutes vos ordonnances.</p></div>
+      <button class="btn btn-primary" type="button" onClick=${() => setForm({ name: '', phone: '', address: '', paper_format: 'A5' })}>Créer un établissement</button>
+    </div>`;
+  }
+  const set = (name) => (e) => { setForm({ ...form, [name]: e.target.value }); setError(''); };
+  const save = async () => {
+    if (!form.name.trim()) { setError("Indiquez le nom de l'établissement."); return; }
+    setBusy(true); setError('');
+    try { const d = await api('/prescriber/establishments', { method: 'POST', body: form }); onCreated(d.establishment); }
+    catch (err) { setError(err.message); }
+    finally { setBusy(false); }
+  };
+  return html`<div class="invite is-open">
+    <b>Nouvel établissement</b>
+    <div class="grid">
+      <label class="field c4">Nom<input value=${form.name} placeholder="Cabinet médical, clinique, centre de santé…" onInput=${set('name')} /></label>
+      <label class="field c2">Téléphone<input value=${form.phone} onInput=${set('phone')} /></label>
+      <label class="field c4">Adresse<input value=${form.address} onInput=${set('address')} /></label>
+      <div class="field c2">Format du papier<div class="seg seg-inline" role="group" aria-label="Format du papier">${['A5', 'A4'].map((f) => html`
+        <button type="button" key=${f} aria-pressed=${form.paper_format === f} onClick=${() => setForm({ ...form, paper_format: f })}>${f}</button>`)}</div></div>
+    </div>
+    ${error && html`<p class="form-error" role="alert">${error}</p>`}
+    <div class="row-end">
+      <button class="btn btn-ghost" type="button" onClick=${() => { setForm(null); setError(''); }}>Annuler</button>
+      <button class="btn btn-primary" type="button" aria-disabled=${busy} onClick=${save}>${busy ? 'Enregistrement…' : "Créer et l'utiliser"}</button>
+    </div>
+    <p class="muted small">Logo, identifiants et mentions se complètent ensuite dans <a href="/etablissements">Établissements</a>.</p>
+  </div>`;
 }
 
 /* =============================== Traitement =============================== */
@@ -179,6 +238,7 @@ function Composer({ patientId, onAdd }) {
 export function TreatmentStep({ content, analysis, analysisError, patientId, onAdd, onLineField, onRemoveLine,
   onContentField, focusLineId, goStep }) {
   const alerts = (analysis && analysis.alerts) || [];
+  const plain = useExplanations(alerts, content);
   const free = new Set(((analysis && analysis.scope.free_text_lines) || []));
   const focusRef = useRef(null);
   useEffect(() => { focusRef.current && focusRef.current.focus(); }, [focusLineId]);
@@ -207,7 +267,7 @@ export function TreatmentStep({ content, analysis, analysisError, patientId, onA
             </div>
             ${own.map((a) => html`<div class=${`line-alert ${kindOf(a)}`} key=${a.id}>
               <span class=${`lvl lvl-${kindOf(a)}`}>${alertTag(a)}</span>
-              <p><b>${linesLabel(content, a.line_ids)}</b> : ${a.details && a.details.risks ? a.details.risks : a.message}</p>
+              <p><b>${linesLabel(content, a.line_ids)}</b> : ${a.details && a.details.risks ? a.details.risks : a.message}<${Plain} text=${plain(a.id)} /></p>
               ${a.requirement === 'blocking' ? html`<span class="muted small">Retirez ou remplacez une ligne</span>`
                 : a.requirement === 'justify' ? html`<button class="btn btn-sm btn-ghost" onClick=${() => goStep(3)}>${a.derogation ? 'Motif saisi' : 'Justifier'}</button>` : ''}
             </div>`)}
@@ -243,6 +303,7 @@ export function CheckStep({ content, check, checkError, ordonnance, onDerogation
   }
   const missing = issued ? [] : check.reasons.filter((r) => REASON_STEP[r.code]);
   const alerts = analysis.alerts;
+  const plain = useExplanations(alerts, content);
   const concerned = new Set(alerts.flatMap((a) => a.line_ids));
   const clean = content.lines.filter((l) => l.medication_id && !concerned.has(l.line_id));
   const warnings = issued ? frozen.warnings : check.warnings;
@@ -272,6 +333,7 @@ export function CheckStep({ content, check, checkError, ordonnance, onDerogation
             ${a.requirement === 'blocking' && !issued && html`<button class="btn btn-sm" onClick=${() => onEditLine(a.line_ids[0])}><${Icon} name="pencil" />Modifier la ligne</button>`}</div>
           <div class="section-body"><div class="who">${linesLabel(content, a.line_ids) || a.message}</div>
             <p>${[a.details && a.details.risks, a.details && a.details.conduct].filter(Boolean).join(' ') || a.message}</p>
+            <${Plain} text=${plain(a.id)} />
             ${a.requirement === 'blocking' && html`<p class="small">Aucune dérogation possible. Retirez ou remplacez une des lignes.</p>`}
             ${a.requirement === 'justify' && !issued && html`<div class=${`reason ${(content.derogations[a.id] || '').trim() ? 'is-ok' : ''}`}>
               <label class="sr" for=${`r-${a.id}`}>Motif bénéfice-risque</label>
@@ -282,16 +344,19 @@ export function CheckStep({ content, check, checkError, ordonnance, onDerogation
           </div></article>`)}
       ${alerts.filter((a) => a.requirement === 'info').map((a) => html`
         <article class="section" key=${a.id}><div class="section-head"><${Icon} name="info" /><h3>${alertTag(a)} · ${alertTitle(a)}</h3></div>
-          <div class="section-body"><div class="who">${linesLabel(content, a.line_ids)}</div><p>${[a.details && a.details.risks, a.details && a.details.conduct].filter(Boolean).join(' ') || a.message}</p></div></article>`)}
+          <div class="section-body"><div class="who">${linesLabel(content, a.line_ids)}</div><p>${[a.details && a.details.risks, a.details && a.details.conduct].filter(Boolean).join(' ') || a.message}</p>
+            <${Plain} text=${plain(a.id)} /></div></article>`)}
       ${warnings.map((w) => html`<article class="section" key=${w.code}><div class="section-head"><${Icon} name="info" /><h3>${w.message}</h3></div></article>`)}
       ${clean.length > 0 && html`<article class="section ok"><div class="section-head"><${Icon} name="check-circle" /><h3>Sans alerte</h3></div>
         <div class="section-body ok-list">${clean.map((l) => html`<div class="ok-row" key=${l.line_id}><${Icon} name="check" />${l.name} : aucune interaction connue avec les autres lignes.</div>`)}</div></article>`}
     </div>
-    <div class="scope"><b>Ce que l'analyse ne vérifie pas</b>
+    <details class="scope">
+      <summary><${Icon} name="info" /><b>Ce que l'analyse ne vérifie pas</b>
+        <svg class="scope-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></summary>
       <ul>${analysis.scope.not_checked.map((item) => html`<li key=${item}>${item}</li>`)}</ul>
       ${analysis.scope.free_text_lines.length > 0 && html`<p class="small">Lignes en saisie libre, non vérifiées : ${analysis.scope.free_text_lines.join(', ')}.</p>`}
-      <small>${analysis.scope.disclaimer}${refs && refs.thesaurus ? ` Thésaurus : ${refs.thesaurus.label}.` : ''}${refs && refs.catalog ? ` Catalogue : ${refs.catalog.label}.` : ''}</small>
-    </div>`;
+      <small>${analysis.scope.disclaimer}${refs && refs.thesaurus ? ` Thésaurus : ${refs.thesaurus.label}.` : ''}</small>
+    </details>`;
 }
 
 const ACTION_LABELS = {

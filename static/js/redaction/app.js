@@ -68,7 +68,8 @@ function App({ initial }) {
 
   const editable = ord.status === 'draft';
   const dirty = editable && JSON.stringify(content) !== savedJson.current;
-  const establishment = initial.establishments.find((e) => e.id === content.establishment_id);
+  const [establishments, setEstablishments] = useState(initial.establishments);
+  const establishment = establishments.find((e) => e.id === content.establishment_id);
 
   /* ---------- step in the address, so a reload comes back here ---------- */
   useEffect(() => {
@@ -304,7 +305,8 @@ function App({ initial }) {
             <button class="btn btn-sm btn-ghost" onClick=${() => setNotice('')}>Fermer</button></div>`}
           ${step === 1 && html`<${PatientStep} content=${content} patient=${patient} form=${patientForm} onField=${onPatientField}
             onPick=${onPickPatient} onNew=${onNewPatient} onChange=${onChangePatient} saving=${patientSaving} error=${patientError}
-            establishments=${initial.establishments} onContentField=${onContentField} />`}
+            establishments=${establishments} onContentField=${onContentField}
+            onEstablishmentCreated=${(est) => { setEstablishments((list) => [...list, est]); onContentField('establishment_id', est.id); }} />`}
           ${step === 2 && html`<${TreatmentStep} content=${content} analysis=${analysis} analysisError=${analysisError}
             patientId=${content.patient_id} onAdd=${onAdd} onLineField=${onLineField} onRemoveLine=${onRemoveLine}
             onContentField=${onContentField} focusLineId=${focusLineId} goStep=${setStep} />`}
