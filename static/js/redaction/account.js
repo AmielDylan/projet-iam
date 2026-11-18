@@ -25,7 +25,7 @@ function AuthShell({ children, wide }) {
       <aside class="auth-side">
         <a class="auth-pill brand" href="/" aria-label="DigiRemed, retour à l'accueil">DigiRemed</a>
         <div class="auth-photo"><img src="/static/img/accueil/medecin-notes.jpg" alt="Un médecin en blouse blanche, stéthoscope autour du cou, prend des notes sur un porte-documents." /></div>
-        <p class="auth-side-title">L'ordonnance vérifiée pendant que vous l'écrivez</p>
+        <p class="auth-side-title">Votre ordonnance vérifiée pendant que vous l'écrivez</p>
       </aside>
       <main class="auth-main"><div class="auth-form">${children}</div></main>
     </div>
@@ -56,7 +56,7 @@ function Login({ initial }) {
   };
   return html`<${AuthShell}>
     <h1>Connexion</h1>
-    <p class="lead">Pour les comptes déjà validés.</p>
+    <p class="lead">Retrouvez vos patients et vos ordonnances.</p>
     <${Flashes} items=${initial.flashes} />
     ${error && html`<p class="form-error" role="alert">${error}</p>`}
     <form class="stack" onSubmit=${submit}>
@@ -111,7 +111,7 @@ function Register() {
   }
   return html`<${AuthShell} wide>
     <h1>Demander un accès</h1>
-    <p class="lead">Un administrateur vérifie chaque demande avant d'ouvrir le compte.</p>
+    <p class="lead">Nous vérifions votre profil avant d'ouvrir votre compte.</p>
     ${error && html`<p class="form-error" role="alert">${error}</p>`}
     <form class="grid" onSubmit=${submit} novalidate>
       <label class=${`field c3 ${bad('last_name')}`}>Nom<input value=${form.last_name || ''} onInput=${set('last_name')} autocomplete="family-name" /></label>

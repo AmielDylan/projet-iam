@@ -4,8 +4,8 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>DigiRemed · L'ordonnance vérifiée pendant que vous l'écrivez</title>
-  <meta name="description" content="DigiRemed aide les prescripteurs du Bénin et d'Afrique francophone à rédiger des ordonnances vérifiées selon le thésaurus des interactions médicamenteuses de l'ANSM.">
+  <title>DigiRemed · Votre ordonnance vérifiée pendant que vous l'écrivez</title>
+  <meta name="description" content="Vous prescrivez au Bénin ou en Afrique francophone ? DigiRemed vérifie votre ordonnance pendant que vous l'écrivez, selon le thésaurus des interactions médicamenteuses de l'ANSM.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible+Next:wght@400;500;600;700&family=Host+Grotesk:wght@300;400;500;600&display=swap" rel="stylesheet">
@@ -37,19 +37,19 @@
       {% endif %}
     </div>
 
-    <div class="notch-title"><h1>L'ordonnance vérifiée pendant que vous l'écrivez</h1></div>
-    {% if not user %}<p class="mobile-login">Déjà un compte ? <a href="/connexion">Connexion</a></p>{% endif %}
+    <div class="notch-title"><h1>Votre ordonnance vérifiée pendant que vous l'écrivez</h1></div>
+    {% if not user %}<p class="mobile-login">Vous avez déjà un compte ? <a href="/connexion">Connectez-vous</a></p>{% endif %}
 
     <form class="verify-card" id="verifier" action="/interactions" method="get" novalidate>
-      <h2>Vérifier une interaction</h2>
-      <p>Saisissez deux médicaments. La réponse vient du thésaurus de l'ANSM.</p>
+      <h2>Vérifiez une interaction</h2>
+      <p>Saisissez deux médicaments : vous obtenez la réponse du thésaurus de l'ANSM.</p>
       <label class="hfield"><span>Premier médicament</span>
         <input name="med1" autocomplete="off" placeholder="Nom, substance ou classe" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="suggest-med1"></label>
       <label class="hfield"><span>Second médicament</span>
         <input name="med2" autocomplete="off" placeholder="Nom, substance ou classe" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="suggest-med2"></label>
       <p class="checker-error" role="alert" hidden>Indiquez les deux médicaments.</p>
       <div class="checker-foot">
-        <small>Une aide à la décision. Elle ne remplace pas votre jugement.</small>
+        <small>Une aide à votre décision, qui ne remplace pas votre jugement.</small>
         <button class="btn-check" type="submit">Vérifier<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
       </div>
     </form>
@@ -59,20 +59,20 @@
     <section class="mint-panel safety" id="securite" aria-labelledby="securite-titre">
       <div class="safety-side">
         <div class="block-head">
-          <h2 id="securite-titre">Des résultats fiables, des données protégées</h2>
-          <p>Chaque médicament que vous ajoutez est comparé aux autres, selon le thésaurus de l'ANSM.</p>
+          <h2 id="securite-titre">Vous prescrivez en confiance</h2>
+          <p>Chaque médicament que vous ajoutez est comparé aux autres lignes de votre ordonnance, selon le thésaurus de l'ANSM.</p>
         </div>
         <div>
           <p class="big-number">22&#8239;705</p>
-          <p>médicaments dans le catalogue.</p>
+          <p>médicaments à votre disposition dans le catalogue.</p>
         </div>
       </div>
       <ul class="checks">
-        <li>{{ check_icon }}<span>Une association dangereuse bloque l'ordonnance.</span></li>
-        <li>{{ check_icon }}<span>Les autres risques sont signalés et expliqués simplement.</span></li>
-        <li>{{ check_icon }}<span>Ce que l'analyse ne vérifie pas encore est toujours indiqué.</span></li>
-        <li>{{ check_icon }}<span>Les données de vos patients sont chiffrées, et vous seul les voyez.</span></li>
-        <li>{{ check_icon }}<span>Une coupure réseau ne fait pas perdre l'ordonnance en cours.</span></li>
+        <li>{{ check_icon }}<span>Si une association est dangereuse, vous ne pouvez pas émettre l'ordonnance.</span></li>
+        <li>{{ check_icon }}<span>Les autres risques vous sont signalés et expliqués simplement.</span></li>
+        <li>{{ check_icon }}<span>Vous savez toujours ce que l'analyse ne vérifie pas encore.</span></li>
+        <li>{{ check_icon }}<span>Les données de vos patients sont chiffrées, et vous seul y avez accès.</span></li>
+        <li>{{ check_icon }}<span>En cas de coupure réseau, vous ne perdez pas l'ordonnance en cours.</span></li>
       </ul>
     </section>
 
@@ -104,13 +104,13 @@
       <div>
         <div class="block-head">
           <h2 id="ordonnance-titre">À quoi ressemble votre ordonnance</h2>
-          <p>En A5, en A4 ou en PDF, telle que vous la voyez à l'écran.</p>
+          <p>Vous l'imprimez en A5 ou en A4, ou vous l'enregistrez en PDF, exactement comme vous la voyez à l'écran.</p>
         </div>
         <ol class="legend">
-          <li><div><b>Un numéro unique</b><span>L'ordonnance émise ne change plus.</span></div></li>
-          <li><div><b>Le patient</b><span>Avec son âge et son poids.</span></div></li>
-          <li><div><b>Les médicaments et leur DCI</b><span>Vérifiés les uns avec les autres.</span></div></li>
-          <li><div><b>Votre signature et votre cachet</b><span>Ajoutés au PDF.</span></div></li>
+          <li><div><b>Un numéro unique</b><span>Une fois émise, votre ordonnance ne change plus.</span></div></li>
+          <li><div><b>Votre patient</b><span>Avec son âge et son poids.</span></div></li>
+          <li><div><b>Vos médicaments et leur DCI</b><span>Vérifiés les uns avec les autres.</span></div></li>
+          <li><div><b>Votre signature et votre cachet</b><span>Ajoutés à votre PDF.</span></div></li>
         </ol>
       </div>
     </section>
@@ -118,14 +118,14 @@
     <section class="who" id="pour-qui" aria-labelledby="qui-titre">
       <div class="who-photo"><img src="{{ url_for('static', filename='img/accueil/equipe-tablette.jpg') }}" alt="Une médecin en blouse blanche, stéthoscope autour du cou, penchée sur son travail." loading="lazy"></div>
       <div class="who-card">
-        <h2 id="qui-titre">Pour les professionnels qui prescrivent</h2>
+        <h2 id="qui-titre">Conçu pour vous qui prescrivez</h2>
         <ul>
           <li>{{ check_icon }}Médecins</li>
           <li>{{ check_icon }}Chirurgiens-dentistes</li>
           <li>{{ check_icon }}Sages-femmes</li>
           <li>{{ check_icon }}Infirmiers</li>
         </ul>
-        <p class="note">Chaque compte est vérifié avant son ouverture.</p>
+        <p class="note">Nous vérifions votre profil avant d'ouvrir votre compte.</p>
       </div>
     </section>
 
@@ -133,7 +133,7 @@
     <section class="closing" aria-labelledby="fin-titre">
       <div>
         <h2 id="fin-titre">Rédigez votre prochaine ordonnance avec DigiRemed</h2>
-        <p>Envoyez votre demande avec une pièce justificative. Après vérification, vous recevez votre mot de passe par email.</p>
+        <p>Envoyez-nous votre demande avec une pièce justificative. Une fois votre profil vérifié, vous recevez votre mot de passe par email.</p>
         <div class="actions">
           {% if user %}<a class="btn-dark" href="{{ '/admin' if user.role == 'admin' else '/ordonnances' }}">Ouvrir mon espace<span class="arrow-round" aria-hidden="true"><svg class="ico" viewBox="0 0 24 24"><path d="M7 17 17 7M9 7h8v8"/></svg></span></a>
           {% else %}<a class="btn-dark" href="/inscription">Demander un accès<span class="arrow-round" aria-hidden="true"><svg class="ico" viewBox="0 0 24 24"><path d="M7 17 17 7M9 7h8v8"/></svg></span></a><a class="link-quiet" href="/connexion">J'ai déjà un compte</a>{% endif %}
@@ -143,7 +143,7 @@
   </main>
 
   <footer class="home-foot">
-    <p><strong>DigiRemed</strong> · Aide à la prescription. Elle ne remplace pas votre jugement.</p>
+    <p><strong>DigiRemed</strong> vous aide à prescrire, sans jamais remplacer votre jugement.</p>
     <nav aria-label="Pied de page"><a href="#verifier">Vérifier une interaction</a><a href="/connexion">Connexion</a><a href="/inscription">Demander un accès</a></nav>
   </footer>
 </div>
