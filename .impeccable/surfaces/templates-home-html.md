@@ -7,7 +7,7 @@ related_targets: []
 
 # Page d'accueil publique
 
-Mode : Persuade. Public : prescripteurs du Bénin et d'Afrique francophone, et visiteurs qui vérifient une interaction. Action principale : vérifier une interaction depuis le premier écran ; action secondaire : demander un accès. Preuves : thésaurus ANSM, 22 705 médicaments au catalogue, règles réelles de l'analyse (CI, ASDEC, PE, limites), une ordonnance illustrée en exemple fictif. Contraintes : ni prix, ni gratuité, ni crédits ; pas de logos de partenaires tant qu'ils ne sont pas fournis ; pas de captures de l'interface, des descriptions seulement ; textes simples ; aucune photo répétée sur le site ; photos libres en attendant les photos réelles. Sections : sécurité et fiabilité, l'ordonnance illustrée, pour qui, confidentialité.
+Mode : Persuade. Public : prescripteurs du Bénin et d'Afrique francophone, et visiteurs qui vérifient une interaction. Action principale : vérifier une interaction depuis le premier écran ; action secondaire : demander un accès. Preuves : thésaurus ANSM, 22 705 médicaments au catalogue, règles réelles de l'analyse (CI, ASDEC, PE, limites), une ordonnance illustrée en exemple fictif. Contraintes : ni prix, ni gratuité, ni crédits ; pas de logos de partenaires tant qu'ils ne sont pas fournis ; pas de captures de l'interface, des descriptions seulement ; textes simples ; aucune photo répétée sur le site ; photos libres en attendant les photos réelles. Sections : résultats fiables et données protégées (sans détail des niveaux ANSM, à la demande de l'utilisateur : « pas besoin de détails sur les CI, ASDEC, etc »), l'ordonnance illustrée, pour qui. Page allégée sur demande (« le site est chargé »).
 
 ## Direction contract
 

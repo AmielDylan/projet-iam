@@ -18,23 +18,14 @@ function destinationFor(user, next) {
   return allowed.some((prefix) => next === prefix || next.startsWith(`${prefix}/`) || next.startsWith(`${prefix}?`)) ? next : fallback;
 }
 
-const REASSURANCE = [
-  "Des résultats tirés du thésaurus de l'ANSM",
-  'Les données des patients sont chiffrées',
-  'Chaque compte est vérifié avant son ouverture',
-];
-
 /** Same language as the home page: a white sheet, a mint side panel, the form beside it. */
 function AuthShell({ children, wide }) {
   return html`<div class="auth">
     <div class=${`auth-sheet ${wide ? 'is-wide' : ''}`}>
       <aside class="auth-side">
-        <nav class="auth-pill" aria-label="DigiRemed"><a class="brand" href="/">DigiRemed</a><a href="/">Accueil</a></nav>
+        <a class="auth-pill brand" href="/" aria-label="DigiRemed, retour à l'accueil">DigiRemed</a>
         <div class="auth-photo"><img src="/static/img/accueil/medecin-notes.jpg" alt="Un médecin en blouse blanche, stéthoscope autour du cou, prend des notes sur un porte-documents." /></div>
-        <div>
-          <p class="auth-side-title">L'ordonnance vérifiée pendant que vous l'écrivez</p>
-          <ul>${REASSURANCE.map((line) => html`<li key=${line}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>${line}</li>`)}</ul>
-        </div>
+        <p class="auth-side-title">L'ordonnance vérifiée pendant que vous l'écrivez</p>
       </aside>
       <main class="auth-main"><div class="auth-form">${children}</div></main>
     </div>

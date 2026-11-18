@@ -285,7 +285,7 @@ Une palette froide de vert d'eau et d'encre, avec un seul vert saturé et quatre
 
 L'accueil est une seule grande feuille blanche (`max-width: 1320px`, marge intérieure 12px, rayon 32px) posée sur le sol vert d'eau. À l'intérieur, chaque bloc est une feuille ou un panneau séparé du suivant par une gouttière de 12px. Le premier écran est une photo pleine largeur (clamp 580 à 700px de haut, rayon 28px) dans laquelle s'insèrent : la navigation en pilule blanche en haut à gauche, une encoche blanche en haut à droite (Connexion et Demander un accès), une encoche blanche en bas à gauche pour le titre, une carte Vérifier flottante de 380px en bas à droite. Les encoches ont des coins inversés qui prolongent la feuille dans la photo.
 
-Les sections suivent des grilles asymétriques en fractions (5/7, 6/5, 7/5), jamais une rangée de cartes égales : sécurité (chiffre et titre à gauche, liste de niveaux à droite), ordonnance illustrée (feuille inclinée à gauche, légende numérotée à droite), « Pour qui » (photo et carte en dégradé), confidentialité (texte en panneau et photo), clôture avec pastille « Haut de page ».
+Les sections suivent des grilles asymétriques en fractions (5/7, 6/5, 7/5), jamais une rangée de cartes égales : résultats fiables et données protégées (chiffre et titre à gauche, cinq phrases cochées à droite, sans détail des niveaux ANSM), ordonnance illustrée (feuille inclinée à gauche, légende numérotée à droite), « Pour qui » (photo et carte en dégradé), puis clôture et pied de page sur une ligne. L'accueil reste court : une idée par section, rien de répété.
 
 Les pages de connexion, d'inscription, de double authentification et d'erreur partagent une coquille : une feuille blanche (1040px, ou 1180px en version large) à deux colonnes, panneau latéral en dégradé menthe avec pilule de marque, photo et promesses cochées, formulaire de 420px (640px en large) à droite.
 
@@ -310,7 +310,7 @@ Le système est plat par tonalité : la profondeur vient du blanc posé sur le v
 
 ## Shapes
 
-Une géométrie de feuilles arrondies, du plus grand au plus petit : grande feuille 32px (`sheet-l`), photos et panneaux de l'accueil 28px (`photo`), cartes flottantes 22px (`card`), panneaux et cartes de l'espace prescripteur 18px (`panel`), contrôles 10px (`ctl`), numéros d'étape 6px (`step`), étiquettes de niveau 5px (`level`). Tout ce qui se clique ou se choisit dans une barre est une pilule (999px) : boutons, champs publics, navigation, filtres, statuts. Les cercles portent les repères numérotés, les flèches rondes et la pastille « Haut de page ». Les encoches de l'accueil utilisent des coins inversés en dégradé radial. Les bords sont des filets d'un pixel ; la feuille d'ordonnance seule garde des rayons quasi nuls (1mm).
+Une géométrie de feuilles arrondies, du plus grand au plus petit : grande feuille 32px (`sheet-l`), photos et panneaux de l'accueil 28px (`photo`), cartes flottantes 22px (`card`), panneaux et cartes de l'espace prescripteur 18px (`panel`), contrôles 10px (`ctl`), numéros d'étape 6px (`step`), étiquettes de niveau 5px (`level`). Tout ce qui se clique ou se choisit dans une barre est une pilule (999px) : boutons, champs publics, navigation, filtres, statuts. Les cercles portent les repères numérotés et les flèches rondes. Les encoches de l'accueil utilisent des coins inversés en dégradé radial. Les bords sont des filets d'un pixel ; la feuille d'ordonnance seule garde des rayons quasi nuls (1mm).
 
 ## Components
 
@@ -321,7 +321,7 @@ Des pilules nettes, sans relief, qui se distinguent par la couleur de remplissag
 - **Hover / Focus:** le vert fonce en vert profond ; Vérifier descend de 1px à l'appui ; anneau de focus vert de 2px décalé de 2px.
 - **Pilule blanc-menthe:** dégradé blanc vers menthe, texte encre 700 à 15px, filet intérieur à 6 %. Au survol, le filet passe à 16 % et une ombre douce apparaît. Porte « Demander un accès ».
 - **Pilule noire:** encre pleine, texte blanc, avec une flèche ronde blanche intégrée à droite ; action de clôture de l'accueil.
-- **Default / Soft / Ghost:** blanc avec filet (le filet fonce au survol) ; teinte verte à 8 % et texte vert pour une action secondaire positive ; transparent en encre seconde pour Copier le lien, Accueil, J'ai déjà un compte. Le bouton indisponible passe en gris `#E3E7E4`.
+- **Default / Soft / Ghost:** blanc avec filet (le filet fonce au survol) ; teinte verte à 8 % et texte vert pour une action secondaire positive ; transparent en encre seconde pour Copier le lien, Mes ordonnances (page d'erreur), J'ai déjà un compte. Le bouton indisponible passe en gris `#E3E7E4`.
 - **Lien discret:** pilule sans fond en encre seconde, fond menthe au survol ; Connexion.
 
 ### Chips
@@ -342,7 +342,7 @@ Des pilules nettes, sans relief, qui se distinguent par la couleur de remplissag
 - **Suggestions:** liste blanche au rayon de 16px, lignes au rayon de 10px, survol et sélection en vert d'eau, type (Classe, Substance, Spécialité) en petit à droite.
 
 ### Navigation
-- **Accueil:** pilule blanche posée sur la photo, marque en Host Grotesk 600, liens en Atkinson 600 à 15px, survol vert d'eau, page courante en pilule noire. Sur téléphone, seule la marque reste.
+- **Accueil:** pilule blanche posée sur la photo, marque en Host Grotesk 600, liens en Atkinson 600 à 15px, survol vert d'eau, page courante en pilule noire. La marque mène à l'accueil : aucun lien « Accueil » en plus, ni ici ni sur les pages de connexion. Sur téléphone, seule la marque reste.
 - **Espace prescripteur:** barre de 56px, onglets dans une pilule vert d'eau, survol blanc, onglet actif en pilule noire. Sur téléphone, les onglets passent sur une seconde ligne défilante dont le bord droit s'estompe.
 
 ### Étiquettes de niveau ANSM

@@ -413,15 +413,9 @@ a.btn-primary { color: #fff; }
 .auth-sheet.is-wide { max-width: 1180px; grid-template-columns: minmax(0, 4fr) minmax(0, 7fr); }
 .auth-side { display: flex; flex-direction: column; justify-content: space-between; gap: 22px; padding: 18px 30px 34px 18px; border-radius: var(--r-photo);
   background: linear-gradient(160deg, #F6FAF8 0%, var(--mint-2) 100%); }
-.auth-pill { align-self: flex-start; display: flex; align-items: center; gap: 2px; padding: 4px; background: #fff; border-radius: 999px; box-shadow: 0 6px 20px rgba(14, 33, 26, .08); }
-.auth-pill a { padding: 8px 14px; border-radius: 999px; text-decoration: none; font-size: 14px; font-weight: 600; color: var(--ink-2); }
-.auth-pill a:hover { background: var(--mint); color: var(--ink); }
-.auth-pill .brand { color: var(--ink); }
-.auth-side-title { margin: 0 0 22px 12px; font-family: var(--display); font-size: clamp(28px, 3vw, 40px); line-height: 1.06; letter-spacing: -0.03em; text-wrap: balance; }
-.auth-side ul { list-style: none; margin: 0 0 0 12px; padding: 0; }
-.auth-side li { display: flex; gap: 10px; align-items: center; padding: 10px 0; border-bottom: 1px solid rgba(21, 25, 30, .1); font-size: 15px; font-weight: 600; }
-.auth-side li:last-child { border-bottom: 0; }
-.auth-side svg { width: 18px; height: 18px; flex: none; fill: none; stroke: var(--act); stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+.auth-pill { align-self: flex-start; padding: 10px 18px; background: #fff; border-radius: 999px; box-shadow: 0 6px 20px rgba(14, 33, 26, .08); text-decoration: none; color: var(--ink); }
+.auth-pill:hover { box-shadow: 0 6px 20px rgba(14, 33, 26, .14); }
+.auth-side-title { margin: 0 0 8px 12px; font-family: var(--display); font-size: clamp(28px, 3vw, 40px); line-height: 1.06; letter-spacing: -0.03em; text-wrap: balance; }
 .auth-main { display: grid; align-items: center; padding: 40px clamp(20px, 5vw, 64px); }
 .auth-form { width: 100%; max-width: 420px; margin: 0 auto; }
 .auth-sheet.is-wide .auth-form { max-width: 640px; }
@@ -435,7 +429,6 @@ a.btn-primary { color: #fff; }
   .auth { padding: 10px; place-items: start center; }
   .auth-sheet, .auth-sheet.is-wide { grid-template-columns: 1fr; min-height: 0; padding: 8px; border-radius: 26px; }
   .auth-side { padding: 14px 18px 20px 14px; gap: 18px; }
-  .auth-side ul { display: none; }
   .auth-side-title { font-size: 24px; margin-bottom: 0; }
   .auth-main { padding: 24px 12px 28px; }
 }

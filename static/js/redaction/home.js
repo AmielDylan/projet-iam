@@ -87,7 +87,6 @@ function Home({ initial }) {
   return html`
     ${prescriber ? html`<${AppBar} current="interactions" />` : html`<header class="appbar"><div class="appbar-inner">
       <a class="brand" href="/">DigiRemed</a>
-      <nav class="appnav" aria-label="Navigation principale"><a href="/">Accueil</a><a href="/interactions" aria-current="page">Interactions</a></nav>
       <span class="spacer"></span>
       ${initial.user ? html`<a class="btn-mint btn-mint-sm" href=${initial.user.role === 'admin' ? '/admin' : '/ordonnances'}>${initial.user.role === 'admin' ? 'Administration' : 'Mes ordonnances'}</a>`
         : html`<a class="link-quiet" href="/connexion">Connexion</a><a class="btn-mint btn-mint-sm" href="/inscription">Demander un accès</a>`}
