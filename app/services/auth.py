@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import base64
+import os
 import secrets
 from datetime import datetime
 from functools import wraps
@@ -515,7 +516,7 @@ class AuthService:
             f"Adresse de connexion: {target['email']}\n"
             f"Mot de passe temporaire: {password}\n\n"
             "Ce mot de passe est valable 24h. Vous devrez le changer à la première connexion.\n"
-            "Connexion: https://projet-iam-web-production.up.railway.app/connexion\n\n"
+            f"Connexion: {os.environ.get('PUBLIC_URL', 'https://digiremed.com').rstrip('/')}/connexion\n\n"
             "DigiRemed"
         )
 

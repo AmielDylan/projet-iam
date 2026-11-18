@@ -18,11 +18,17 @@ function destinationFor(user, next) {
   return allowed.some((prefix) => next === prefix || next.startsWith(`${prefix}/`) || next.startsWith(`${prefix}?`)) ? next : fallback;
 }
 
+/** Same language as the home page: a white sheet, a mint side panel, the form beside it. */
 function AuthShell({ children, wide }) {
   return html`<div class="auth">
-    <a class="brand auth-brand" href="/">DigiRemed</a>
-    <main class=${`auth-card ${wide ? 'is-wide' : ''}`}>${children}</main>
-    <p class="auth-foot muted small">DigiRemed · Aide à la prescription</p>
+    <div class=${`auth-sheet ${wide ? 'is-wide' : ''}`}>
+      <aside class="auth-side">
+        <a class="auth-pill brand" href="/" aria-label="DigiRemed, retour à l'accueil">DigiRemed</a>
+        <div class="auth-photo"><img src="/static/img/accueil/medecin-notes.jpg" alt="Un médecin en blouse blanche, stéthoscope autour du cou, prend des notes sur un porte-documents." /></div>
+        <p class="auth-side-title">Vous soignez, nous sécurisons vos ordonnances</p>
+      </aside>
+      <main class="auth-main"><div class="auth-form">${children}</div></main>
+    </div>
   </div>`;
 }
 
@@ -50,7 +56,7 @@ function Login({ initial }) {
   };
   return html`<${AuthShell}>
     <h1>Connexion</h1>
-    <p class="lead">Accès réservé aux comptes validés.</p>
+    <p class="lead">Retrouvez vos patients et vos ordonnances.</p>
     <${Flashes} items=${initial.flashes} />
     ${error && html`<p class="form-error" role="alert">${error}</p>`}
     <form class="stack" onSubmit=${submit}>
@@ -99,13 +105,13 @@ function Register() {
     return html`<${AuthShell}>
       <h1>${done.code === 'waitlist' ? "Liste d'attente" : 'Demande envoyée'}</h1>
       <p class="lead">${done.message}</p>
-      ${done.code !== 'waitlist' && html`<p class="muted">Vous recevrez votre mot de passe temporaire par email après vérification de votre pièce d'identité.</p>`}
+      ${done.code !== 'waitlist' && html`<p class="muted">Après vérification de votre pièce d'identité, vous recevrez par email un mot de passe temporaire.</p>`}
       <a class="btn btn-primary btn-block" href="/connexion">Retour à la connexion</a>
     <//>`;
   }
   return html`<${AuthShell} wide>
     <h1>Demander un accès</h1>
-    <p class="lead">Chaque demande est vérifiée par l'administrateur avant ouverture du compte.</p>
+    <p class="lead">Nous vérifions votre profil avant d'ouvrir votre compte.</p>
     ${error && html`<p class="form-error" role="alert">${error}</p>`}
     <form class="grid" onSubmit=${submit} novalidate>
       <label class=${`field c3 ${bad('last_name')}`}>Nom<input value=${form.last_name || ''} onInput=${set('last_name')} autocomplete="family-name" /></label>
@@ -113,13 +119,13 @@ function Register() {
       <label class=${`field c3 ${bad('birthdate')}`}>Date de naissance<${DateInput} value=${form.birthdate || ''} onText=${(v) => setForm((f) => ({ ...f, birthdate: v }))} /></label>
       <label class=${`field c3 ${bad('profession')}`}>Profession
         <select onChange=${set('profession')}>${PROFESSIONS.map((p) => html`<option key=${p} value=${p} selected=${p === form.profession}>${p}</option>`)}</select></label>
-      ${pharmacist && html`<p class="notice c6"><span>La rédaction d'ordonnances n'est pas ouverte aux pharmaciens. Votre demande rejoindra la liste d'attente de l'offre officine.</span></p>`}
+      ${pharmacist && html`<p class="notice c6"><span>Les pharmaciens ne rédigent pas d'ordonnances. Votre demande rejoindra la liste d'attente de l'offre pour les officines.</span></p>`}
       <label class=${`field c3 ${bad('order_number')}`}>N° d'inscription à l'ordre<input value=${form.order_number || ''} onInput=${set('order_number')} /></label>
       <label class=${`field c3 ${bad('phone')}`}>Téléphone<input type="tel" value=${form.phone || ''} onInput=${set('phone')} autocomplete="tel" /></label>
       <label class=${`field c6 ${bad('email')}`}>Email<input type="email" value=${form.email || ''} onInput=${set('email')} autocomplete="email" /></label>
       ${!pharmacist && html`<label class=${`field c6 ${bad('identity_document')}`}>Pièce d'identité (PDF, JPG ou PNG)
         <input type="file" accept="application/pdf,image/jpeg,image/png" onChange=${(e) => setFile(e.target.files[0] || null)} />
-        <span class="hint">Utilisée seulement pour vérifier votre profil, puis supprimée après la décision.</span></label>`}
+        <span class="hint">Elle sert seulement à vérifier votre profil. Elle est supprimée après la décision.</span></label>`}
       <div class="c6 row-end"><a class="btn btn-ghost" href="/connexion">J'ai déjà un compte</a>
         <button class="btn btn-primary" type="submit" aria-disabled=${busy}>${busy ? 'Envoi…' : 'Envoyer la demande'}</button></div>
     </form>
@@ -142,7 +148,7 @@ function ChangePassword({ initial }) {
   };
   return html`<${AuthShell}>
     <h1>Nouveau mot de passe</h1>
-    <p class="lead">${initial.must_change ? 'Remplacez le mot de passe temporaire reçu par email avant de continuer.' : 'Choisissez un nouveau mot de passe.'}</p>
+    <p class="lead">${initial.must_change ? 'Remplacez le mot de passe temporaire reçu par email avant de continuer.' : 'Choisissez votre nouveau mot de passe.'}</p>
     ${error && html`<p class="form-error" role="alert">${error}</p>`}
     <form class="stack" onSubmit=${submit}>
       <label class="field">${initial.must_change ? 'Mot de passe temporaire' : 'Mot de passe actuel'}<input type="password" autocomplete="current-password" value=${form.current_password} onInput=${set('current_password')} /></label>
