@@ -1,5 +1,6 @@
 """Web page routes."""
 import secrets
+from datetime import date
 from urllib.parse import urlparse
 
 from flask import Blueprint, abort, flash, get_flashed_messages, redirect, render_template, request, session, url_for
@@ -61,7 +62,8 @@ def login_destination_for(user: dict, requested_next: str | None = None) -> str:
 def home():
     """Public home page (templates/home.html), with the interaction check in its first screen."""
     user = AuthService.current_session_user()
-    return render_template('home.html', user={'role': user['role']} if user else None)
+    return render_template('home.html', user={'role': user['role']} if user else None,
+                           now_year=date.today().year)
 
 
 @web_bp.route('/ordonnances')

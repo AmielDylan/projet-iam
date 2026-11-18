@@ -31,7 +31,7 @@
       <a class="brand" href="/" aria-current="page">DigiRemed</a>
       <a href="#securite">Sécurité</a>
       <a href="#ordonnance">L'ordonnance</a>
-      <a href="#pour-qui">Pour qui</a>
+      <a href="#pour-qui">Pour qui ?</a>
     </nav>
 
     <div class="notch-top">
@@ -139,8 +139,8 @@
 
 
     <section class="closing" aria-labelledby="fin-titre">
-      <div>
-        <h2 id="fin-titre">Rédigez votre prochaine ordonnance avec DigiRemed</h2>
+      <h2 id="fin-titre">Rédigez votre prochaine ordonnance avec DigiRemed</h2>
+      <div class="closing-side">
         <p>Envoyez-nous votre demande avec une pièce justificative. Une fois votre profil vérifié, vous recevez votre mot de passe par email.</p>
         <div class="actions">
           {% if user %}<a class="btn-dark" href="{{ '/admin' if user.role == 'admin' else '/ordonnances' }}">Ouvrir mon espace<span class="arrow-round" aria-hidden="true"><svg class="ico" viewBox="0 0 24 24"><path d="M7 17 17 7M9 7h8v8"/></svg></span></a>
@@ -151,8 +151,16 @@
   </main>
 
   <footer class="home-foot">
-    <p><strong>DigiRemed</strong> vous aide à prescrire, sans jamais remplacer votre jugement.</p>
-    <nav aria-label="Pied de page"><a href="#verifier">Vérifier une interaction</a><a href="/connexion">Connexion</a><a href="/inscription">Demander un accès</a></nav>
+    <div class="foot-row">
+      <p class="foot-credits">DigiRemed vous aide à prescrire, sans jamais remplacer votre jugement. L'analyse suit le thésaurus des interactions médicamenteuses de l'ANSM. Photos : Francisco Venâncio, Ato Aikins, Bruno Rodrigues (Unsplash) et Tima Miroshnichenko (Pexels).</p>
+      <div class="foot-legal">
+        <nav aria-label="Pied de page"><a href="#verifier">Vérifier une interaction</a><a href="/connexion">Connexion</a><a href="/inscription">Demander un accès</a></nav>
+        <p>© {{ now_year }} DigiRemed</p>
+      </div>
+    </div>
+    <svg class="wordmark" viewBox="0 0 1000 156" preserveAspectRatio="xMidYMin slice" aria-hidden="true" focusable="false">
+      <text x="0" y="200" textLength="1000" lengthAdjust="spacingAndGlyphs">DigiRemed</text>
+    </svg>
   </footer>
 </div>
 <script src="{{ url_for('static', filename='js/home-page.js') }}" defer></script>
