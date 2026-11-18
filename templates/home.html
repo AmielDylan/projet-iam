@@ -158,8 +158,25 @@
         <p>© {{ now_year }} DigiRemed</p>
       </div>
     </div>
-    <svg class="wordmark" viewBox="0 0 1000 156" preserveAspectRatio="xMidYMin slice" aria-hidden="true" focusable="false">
-      <text x="0" y="200" textLength="1000" lengthAdjust="spacingAndGlyphs">DigiRemed</text>
+    <svg class="wordmark" viewBox="14 0 980 203" aria-hidden="true" focusable="false">
+      <defs>
+        <!-- Letters pressed into the sheet: a shaded top edge, a lit bottom edge and a soft floor. -->
+        <filter id="press" x="-2%" y="-6%" width="104%" height="112%" color-interpolation-filters="sRGB">
+          <feOffset in="SourceAlpha" dy="1.45" result="down"/><feGaussianBlur in="down" stdDeviation="0.9" result="downSoft"/>
+          <feComposite in="SourceAlpha" in2="downSoft" operator="out" result="topBand"/>
+          <feFlood flood-color="rgba(21, 25, 30, .17)"/><feComposite in2="topBand" operator="in" result="innerShade"/>
+          <feOffset in="SourceAlpha" dy="-0.85" result="up"/><feGaussianBlur in="up" stdDeviation="0.55" result="upSoft"/>
+          <feComposite in="SourceAlpha" in2="upSoft" operator="out" result="bottomBand"/>
+          <feFlood flood-color="#FFFFFF"/><feComposite in2="bottomBand" operator="in" result="innerLight"/>
+          <feOffset in="SourceAlpha" dy="4.3" result="deep"/><feGaussianBlur in="deep" stdDeviation="3" result="deepSoft"/>
+          <feComposite in="SourceAlpha" in2="deepSoft" operator="out" result="floorBand"/>
+          <feFlood flood-color="rgba(21, 25, 30, .06)"/><feComposite in2="floorBand" operator="in" result="floor"/>
+          <feOffset in="SourceAlpha" dy="0.85" result="lipDown"/><feComposite in="lipDown" in2="SourceAlpha" operator="out" result="lipBand"/>
+          <feFlood flood-color="#FFFFFF"/><feComposite in2="lipBand" operator="in" result="lip"/>
+          <feMerge><feMergeNode in="lip"/><feMergeNode in="SourceGraphic"/><feMergeNode in="floor"/><feMergeNode in="innerShade"/><feMergeNode in="innerLight"/></feMerge>
+        </filter>
+      </defs>
+      <text x="0" y="152" filter="url(#press)">DigiRemed</text>
     </svg>
   </footer>
 </div>
