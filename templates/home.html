@@ -4,7 +4,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>DigiRemed · Votre ordonnance vérifiée pendant que vous l'écrivez</title>
+  <title>DigiRemed · Vous soignez, nous sécurisons vos ordonnances</title>
   <meta name="description" content="Vous prescrivez au Bénin ou en Afrique francophone ? DigiRemed vérifie votre ordonnance pendant que vous l'écrivez, selon le thésaurus des interactions médicamenteuses de l'ANSM.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -17,7 +17,15 @@
 {%- set check_icon %}<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>{% endset %}
 <div class="sheet-page">
   <header class="hero">
-    <div class="hero-photo"><img src="{{ url_for('static', filename='img/accueil/hero-prescription.jpg') }}" alt="Une prescriptrice rédige une ordonnance face à sa patiente." fetchpriority="high"></div>
+    <div class="hero-photo" data-slides>
+      <img class="slide is-active" src="{{ url_for('static', filename='img/accueil/hero-prescription.jpg') }}" alt="Une prescriptrice rédige une ordonnance face à sa patiente." fetchpriority="high" style="object-position: 50% 28%">
+      <img class="slide" src="{{ url_for('static', filename='img/accueil/hero-medecin-sourire.jpg') }}" alt="Une médecin souriante en blouse blanche, stéthoscope autour du cou." decoding="async" aria-hidden="true" style="object-position: 50% 16%">
+      <img class="slide" src="{{ url_for('static', filename='img/accueil/hero-soignant-bleu.jpg') }}" alt="Un soignant souriant en tenue bleue, stéthoscope autour du cou." decoding="async" aria-hidden="true" style="object-position: 50% 20%">
+      <button class="slides-toggle" type="button" aria-pressed="false" aria-label="Mettre le diaporama en pause" hidden>
+        <svg class="ico ico-pause" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6v12M15 6v12"/></svg>
+        <svg class="ico ico-play" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l11-6.5z"/></svg>
+      </button>
+    </div>
 
     <nav class="pillnav" aria-label="Navigation principale">
       <a class="brand" href="/" aria-current="page">DigiRemed</a>
@@ -37,7 +45,7 @@
       {% endif %}
     </div>
 
-    <div class="notch-title"><h1>Votre ordonnance vérifiée pendant que vous l'écrivez</h1></div>
+    <div class="notch-title"><h1>Vous soignez, nous sécurisons vos ordonnances</h1></div>
     {% if not user %}<p class="mobile-login">Vous avez déjà un compte ? <a href="/connexion">Connectez-vous</a></p>{% endif %}
 
     <form class="verify-card" id="verifier" action="/interactions" method="get" novalidate>
@@ -118,7 +126,7 @@
     <section class="who" id="pour-qui" aria-labelledby="qui-titre">
       <div class="who-photo"><img src="{{ url_for('static', filename='img/accueil/equipe-tablette.jpg') }}" alt="Une médecin en blouse blanche, stéthoscope autour du cou, penchée sur son travail." loading="lazy"></div>
       <div class="who-card">
-        <h2 id="qui-titre">Conçu pour vous qui prescrivez</h2>
+        <h2 id="qui-titre">Pour qui ?</h2>
         <ul>
           <li>{{ check_icon }}Médecins</li>
           <li>{{ check_icon }}Chirurgiens-dentistes</li>

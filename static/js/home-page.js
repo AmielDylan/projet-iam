@@ -3,6 +3,40 @@
  * the form opens the result on /interactions?med1=…&med2=… (static/js/redaction/home.js).
  */
 (() => {
+  /* Hero slideshow: cross-fade every 6 s; stops on hover or keyboard focus, on the pause button,
+     and never starts when the visitor asks for reduced motion. */
+  const stage = document.querySelector('[data-slides]');
+  const toggle = document.querySelector('.slides-toggle');
+  if (stage && toggle) {
+    const slides = [...stage.querySelectorAll('.slide')];
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    let index = 0;
+    let timer = null;
+    let paused = reduced;
+    const hero = stage.closest('.hero');
+    const show = (i) => {
+      slides[index].classList.remove('is-active'); slides[index].setAttribute('aria-hidden', 'true');
+      index = i;
+      slides[index].classList.add('is-active'); slides[index].removeAttribute('aria-hidden');
+    };
+    const stop = () => { clearInterval(timer); timer = null; };
+    const start = () => { if (!paused && !timer) timer = setInterval(() => show((index + 1) % slides.length), 6000); };
+    if (slides.length > 1) {
+      toggle.hidden = false;
+      const sync = () => {
+        toggle.setAttribute('aria-pressed', String(paused));
+        toggle.setAttribute('aria-label', paused ? 'Relancer le diaporama' : 'Mettre le diaporama en pause');
+      };
+      sync();
+      toggle.addEventListener('click', () => { paused = !paused; sync(); if (paused) stop(); else start(); });
+      hero.addEventListener('mouseenter', stop);
+      hero.addEventListener('mouseleave', start);
+      hero.addEventListener('focusin', stop);
+      hero.addEventListener('focusout', (e) => { if (!hero.contains(e.relatedTarget)) start(); });
+      start();
+    }
+  }
+
   const form = document.getElementById('verifier');
   if (!form) return;
   const error = form.querySelector('.checker-error');

@@ -17,14 +17,23 @@
 /* ---------- Premier écran ---------- */
 .hero { position: relative; }
 .hero-photo { height: clamp(580px, 50vw, 700px); border-radius: var(--r-photo); overflow: hidden; position: relative; background: var(--mint); }
-.hero-photo img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 28%; display: block; }
+/* Hero slideshow: one photo at a time, cross-faded. */
+.hero-photo .slide { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; opacity: 0; transition: opacity 1.4s var(--ease); }
+.hero-photo .slide.is-active { opacity: 1; }
+.slides-toggle { position: absolute; top: 96px; right: 22px; z-index: 3; display: grid; place-items: center; width: 40px; height: 40px; border: 0; border-radius: 50%;
+  background: rgba(255, 255, 255, .92); color: var(--ink); cursor: pointer; box-shadow: 0 6px 16px rgba(14, 33, 26, .12); }
+.slides-toggle:hover { background: #fff; }
+.slides-toggle .ico { width: 16px; height: 16px; }
+.slides-toggle .ico-play { display: none; fill: currentColor; stroke: none; }
+.slides-toggle[aria-pressed="true"] .ico-pause { display: none; }
+.slides-toggle[aria-pressed="true"] .ico-play { display: block; }
 .hero-photo::after { content: ""; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(180deg, rgba(14, 33, 26, .16) 0%, rgba(14, 33, 26, 0) 26%); }
 
 .pillnav { position: absolute; top: 18px; left: 18px; display: flex; align-items: center; gap: 2px; padding: 5px; background: #fff;
   border-radius: 999px; box-shadow: 0 6px 20px rgba(14, 33, 26, .10); z-index: 2; }
-.pillnav a { text-decoration: none; padding: 9px 16px; border-radius: 999px; font-size: 15px; font-weight: 600; color: var(--ink-2); }
+.pillnav a { text-decoration: none; padding: 9px 16px; border-radius: 999px; font-size: 15px; font-weight: 400; color: var(--ink-2); }
 .pillnav a:hover { color: var(--ink); background: var(--mint); }
-.pillnav .brand { color: var(--ink); font-family: var(--display); font-weight: 600; font-size: 17px; letter-spacing: -0.01em; padding-right: 12px; }
+.pillnav .brand { color: var(--ink); font-family: var(--display); font-weight: 500; font-size: 17px; letter-spacing: -0.01em; padding-right: 12px; }
 .pillnav .brand:hover { background: none; }
 .pillnav a[aria-current="page"] { background: var(--ink); color: #fff; }
 
@@ -46,20 +55,20 @@
 .verify-card h2 { font-size: 22px; letter-spacing: -0.02em; margin-bottom: 4px; }
 .verify-card > p { font-size: 15px; color: var(--ink-2); margin-bottom: 14px; }
 .hfield { display: block; margin-bottom: 10px; position: relative; }
-.hfield > span { display: block; font-size: 14px; font-weight: 600; color: var(--ink-2); margin-bottom: 4px; }
+.hfield > span { display: block; font-size: 14px; font-weight: 400; color: var(--ink-2); margin-bottom: 4px; }
 .hfield input { width: 100%; height: 46px; padding: 0 16px; border: 1px solid var(--line); border-radius: 999px; font: inherit; font-size: 16px; color: var(--ink);
   background: var(--mint); transition: border-color .15s ease, background .15s ease; }
 .hfield input::placeholder { color: var(--placeholder); }
 .hfield input:focus { outline: none; border-color: var(--act); background: #fff; box-shadow: 0 0 0 3px rgba(11, 122, 85, .16); }
 .hsuggest { position: absolute; left: 0; right: 0; top: calc(100% + 4px); z-index: 5; margin: 0; padding: 6px; list-style: none; background: #fff; border: 1px solid var(--line);
   border-radius: 16px; box-shadow: 0 14px 30px -10px rgba(14, 33, 26, .28); max-height: 240px; overflow: auto; }
-.hsuggest li { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 9px 12px; border-radius: 10px; cursor: pointer; font-size: 15px; font-weight: 600; }
+.hsuggest li { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 9px 12px; border-radius: 10px; cursor: pointer; font-size: 15px; font-weight: 400; }
 .hsuggest li small { font-size: 12px; font-weight: 700; color: var(--ink-3); }
 .hsuggest li[aria-selected="true"], .hsuggest li:hover { background: var(--mint); }
 .checker-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--line-soft); }
 .checker-foot small { font-size: 13px; color: var(--ink-3); line-height: 1.35; }
 .btn-check { display: inline-flex; align-items: center; gap: 8px; height: 46px; padding: 0 22px; border: 0; border-radius: 999px; background: var(--act); color: #fff;
-  font: inherit; font-weight: 700; font-size: 16px; cursor: pointer; white-space: nowrap; transition: background .15s ease, transform .1s ease; }
+  font: inherit; font-weight: 500; font-size: 16px; cursor: pointer; white-space: nowrap; transition: background .15s ease, transform .1s ease; }
 .btn-check:hover { background: var(--act-hover); }
 .btn-check:active { transform: translateY(1px); }
 .btn-check svg, .home .ico { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
@@ -70,8 +79,9 @@
 .arrow-round { display: grid; place-items: center; width: 28px; height: 28px; margin-right: -12px; border-radius: 50%; background: #fff; color: var(--ink); }
 .arrow-round .ico { width: 15px; height: 15px; }
 .mobile-login { display: none; padding: 4px 8px 0; font-size: 16px; color: var(--ink-2); }
-.mobile-login a { color: var(--act); font-weight: 700; }
+.mobile-login a { color: var(--act); font-weight: 500; }
 .home .link-quiet { color: var(--ink-2); }
+.notch-top .btn-mint, .notch-top .link-quiet { font-weight: 500; }
 
 /* ---------- Sections ---------- */
 .mint-panel { background: var(--mint); border-radius: var(--r-photo); padding: var(--pad-panel); margin-top: var(--gap-section); }
@@ -150,7 +160,7 @@
 .closing .actions { display: flex; gap: 8px; margin-top: 32px; flex-wrap: wrap; }
  
 @media (prefers-reduced-motion: no-preference) {
-  .hero-photo img { animation: settle 1.4s var(--ease) both; }
+  .hero-photo .slide:first-child { animation: settle 1.4s var(--ease) both; }
   .verify-card { animation: rise .9s .25s var(--ease) both; }
   @keyframes settle { from { transform: scale(1.06); filter: saturate(.6); } }
   @keyframes rise { from { transform: translateY(18px); opacity: .001; } }
@@ -179,7 +189,7 @@
 }
 @media (max-width: 480px) {
   .notch-top .btn-mint { padding: 12px 16px; font-size: 14px; }
+  .slides-toggle { top: auto; bottom: 12px; right: 12px; width: 36px; height: 36px; }
   .hero-photo { height: 240px; }
-  .hero-photo img { object-position: 38% 20%; }
   .pin-1, .pin-3 { right: -6px; } .pin-2 { left: -6px; }
 }
